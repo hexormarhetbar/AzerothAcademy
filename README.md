@@ -1,4 +1,4 @@
-# Azeroth Academy v0.12.0 (test build)
+# Azeroth Academy v0.13.0 (test build)
 
 A free learning addon for kids ages 5 to 13. Lessons are framed as Academy quests in Azeroth.
 This build has the **Main Hub** and two subjects: **Rune Forger** (math) and, new in v0.3,
@@ -38,6 +38,11 @@ New in v0.12: **Librarian Quests**, subject #6 (research skills). Head Librarian
 library of the Knowledge Exchange and trades books with libraries of every faction. Kids find the right shelf, sort
 in ABC order, use contents pages and indexes, pick key words, tell fact from opinion, take notes, judge sources, cite
 books, compare two accounts and read data tables. Each mastered tier earns a stamp in the **Library Passport**.
+New in v0.13: **Mechanics Academy**, subject #7 (group tactics with reading and math). Coach Brakka Steelwhistle runs
+the Training Ring: tank/healer/DPS roles, "avoid the fire" grid puzzles, health bars, threat, positioning, interrupts,
+cooldowns, classes and racial traits, plus DPS math, mana budgets, priority lists and boss mechanics. The class and
+race lists follow your game client (9 classes on WoW Forever and Classic Era, 13 on Retail). Each mastered tier adds a
+card to the **Tactics Deck**. Every hub tile is now a real subject.
 Progress stays on your computer. The only thing the addon ever sends is Duel of Wits race data, inside the game, to
 the players you race (see "Duel of Wits").
 
@@ -97,6 +102,8 @@ Or tick **Load out of date AddOns** on the AddOns screen.
 | `/aa gnomish` | Open the Gnomish Engineering skill list (v0.11; `/aa engineering` and `/aa code` work too) |
 | `/aa blueprints` | Open the Blueprint Binder (v0.11; gadget blueprints you collected by mastering Gnomish Engineering skills; `/aa binder` works too) |
 | `/aa library` | Open the Librarian Quests skill list (v0.12; `/aa librarian` and `/aa research` work too) |
+| `/aa mechanics` | Open the Mechanics Academy skill list (v0.13; `/aa tactics` and `/aa training` work too) |
+| `/aa deck` | Open the Tactics Deck (v0.13; tactics cards you earned by mastering Mechanics Academy skills; `/aa cards` works too) |
 | `/aa passport` | Open the Library Passport (v0.12; library stamps you earned by mastering Librarian Quests skills; `/aa stamps` works too) |
 | `/aa review` | Start a Review Time round (if any reviews are due) |
 | `/aa trial` | Open the placement trial for the current subject and band |
@@ -135,7 +142,7 @@ A round button with Fizzwick's face sits on the edge of the minimap.
 Race other players who also have Azeroth Academy. Open it from the hub's **Duel of Wits** button, `/aa duel`,
 or shift/middle-click on the minimap button.
 - **Setup:** pick a subject (Rune Forger, Scribe's Scrolls, Typing race, Lore Chronicles, Azeroth Naturalist,
-  the Lore Quiz or, since v0.11, Gnomish Engineering, grid puzzles included, and since v0.12 Librarian Quests), **5** or **10** questions, and who to challenge: **My group** (party or raid), **My guild**,
+  the Lore Quiz or, since v0.11, Gnomish Engineering, grid puzzles included, since v0.12 Librarian Quests and since v0.13 Mechanics Academy), **5** or **10** questions, and who to challenge: **My group** (party or raid), **My guild**,
   **One player** (type their name), or **Random challenger**. Then **Send challenge**.
 - **Invites:** everyone challenged gets a small pop-up (**Accept** / **No thanks**), even with the Academy closed.
   It says no by itself after 25 seconds, and right away in combat, in a dungeon/raid/battleground, when duels are off
@@ -192,7 +199,8 @@ Flight paths are perfect lesson time, so Fizzwick speaks up a couple of seconds 
 - **First run:** pick an age band. **Initiate** is ages 5–7, **Adept** is 8–10, **Magister** is 11–13.
 - **Hub:** shows your rank and progress bar, knowledge shards, bonus minutes earned today
   against the daily cap, and the module tiles. Rune Forger, Scribe's Scrolls, Lore Chronicles,
-  Azeroth Naturalist, Gnomish Engineering and Librarian Quests are active; Mechanics Academy says "Coming soon".
+  Azeroth Naturalist, Gnomish Engineering, Librarian Quests and Mechanics Academy are all active (since v0.13
+  no tile says "Coming soon").
 - **Rune Forger:** 5 skills per band, and each skill has 3 tiers: **Spark → Rune → Glyph**.
   - Initiate: Counting, Adding within 10, Adding within 20, Subtracting within 20, More or Less
   - Adept: Times Tables, Division, Place Value, Fractions of a Whole, Word Problems
@@ -351,6 +359,25 @@ Flight paths are perfect lesson time, so Fizzwick speaks up a couple of seconds 
   Stormwind, Ironforge, Orgrimmar and Thunder Bluff in equal numbers plus Dalaran, Gadgetzan and other neutral places).
   Same band tabs, fading-ink-then-**Review now**, **Go collect it!**, reward-screen **Open Library Passport** button,
   skill-list link, hub tile **Passport** button and `/aa passport`. Account-wide like the journal.
+- **Mechanics Academy (new in v0.13):** Coach Brakka Steelwhistle (original goblin, neutral) runs the Training Ring
+  behind the Knowledge Exchange in Gadgetzan. Group-play ideas taught with reading and math drills. Same tiers,
+  rewards, trial ("The Coach's Tryout"), reviews and exam ("Tactics Mastery Exam") as the other subjects. All questions
+  are original; game facts (roles, classes, racial traits) are described in our own words.
+  - Initiate (5–7): Tank, Healer, DPS (who does what), Avoid the Fire (a small arena grid drawn with the in-game fire
+    icon: which lettered spot is safe, which stays safe when the fire spreads, which way the hero steps out),
+    Count the Monsters (adding, taking away, packs), Health Bars (who needs a heal first, what is missing),
+    Teamwork (kindness, ready checks, staying together, telling a grown-up about rude chat). Always 3 big buttons.
+  - Adept (8–10): Threat (who the monster attacks, how far behind the tank, when you'd catch up), Positioning (behind or
+    beside, spread out, stack up, line of sight), Interrupts (cast timing, counting casts, can one or two players
+    interrupt every cast), Cooldowns (ready again, uses per fight, minutes:seconds), Classes and Roles.
+  - Magister (11–13): DPS Math (totals, group DPS, fight length, enrage timers), Mana Budget (casts, regen, which heal
+    gives more for the mana), Priority Lists (use the first ability whose rule is true), Boss Mechanics (phases,
+    enrage, adds, soaking, tank swaps, phase health), Racial Traits.
+  - **Client-aware lists:** WoW Forever and Classic Era teach the original 9 classes and 8 races; Retail adds Death
+    Knight, Monk, Demon Hunter, Evoker and four more races (Compat decides; the harness checks both lists).
+- **Tactics Deck (new in v0.13):** mastering a Mechanics Academy tier earns that tier's tactics card (45 cards, each
+  naming a neutral place to practise it). Same band tabs, fading-then-**Review now**, **Go collect it!**, reward-screen
+  **Open Tactics Deck** button, skill-list link, hub tile **Deck** button and `/aa deck`. Account-wide.
 - **In-flight science:** if Azeroth Naturalist was the last subject you opened, flight rounds pick a
   "look down" skill first (Zone Sorting, Day and Night, Seasons; Water Cycle, Food Chains, Adaptations;
   Ecosystems, Energy, Forces) and Fizzwick says something like "Look down! Every zone below is a habitat."
@@ -745,6 +772,32 @@ Azeroth Academy v0.10.0** (two accounts, or a friend), both with an age band pic
 158. [ ] Duel of Wits setup shows 8 subjects in two rows of 4 (Librarian Quests included); a Librarian race shows tables and citations in the race card.
 159. [ ] Parent Panel export also lists "Library Passport: N / 45 stamps collected."
 
+**Mechanics Academy and the Tactics Deck (v0.13)**. Restart the game client once (new sound and voice files).
+
+160. [ ] The hub shows 7 real subject tiles and no "Coming soon" tile. **Mechanics Academy** offers **The Coach's Tryout**.
+161. [ ] A round starts with a horn-and-thump sound and Fizzwick saying "Tanks up front, healers ready. Training begins!" (voice and bubble).
+162. [ ] Initiate **Avoid the Fire**: the grid shows fire icons on red squares and letters A/B/C; exactly one letter is safe. At higher levels the fire "spreads" (pick the spot not touching fire) and the hero icon must step out (Up/Down/Left/Right).
+163. [ ] Initiate **Health Bars** and **Count the Monsters**: names and numbers are readable; the answer is the lowest health / right count.
+164. [ ] Adept **Threat**, **Interrupts** and **Cooldowns**: type numbers on Rune/Glyph; the minutes:seconds question shows 4 buttons.
+165. [ ] Adept **Classes and Roles** on WoW Forever: only Warrior, Paladin, Hunter, Rogue, Priest, Shaman, Mage, Warlock and Druid appear ("This game has 9 classes"). On Retail you also see Death Knight, Monk, Demon Hunter and Evoker (13).
+166. [ ] Magister **DPS Math**, **Mana Budget** and **Priority Lists**: the numbers work out; the priority list is left-aligned and the answer is the first rule that is true.
+167. [ ] Magister **Racial Traits** on WoW Forever shows only the 8 original races. Tell me if any trait description looks wrong for your client.
+168. [ ] Master a Mechanics tier: "New card for your Tactics Deck: ...", Fizzwick says "Drill complete! A new tactics card for your deck!", and **Open Tactics Deck** opens on the new card ("Practice it in: ...").
+169. [ ] `/aa deck`, the hub tile's **Deck** button and the skill list's **Tactics Deck** link open the deck; `/aa mechanics` opens the subject.
+170. [ ] Duel of Wits setup shows 9 subjects in three rows (4 + 4 + 1) and nothing overlaps the question-count and "Who" rows. A Mechanics race shows the fire grid in the race card.
+171. [ ] Parent Panel export also lists "Tactics Deck: N / 45 cards collected."
+
+## Known limits (v0.13)
+
+- **Class and race lists are picked by client type.** WoW Forever and Classic Era get the original 9 classes and 8 races,
+  Retail gets 13 and 12. If WoW Forever ever adds the newer classes, `C.HasModernClasses` in `Adapters/Compat.lua` is
+  the one line to change. Class and trait names are English until the v1.0 translations.
+- **Racial traits are the long-standing ones** (one per race). Exact game numbers (damage, cooldowns) are never quoted,
+  because they change between patches; all battle math uses made-up abilities and numbers.
+- **Duel players on different clients** may get different class/race questions in a Mechanics race (each racer's game
+  builds its own set, as always), which keeps it fair for their own game.
+- **27 lines are spoken now** (2 new Mechanics lines); one new sound effect (`drill`).
+
 ## Known limits (v0.12)
 
 - **Research is practised on short texts in the card**, not real books or web searches; the libraries and books in the
@@ -876,6 +929,8 @@ AzerothAcademy/
     GnomishGen.lua          Gnomish Engineering (module #5): grid engine (moves, turns, loops, BFS), 15 generators, checker
     LibrarianData.lua       Librarian Quests curated questions, topics, invented books, comparisons, tables, 45 stamps (original)
     LibrarianGen.lua        Librarian Quests (module #6): shelves, contents, index, citation, comparison and table generators
+    MechanicsData.lua       Mechanics Academy curated questions, classes, racial traits, 45 tactics cards (original writing)
+    MechanicsGen.lua        Mechanics Academy (module #7): fire grids, battle math, priority lists, client-aware class lists
     Art.lua                 posed art rules: pose per event/subject, head crops, Sprocket states, fallbacks
     SkillIcons.lua          per-skill in-game icon paths
     BoardingData.lua        Murloc Boarding Party crew orders + Tidehunter sentences (original writing)
@@ -998,6 +1053,22 @@ originals and face-centered head crops, and wrote a 26-entry manifest.
 For v0.5, `tools/convert_art.sh` was run with ImageMagick 7.1.2 on test PNGs. It produced 512x512 RGBA TGAs, a 1024x256 (4-frame) and a 2048x256 (8-frame) strip, and a correct manifest. Removed files dropped out of the manifest, and a bad `STRIP_FRAMES` was rejected.
 
 ## Changelog
+
+**v0.13.0**
+- **Mechanics Academy (group tactics), subject #7:** 15 skills across Initiate / Adept / Magister with the usual
+  mastery, trial ("The Coach's Tryout"), reviews, exam ("Tactics Mastery Exam"), shards and report. Host: Coach Brakka
+  Steelwhistle (original). 38 curated questions plus generators for fire grids, monster counts, health bars, threat,
+  interrupts, cooldowns, classes, DPS, mana, priority lists, phase health and racial traits.
+- **Avoid the Fire:** `W.Grid` learned fire squares (in-game fire icon on a red square, letters on top) and per-puzzle
+  icon overrides (the hero). Every fire puzzle is re-checked by the harness: exactly one safe spot / one way out.
+- **Client-aware lists:** `Compat.HasModernClasses()` sets `ns.Env.modernClasses`; the module filters classes and races.
+- **Tactics Deck:** 45 tactics cards on the shared collection system.
+- **Hub:** all 7 subject tiles are real; the last "Coming soon" tile is gone.
+- **Duel of Wits:** Mechanics Academy is a duel subject (9 subjects).
+- **Fizzwick:** 5 new events with 15 lines, 2 voice clips and the `drill` sound effect (from the v0.11 audio batch).
+- **Slash:** `/aa mechanics` (`tactics`, `training`), `/aa deck` (`cards`).
+- **Tests:** harness section 26 (both class lists, no newer classes/races on Forever/Era, fire-grid and priority-list
+  replay, healer counts) and a UI smoke pass (fire icon, hero icon, class list per client, deck).
 
 **v0.12.0**
 - **Librarian Quests (research skills), subject #6:** 15 skills across Initiate / Adept / Magister with the usual

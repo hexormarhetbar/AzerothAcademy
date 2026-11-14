@@ -28,6 +28,19 @@ else
 end
 C.isForever = C.flavor == "forever"
 
+-- v0.13 Mechanics Academy: which class and race lists to teach. WoW Forever and Classic Era
+-- have the original nine classes and eight races; Retail adds Death Knight, Monk, Demon Hunter
+-- and Evoker plus newer races. Progression Classic clients (Wrath and later) are asked whether a
+-- class with id 6 (Death Knight) exists; that check is not trusted on Era/Forever, where the
+-- class tables can list classes the game does not offer.
+function C.HasModernClasses()
+  if C.flavor == "mainline" then return true end
+  if C.flavor ~= "classic" then return false end
+  local ok, _, file = pcall(GetClassInfo or function() end, 6)
+  return ok and file == "DEATHKNIGHT" or false
+end
+ns.Env.modernClasses = C.HasModernClasses()
+
 C.FLAVOR_NAMES = {
   forever = "WoW Forever", mainline = "Retail", classic_era = "Classic Era", classic = "Classic",
 }

@@ -12,7 +12,7 @@ globals = {
   "UISpecialFrames",
 }
 read_globals = {
-  "time", "date", "GetTime", "GetBuildInfo", "GetLocale", "GetRealmName",
+  "time", "date", "GetTime", "GetBuildInfo", "GetClassInfo", "GetLocale", "GetRealmName",
   "CreateFrame", "UIParent", "PlaySound", "SOUNDKIT", "C_Timer",
   "BackdropTemplateMixin", "STANDARD_TEXT_FONT", "GameFontHighlight",
   "InCombatLockdown", "UnitAffectingCombat", "UnitOnTaxi", "UnitName",

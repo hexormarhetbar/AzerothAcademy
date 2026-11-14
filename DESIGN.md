@@ -1,4 +1,4 @@
-# Azeroth Academy: Architecture (v0.12)
+# Azeroth Academy: Architecture (v0.13)
 
 ## Goals that shape the code
 1. **WoW Forever first, Retail second.** Forever (1.60.1, interface 16001) is a Mainline-family
@@ -505,6 +505,24 @@ or whispers each racer (one-player and random duels).
   and curated data and requires the two sides within 2 of each other, instead of banning them.
 - **Library Passport:** `Journal.RegisterBook{ moduleId = "librarian", prefix = "PASSPORT", newEvent = "LIBSTAMP",
   openEvent = "LIBPASSPORT", sound = "stamp" }`. Slash `/aa passport` maps through `BOOK_SLASH`.
+
+## Mechanics Academy (v0.13)
+
+- **Module `mechanics`** (Core/MechanicsData.lua + Core/MechanicsGen.lua), node ids `mech_*`. Four curated lists
+  (roles, teamwork, positioning, boss mechanics); everything else is generated from small tables (12 names, 8 enemy
+  kinds, 6 bosses, 13 classes, 12 races, 8 made-up abilities).
+- **Client-aware data:** classes/races carry `modern = true` when they only exist on newer clients. `Adapters/Compat.lua`
+  sets `ns.Env.modernClasses` (`mainline` = true, `forever`/`classic_era` = false, progression `classic` asks
+  `GetClassInfo(6)`); `MA.Classes(filter)` and `MA.Races()` filter on it. Core stays WoW-API free.
+- **Fire grids:** `p.grid = { w, h, fire = {{x, y, label}}, marks, bot = {x, y, ""}, icons = { bot = hero icon } }`.
+  Level 1: one of three letters is off the fire; level 2: one is neither on nor next to fire; level 3: the hero has fire
+  on three sides and one way out (extra fire never touches the exit). `MA.FireSet` / `MA.NearFire` are shared with the
+  harness, which re-checks every puzzle. `W.Grid` draws `fire` cells (red square + fire icon, letter on top) and honours
+  `spec.icons` overrides.
+- **Priority lists:** rules carry `{ text, ok, ab }` plus `p.state` so tests can recompute which rule fires first; rule
+  order is shuffled above the "Otherwise" line from level 2.
+- **Tactics Deck:** `Journal.RegisterBook{ moduleId = "mechanics", prefix = "TACTICS", newEvent = "MECHCARD",
+  openEvent = "MECHDECK", sound = "drill" }`. The hub's coming-soon list no longer has entries that are not real modules.
 
 ## Data model (schema 7)
 

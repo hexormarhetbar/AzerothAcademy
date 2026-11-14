@@ -47,6 +47,8 @@ A.EVENT_POSE = {
   -- v0.12 Librarian Quests
   LIBSTART = "researching", LIBCORRECT = "excited", LIBWRONG = "encouraging", LIBSTAMP = "celebrating",
   LIBPASSPORT = "proud",
+  -- v0.13 Mechanics Academy
+  MECHSTART = "excited", MECHCORRECT = "excited", MECHWRONG = "encouraging", MECHCARD = "celebrating", MECHDECK = "proud",
 }
 
 -- While a problem waits for an answer, Fizzwick works on something that fits the subject.
@@ -55,6 +57,7 @@ A.SUBJECT_POSE = {
   runeforger = "tinkering", gnomish = "tinkering",
   boarding = "talking", -- at the ship's wheel
   naturalist = "researching",
+  mechanics = "teaching", -- drawing tactics on the Training Ring chalkboard
 }
 
 local function has(manifest, name, missing)

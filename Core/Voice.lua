@@ -52,6 +52,9 @@ V.LINES = {
   -- v0.12 Librarian Quests
   FZ_LIBSTART_1 = { file = "lib_start", dur = 3.4 },
   FZ_LIBSTAMP_1 = { file = "lib_stamp", dur = 4.2, big = true },
+  -- v0.13 Mechanics Academy
+  FZ_MECHSTART_1 = { file = "mech_start", dur = 3.7 },
+  FZ_MECHCARD_1 = { file = "mech_card", dur = 3.5, big = true },
 }
 -- event -> clip that fits every line of the event
 V.EVENT_CLIPS = {

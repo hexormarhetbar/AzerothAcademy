@@ -318,6 +318,7 @@ W.GRID_ICONS = {
   goal = "Interface\\Icons\\INV_Misc_Gear_01",
   wall = "Interface\\Icons\\INV_Stone_01",
   coin = "Interface\\Icons\\INV_Misc_Coin_01",
+  fire = "Interface\\Icons\\Spell_Fire_Fire", -- v0.13 Mechanics Academy: "avoid the fire"
 }
 W.GRID_ARROWS = { N = "^", E = ">", S = "v", W = "<" }
 function W.Grid(parent, maxSide, cell)
@@ -345,7 +346,7 @@ function W.Grid(parent, maxSide, cell)
     local function put(list, k)
       for _, c in ipairs(list or {}) do kind[c[2] * 100 + c[1]] = { k = k, label = c[3] } end
     end
-    put(spec.walls, "wall"); put(spec.coins, "coin")
+    put(spec.walls, "wall"); put(spec.coins, "coin"); put(spec.fire, "fire")
     if spec.goal then put({ spec.goal }, "goal") end
     put(spec.marks, "mark")
     if spec.bot then put({ { spec.bot[1], spec.bot[2], W.GRID_ARROWS[spec.bot[3] or "E"] } }, "bot") end
@@ -359,13 +360,14 @@ function W.Grid(parent, maxSide, cell)
           c.label:SetText(k and k.label or "")
           c.label:Show()
           if k and k.k ~= "mark" then
-            c.icon:SetTexture(W.GRID_ICONS[k.k])
+            c.icon:SetTexture((spec.icons and spec.icons[k.k]) or W.GRID_ICONS[k.k])
             c.icon:SetAlpha(k.k == "bot" and 1 or 0.9)
             c.icon:Show()
           else
             c.icon:Hide()
           end
           if k and k.k == "mark" then C.SetColor(c.bg, 0.3, 0.22, 0.05, 0.95) end
+          if k and k.k == "fire" then C.SetColor(c.bg, 0.4, 0.1, 0.05, 0.95) end
         else
           c.bg:Hide(); c.icon:Hide(); c.label:Hide()
         end

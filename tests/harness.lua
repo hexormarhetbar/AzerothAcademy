@@ -3159,6 +3159,95 @@ do
 end
 
 -------------------------------------------------------------------------
+-- 26. v0.13: Mechanics Academy - fire grids, battle math, client class lists, Tactics Deck
+-------------------------------------------------------------------------
+do
+  local mtns = newNS()
+  local MA, MD = mtns.Mechanics, mtns.MechanicsData
+  ok(not MA.Modern() and #MA.Classes() == 9 and #MA.Races() == 8, "Forever/Classic Era: 9 classes, 8 races")
+  mtns.Env.modernClasses = true
+  ok(MA.Modern() and #MA.Classes() == 13 and #MA.Races() == 12, "Retail: 13 classes, 12 races")
+  local seenModern = false
+  for _ = 1, 300 do
+    local p = mtns.Modules.Generate("mech_classes", 5, 2, "practice")
+    for _, c in ipairs(MD.CLASSES) do
+      if c.modern and (p.text .. tostring(p.answer) .. table.concat(p.choices or {}, " ")):find(c.name, 1, true) then seenModern = true end
+    end
+  end
+  ok(seenModern, "Retail class questions use the newer classes")
+  mtns.Env.modernClasses = nil
+  for _ = 1, 300 do
+    for _, nodeId in ipairs({ "mech_classes", "mech_races" }) do
+      local p = mtns.Modules.Generate(nodeId, 5, 2, "practice")
+      local blob = p.text .. tostring(p.answer) .. table.concat(p.choices or {}, " ") .. (p.explain or "")
+      for _, c in ipairs(MD.CLASSES) do if c.modern then ok(not blob:find(c.name, 1, true), "no " .. c.name .. " on Forever/Classic Era") end end
+      for _, r in ipairs(MD.RACES) do if r.modern then ok(not blob:find(r.trait, 1, true), "no " .. r.trait .. " on Forever/Classic Era") end end
+    end
+  end
+  -- class data sanity: every class has a role and a clue; healer count per client
+  for _, c in ipairs(MD.CLASSES) do ok((c.tank or c.heal or c.dps) and #c.hint > 20, "class data: " .. c.name) end
+  ok(#MA.Classes(function(c) return c.heal end) == 4, "4 healing classes on Forever/Classic Era")
+  -- fire helpers
+  local fires = MA.FireSet({ fire = { { 2, 2 } } })
+  ok(MA.NearFire(fires, 2, 1) and MA.NearFire(fires, 3, 2) and not MA.NearFire(fires, 3, 3), "fire spreads up/down/left/right only")
+  ok(mtns.Art.SUBJECT_POSE.mechanics == "teaching", "Fizzwick teaches at the Training Ring")
+  ok(mtns.Voice.LINES.FZ_MECHSTART_1 and mtns.Voice.LINES.FZ_MECHCARD_1.big, "mechanics voice lines")
+  ok(mtns.SoundEvents.EVENTS.drill, "drill sound")
+
+  subjectSuite({
+    id = "mechanics", nameKey = "MOD_MECHANICS", prefix = "TACTICS", lists = MA.LISTS,
+    keys = { "MECH_LORE", "MECH_TITLE", "MECH_TRIAL", "MECH_EXAM", "MECH_TRIAL_LORE", "MECH_EXAM_LORE", "MECH_TRIAL_RESULT", "MECH_EXAM_PASS", "MECH_TRIAL_RIGHT", "MECH_TRIAL_WRONG" },
+    events = { "MECHSTART", "MECHCORRECT", "MECHWRONG", "MECHCARD", "MECHDECK" },
+    maxText = MA.MAX_TEXT, maxChoice = MA.MAX_CHOICE, numeric = true,
+    noTyped = { mech_positioning = true, mech_rotation = true, mech_races = true },
+    perProblem = function(tns, p, tag)
+      local M = tns.Mechanics
+      if p.nodeId == "mech_fire" then
+        local g = p.grid
+        if ok(g and g.fire and #g.fire > 0, tag .. " fire puzzle has a grid") then
+          ok(g.w <= 6 and g.h <= 6, tag .. " grid fits the card")
+          local fs = M.FireSet(g)
+          if p.escape then
+            local hx, hy = g.bot[1], g.bot[2]
+            local free = 0
+            for d, v in pairs(M.NEIGHBORS) do
+              local x, y = hx + v[1], hy + v[2]
+              local inside = x >= 1 and y >= 1 and x <= g.w and y <= g.h
+              if inside and not fs[y * 100 + x] then free = free + 1; ok(d == p.escape, tag .. " only the answer way is free") end
+            end
+            ok(free == 1 and not fs[hy * 100 + hx], tag .. " exactly one way out, hero not on fire")
+          else
+            local spread = p.text:find("spread", 1, true) ~= nil
+            local labels, safeCount = {}, 0
+            for _, f in ipairs(g.fire) do if f[3] then labels[#labels + 1] = { f[1], f[2], f[3] } end end
+            for _, m in ipairs(g.marks or {}) do labels[#labels + 1] = m end
+            ok(#labels == 3, tag .. " three lettered spots")
+            for _, l in ipairs(labels) do
+              local safe = not fs[l[2] * 100 + l[1]] and (not spread or not M.NearFire(fs, l[1], l[2]))
+              if safe then safeCount = safeCount + 1; ok(l[3] == p.answer, tag .. " the safe spot is the answer") end
+            end
+            ok(safeCount == 1, tag .. " exactly one safe spot")
+          end
+        end
+      end
+      if p.nodeId == "mech_rotation" and p.rules then
+        local want
+        for _, r in ipairs(p.rules) do
+          local truth = r.ok
+          if r.text:find("combo", 1, true) then truth = p.state.combo == 5
+          elseif r.text:find("20%", 1, true) then truth = p.state.hp < 20
+          elseif r.text:find("is ready", 1, true) then truth = p.state.ready
+          end
+          ok(truth == r.ok, tag .. " rule truth matches the state")
+          if not want and truth then want = r.ab end
+        end
+        ok(want == p.answer, tag .. " priority answer is the first true rule")
+      end
+    end,
+  })
+end
+
+-------------------------------------------------------------------------
 print(string.format("Generated %d problems: %d Rune Forger nodes x 5 levels x 3 tiers (%d per node) + 15 Scribe nodes x 5 levels x 3 tiers x 2 purposes.", genCount,
   (function() local n = 0 for _ in pairs(perNode) do n = n + 1 end return n end)(), ITER * 15))
 print(string.format("Lore Chronicles + Lore Quiz: %d generated problems checked.", loreGenCount))

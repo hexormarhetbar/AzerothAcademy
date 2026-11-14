@@ -320,8 +320,9 @@ if ns.Hub.current ~= "home" then fail("expected home view after band pick") end
 if ns.Progress.GetBand() == nil then fail("band not saved") end
 
 -- Coming-soon module + active module
-click("^Mechanics Academy$") -- coming soon tile: prints, stays home
-if ns.Hub.current ~= "home" then fail("coming-soon tile should not navigate") end
+-- v0.13: every subject is built, so no tile says "Coming soon" any more
+for _, t in ipairs(ns.Hub.Tiles()) do if not t.active then fail("no coming-soon tiles left: " .. tostring(t.key)) end end
+if #ns.Hub.Tiles() ~= 7 then fail("hub shows 7 subject tiles, got " .. #ns.Hub.Tiles()) end
 click("^Rune Forger$")
 -- v0.2: first visit offers The Forgemaster's Trial
 if ns.Hub.current ~= "trial" then fail("first forge visit should offer the placement trial, got " .. tostring(ns.Hub.current)) end
@@ -1562,7 +1563,6 @@ do
   ns.Progress.account.settings.unlockAllTiers = false
   ns.Hub.Open("home")
   if not findButton("^Azeroth Naturalist$") then fail("Azeroth Naturalist should be a real hub tile") end
-  if findButton("^Mechanics Academy$") == nil and #ns.Hub.Tiles() < 6 then fail("coming-soon tiles still listed") end
   click("^Azeroth Naturalist$")
   if ns.Hub.current ~= "trial" or not visibleText("^The Field Warden's Survey$") then fail("Naturalist tile should open The Field Warden's Survey") end
   click("^Begin the Trial$")
@@ -1708,7 +1708,7 @@ local function subjectSmoke(cfg)
   ns.Hub.Open("home")
   if not findButton("^" .. cfg.tile .. "$") then fail(cfg.tile .. " should be a real hub tile") end
   click("^" .. cfg.tile .. "$")
-  if ns.Hub.current ~= "trial" or not visibleText("^" .. en[mod.placementKey] .. "$") then fail(cfg.tile .. " tile should open its trial") end
+  if ns.Hub.current ~= "trial" or not visibleText("^" .. en[mod.placementKey] .. "$") then fail(cfg.tile .. " tile should open its trial (view " .. tostring(ns.Hub.current) .. ")") end
   click("^Begin the Trial$")
   local ts = ns.RuneForger.session
   if not (ts and ts.isTrial and ts.moduleId == cfg.id) then fail(cfg.id .. " trial did not start") end
@@ -1853,6 +1853,49 @@ step("v0.12 librarian quests", function()
       if ns.Lessons.CurrentModule().id ~= "librarian" then fail("/aa research opens Librarian Quests") end
       slash("stamps")
       if ns.Hub.current ~= "journal" or ns.Hub.GetView("journal").moduleId ~= "librarian" then fail("/aa stamps opens the passport") end
+    end,
+  })
+end)
+
+step("v0.13 mechanics academy", function()
+  subjectSmoke({
+    id = "mechanics", tile = "Mechanics Academy", prefix = "TACTICS",
+    startEvent = "MECHSTART", newEvent = "MECHCARD", openEvent = "MECHDECK",
+    slashBook = "deck", slashSubject = "mechanics", startVoice = "mech_start",
+    extra = function()
+      -- "avoid the fire" draws fire squares and letters; the hero puzzle draws the hero icon
+      local seenFire, seenHero = false, false
+      for _ = 1, 12 do
+        ns.RuneForger.StartRound("mech_fire", 1)
+        local view = ns.Hub.GetView("problem")
+        local p = ns.RuneForger.session.problem
+        if not (p.grid and view.grid:IsShown()) then fail("fire puzzle shows its grid") end
+        local f = p.grid.fire[1]
+        local cell = view.grid.cells[(f[2] - 1) * view.grid.maxSide + f[1]]
+        if cell.icon.__tex == ns.W.GRID_ICONS.fire then seenFire = true end
+        if p.grid.bot then
+          local hc = view.grid.cells[(p.grid.bot[2] - 1) * view.grid.maxSide + p.grid.bot[1]]
+          if hc.icon.__tex == ns.Mechanics.HERO_ICON then seenHero = true end
+        end
+        view:Answer(p.answer)
+        if ns.RuneForger.session.firstCorrect ~= 1 then fail("fire answer accepted") end
+        runTimers()
+        ns.RuneForger.session = nil
+      end
+      if not seenFire then fail("fire squares drawn with the fire icon") end
+      local g = ns.W.Grid(UIParent, 6, 22)
+      for _ = 1, 4 do
+        local p = ns.Modules.Generate("mech_fire", 5, 3, "practice")
+        g:Draw(p.grid)
+        local hc = g.cells[(p.grid.bot[2] - 1) * g.maxSide + p.grid.bot[1]]
+        if hc.icon.__tex == ns.Mechanics.HERO_ICON then seenHero = true end
+      end
+      if not seenHero then fail("escape puzzles draw the hero icon") end
+      -- the class list follows the client: Retail has 13 classes, Forever and Classic Era 9
+      local want = (ns.Compat.flavor == "mainline") and 13 or 9
+      if #ns.Mechanics.Classes() ~= want then fail("class list for " .. ns.Compat.flavor .. ": " .. #ns.Mechanics.Classes()) end
+      ns.Hub.Open("duel")
+      if not findButton("Mechanics Academy") then fail("duel setup lists Mechanics Academy") end
     end,
   })
 end)

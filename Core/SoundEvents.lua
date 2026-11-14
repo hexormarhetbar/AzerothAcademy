@@ -45,10 +45,12 @@ S.EVENTS = {
   gears      = { kits = { "PUT_DOWN_GEMS", 1204, "IG_ABILITY_OPEN", 834 } },
   -- v0.12 Librarian Quests: passport stamp (new stamp)
   stamp      = { kits = { "IG_ABILITY_PAGE_TURN", 836, "IG_QUEST_LIST_COMPLETE", 878 } },
+  -- v0.13 Mechanics Academy: training-yard horn (round start + new tactics card)
+  drill      = { kits = { "READY_CHECK", 8960 } },
 }
 S.ORDER = { "click", "open", "close", "correct", "wrong", "combo", "overcharge", "forge",
   "scroll", "reward", "rankup", "exampass", "chirp", "hint", "cameo", "splash", "cannon", "gurgle", "flight",
-  "page", "specimen", "countdown", "duelwin", "gears", "stamp" }
+  "page", "specimen", "countdown", "duelwin", "gears", "stamp", "drill" }
 
 S.DEFAULTS = { enabled = true, channel = "SFX", level = "all", custom = true }
 

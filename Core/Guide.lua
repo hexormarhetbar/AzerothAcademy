@@ -27,6 +27,8 @@ G.EVENTS = {
   "GESTART", "GECORRECT", "GEWRONG", "GEBLUEPRINT", "GEBINDER",
   -- v0.12: Librarian Quests
   "LIBSTART", "LIBCORRECT", "LIBWRONG", "LIBSTAMP", "LIBPASSPORT",
+  -- v0.13: Mechanics Academy
+  "MECHSTART", "MECHCORRECT", "MECHWRONG", "MECHCARD", "MECHDECK",
 }
 
 -- Who can appear and how the UI should try to show them. Model IDs are tried in

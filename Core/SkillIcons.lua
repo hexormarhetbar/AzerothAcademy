@@ -50,6 +50,13 @@ local I = {
   lib_factopinion = "Spell_Holy_Restoration", lib_notes = "INV_Scroll_04",
   lib_sources = "Spell_Holy_MindSooth", lib_citing = "INV_Scroll_06", lib_compare = "Ability_Hunter_SniperShot",
   lib_tables = "INV_Misc_Coin_05", lib_skim = "INV_Misc_Eye_01",
+  -- Mechanics Academy (v0.13)
+  mech_roles = "Ability_Warrior_ShieldWall", mech_fire = "Spell_Fire_Fireball02", mech_count = "Ability_Hunter_Pet_Raptor",
+  mech_health = "Spell_Holy_Heal02", mech_teamwork = "Spell_Holy_PrayerOfFortitude",
+  mech_threat = "Ability_Warrior_Taunt", mech_positioning = "Ability_Rogue_Sprint", mech_interrupts = "Ability_Kick",
+  mech_cooldowns = "Spell_Nature_TimeStop", mech_classes = "INV_Helmet_08",
+  mech_dps = "Ability_DualWield", mech_mana = "INV_Potion_76", mech_rotation = "Ability_Rogue_SliceDice",
+  mech_bossmech = "INV_Misc_Head_Dragon_Black", mech_races = "Spell_Nature_Polymorph",
 }
 ns.SkillIcons = {}
 for id, name in pairs(I) do ns.SkillIcons[id] = P .. name end
