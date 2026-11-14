@@ -169,7 +169,7 @@ function GU.ShowPose(holder, pose, small, allowModel)
   return holder.mode
 end
 
--- v1.0: a host portrait (Zixi, Quill, the Tidehunter). Art when shipped, else the placeholder.
+-- v1.0: a host portrait (Zixi, Quill). Art when shipped, else the placeholder.
 function GU.ShowHost(holder, id, small)
   local host = holder and ns.Art.HOSTS[id or ""]
   if not host then return nil end

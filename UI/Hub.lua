@@ -211,11 +211,7 @@ H.RegisterView("profile", function(parent)
   local text = W.Text(v, 13, L.PROFILE_TEXT, W.WHITE, "CENTER")
   text:SetPoint("TOP", title, "BOTTOM", 0, -12)
   text:SetWidth(500)
-  local flavor = {
-    initiate = "Learn to count, add and subtract with wisps and murlocs.",
-    adept = "Times tables, division, fractions and adventure word problems.",
-    magister = "Percentages, negatives, equations and real game math.",
-  }
+  local flavor = { initiate = L.PROFILE_FLAVOR_INITIATE, adept = L.PROFILE_FLAVOR_ADEPT, magister = L.PROFILE_FLAVOR_MAGISTER }
   local y = -120
   for _, band in ipairs(ns.Progress.BANDS) do
     local b = W.Button(v, L[band.key] .. "  (" .. string.format(L.BAND_AGES, band.ages) .. ")", 300, 44, function()

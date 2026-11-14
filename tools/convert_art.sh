@@ -8,8 +8,8 @@
 #                        celebrating proud encouraging tinkering surprised
 #   sprocket_squawk.png  sprocket_curious.png
 #   fizzwick_strip.png   (optional talk animation: 2, 4 or 8 frames side by side)
-#   zixi_portrait.png  quill_portrait.png  tidehunter_portrait.png   (v1.0 host portraits:
-#                        Chronicler Zixi, Archivist Quill, the Murloc Tidehunter boss)
+#   zixi_portrait.png  quill_portrait.png   (host portraits: Chronicler Zixi, Archivist Quill.
+#                        The Murloc Tidehunter has no slot: it stays on the in-game model.)
 # Output, in Media/Art/:
 #   <name>.tga       512x512 32-bit uncompressed TGA, alpha kept, bottom-left origin
 #   <name>_head.tga  256x256 head-and-chest crop for small portrait slots. Made with
@@ -28,7 +28,7 @@ POSES="greet talking thinking researching teaching excited celebrating proud enc
 NAMES=""
 for p in $POSES; do NAMES="$NAMES fizzwick_$p"; done
 NAMES="$NAMES sprocket_squawk sprocket_curious"
-for h in zixi quill tidehunter; do NAMES="$NAMES ${h}_portrait"; done
+for h in zixi quill; do NAMES="$NAMES ${h}_portrait"; done
 
 if command -v magick >/dev/null 2>&1; then IM="magick"
 elif command -v convert >/dev/null 2>&1; then IM="convert"

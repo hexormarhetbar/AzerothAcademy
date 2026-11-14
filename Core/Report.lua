@@ -17,9 +17,9 @@ local function dayText(t)
 end
 
 local function trialLine(L, label, r)
-  if not r then return string.format("  %-16s not taken", label) end
-  return string.format("  %-16s %s  %d/%d correct  avg start level %.1f%s", label, dayText(r.date), r.correct or 0,
-    r.total or 0, r.avgLevel or 0, r.passed and "  PASSED" or "")
+  if not r then return string.format("  %-16s " .. L.RPT_NOT_TAKEN, label) end
+  return string.format("  %-16s %s  " .. L.RPT_TRIAL_LINE .. "%s", label, dayText(r.date), r.correct or 0,
+    r.total or 0, r.avgLevel or 0, r.passed and ("  " .. L.RPT_PASSED) or "")
 end
 
 -- info = { player = "Name-Realm", moduleId = nil (all subjects) | "runeforger" | "scribe" ... }
@@ -35,29 +35,29 @@ function Report.Build(info)
   local st = P.char.stats
   local tierNames = { L.TIER_SPARK, L.TIER_RUNE, L.TIER_GLYPH }
 
-  add("Azeroth Academy - Progress Report (v" .. ns.VERSION .. ")")
-  add("Generated: " .. Util.DateText() .. (info.player and ("  |  Character: " .. info.player) or ""))
-  add("Path: " .. (band and (L[band.key] .. " (ages " .. band.ages .. ")") or "not set"))
-  add(string.format("Rank: %s  |  Knowledge shards: %d", L[rank.key], P.char.shards))
-  add(string.format("Bonus minutes today: %d / %d  (%d per mastered tier)", earned, cap, P.account.settings.minutesPerMastery))
-  add(string.format("Rounds finished: %d  |  Problems: %d  |  First-try accuracy: %s  |  Time: %s",
+  add(string.format(L.RPT_TITLE, ns.VERSION))
+  add(string.format(L.RPT_GENERATED, Util.DateText()) .. (info.player and ("  |  " .. string.format(L.RPT_CHARACTER, info.player)) or ""))
+  add(string.format(L.RPT_PATH, band and string.format(L.RPT_PATH_BAND, L[band.key], band.ages) or L.RPT_NOT_SET))
+  add(string.format(L.RPT_RANK, L[rank.key], P.char.shards))
+  add(string.format(L.RPT_MINUTES, earned, cap, P.account.settings.minutesPerMastery))
+  add(string.format(L.RPT_ROUNDS,
     st.rounds, st.problems, st.problems > 0 and string.format("%d%%", math.floor(st.firstCorrect / st.problems * 100 + 0.5)) or "-",
     Util.FormatDuration(st.time)))
 
   local due, fading = R.Due(), R.Fading()
-  add(string.format("Spaced reviews due now: %d  |  Fading skills: %d", #due, #fading))
+  add(string.format(L.RPT_DUE, #due, #fading))
 
   local trouble = {}
   if info.moduleId and ns.Modules.Get(info.moduleId) then
-    add("Subject: " .. L[ns.Modules.Get(info.moduleId).nameKey])
+    add(string.format(L.RPT_SUBJECT, L[ns.Modules.Get(info.moduleId).nameKey]))
   else
-    add("Subjects: all")
+    add(L.RPT_SUBJECTS_ALL)
   end
   for _, module in ipairs(ns.Modules.list) do
    if not info.moduleId or info.moduleId == module.id or not ns.Modules.Get(info.moduleId) then
     add("")
-    add(string.upper(L[module.nameKey]) .. " - per skill and tier")
-    add("Format: tier: accuracy (attempts) recent x/10 [MASTERED] [FADING] | start = placement/parent starting tier")
+    add(string.format(L.RPT_MODULE_HEAD, string.upper(L[module.nameKey])))
+    add(L.RPT_FORMAT)
     for _, b in ipairs(module.unbanded and { ns.Modules.EVERYONE } or P.BANDS) do
       local nodes = ns.Modules.Nodes(module.id, b.id)
       local any = b.id == bandId
@@ -76,30 +76,30 @@ function Report.Build(info)
             if (rec.bestWpm or 0) > wpm then wpm = rec.bestWpm end
             local rc, rt = M.RecentCorrect(rec)
             parts[#parts + 1] = string.format("%s: %s (%d) %d/%d%s%s", tierNames[t], pct(rec), rec.attempts, rc, rt,
-              rec.mastered and " [MASTERED]" or "", rec.fading and " [FADING]" or "")
+              rec.mastered and (" [" .. L.RPT_MASTERED .. "]") or "", rec.fading and (" [" .. L.RPT_FADING .. "]") or "")
             if rt >= 5 and rc / rt < 0.6 then
-              trouble[#trouble + 1] = string.format("%s - %s tier (recent %d/%d)", L[node.key], tierNames[t], rc, rt)
+              trouble[#trouble + 1] = string.format(L.RPT_TROUBLE, L[node.key], tierNames[t], rc, rt)
             end
             if rec.fading then
-              trouble[#trouble + 1] = string.format("%s - %s tier is fading (missed a spaced review)", L[node.key], tierNames[t])
+              trouble[#trouble + 1] = string.format(L.RPT_TROUBLE_FADING, L[node.key], tierNames[t])
             end
           end
-          add(string.format("%s | %s | start %s | time %s%s", L[node.key], table.concat(parts, " | "),
-            tierNames[T.StartTier(nodeId)], Util.FormatDuration(time), wpm > 0 and (" | best " .. wpm .. " WPM") or ""))
+          add(string.format(L.RPT_NODE_LINE, L[node.key], table.concat(parts, " | "),
+            tierNames[T.StartTier(nodeId)], Util.FormatDuration(time)) .. (wpm > 0 and (" | " .. string.format(L.RPT_BEST_WPM, wpm)) or ""))
         end
         -- Placement vs post-test
         local cmp = module.noTrials and {} or T.Comparison(module.id, b.id)
         local pl = T.GetPlacement(module.id, b.id)
         if module.noTrials then
-          add("  No placement trial or exam (optional quiz track).")
+          add("  " .. L.RPT_NO_TRIALS)
         else
-        add(string.format("  %s vs %s:", L[module.placementKey or "TRIAL_PLACEMENT"], L[module.examKey or "TRIAL_EXAM"]))
+        add("  " .. string.format(L.RPT_VS, L[module.placementKey or "TRIAL_PLACEMENT"], L[module.examKey or "TRIAL_EXAM"]))
         if pl and pl.status == "skipped" and not cmp.placement then
-          add("  Placement trial was skipped" .. (pl.migrated and " (progress carried over from v0.1)." or "."))
+          add("  " .. (pl.migrated and L.RPT_SKIPPED_MIGRATED or L.RPT_SKIPPED))
         end
-        add(trialLine(L, "Placement:", cmp.placement))
-        add(trialLine(L, "Latest exam:", cmp.exam))
-        if cmp.best and cmp.exam and (cmp.best.date ~= cmp.exam.date or cmp.best.correct ~= cmp.exam.correct) then add(trialLine(L, "Best exam:", cmp.best)) end
+        add(trialLine(L, L.RPT_L_PLACEMENT, cmp.placement))
+        add(trialLine(L, L.RPT_L_LATEST, cmp.exam))
+        if cmp.best and cmp.exam and (cmp.best.date ~= cmp.exam.date or cmp.best.correct ~= cmp.exam.correct) then add(trialLine(L, L.RPT_L_BEST, cmp.best)) end
         if cmp.placement and cmp.exam then
           local growth = {}
           for _, nodeId in ipairs(nodes) do
@@ -110,7 +110,7 @@ function Report.Build(info)
               growth[#growth + 1] = string.format("%s %s->%s", L[node.key], tierNames[a.level], tierNames[z.level])
             end
           end
-          add(string.format("  Growth: %+d correct (%d -> %d of %d). %s", cmp.exam.correct - cmp.placement.correct,
+          add("  " .. string.format(L.RPT_GROWTH, cmp.exam.correct - cmp.placement.correct,
             cmp.placement.correct, cmp.exam.correct, cmp.exam.total, table.concat(growth, ", ")))
         end
         end -- noTrials
@@ -128,13 +128,13 @@ function Report.Build(info)
       local _, node = ns.Modules.FindNode(d.nodeId)
       names[#names + 1] = L[node.key] .. " (" .. tierNames[d.tier] .. ")"
     end
-    add("Reviews due: " .. table.concat(names, ", "))
+    add(string.format(L.RPT_REVIEWS_DUE, table.concat(names, ", ")))
   end
   if #trouble > 0 then
-    add("Needs practice:")
+    add(L.RPT_NEEDS)
     for _, s in ipairs(trouble) do add("  * " .. s) end
   else
-    add("Needs practice: nothing flagged yet.")
+    add(L.RPT_NEEDS_NONE)
   end
   if ns.Journal then
     for _, b in ipairs(ns.Journal.Books()) do
@@ -145,6 +145,6 @@ function Report.Build(info)
     end
   end
   add("")
-  add("All data is stored locally in WoW SavedVariables. Nothing is sent anywhere.")
+  add(L.RPT_PRIVACY)
   return table.concat(lines, "\n")
 end

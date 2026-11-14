@@ -244,10 +244,11 @@ The IDs were cross-checked on Wowhead's Classic and Retail NPC pages, and both l
 
 ## Posed art (v0.5.1; slots since v0.5)
 
-- **Host portraits (v0.15):** `Art.HOSTS` (`zixi`, `quill`, `tidehunter`) each own `<id>_portrait` (512) and
+- **Host portraits (v0.15):** `Art.HOSTS` (`zixi`, `quill`) each own `<id>_portrait` (512) and
   `<id>_portrait_head` (256) in the same manifest. `Art.HostFor(moduleId)` picks the skill-list host;
   `Art.Host(id, manifest, missing, small)` returns the best file or nil. `GuideUI.ShowHost` falls back to the host's
-  `cast` (an in-game icon, or the murloc model for the Tidehunter). Art for these slots is pending Hex.
+  `cast` (an in-game icon). Art for these slots is pending Hex. The Tidehunter deliberately has no slot and always
+  shows the in-game murloc model.
 
 - `Core/Art.lua` is pure logic.
   - It maps each guide event to a pose with `EVENT_POSE`. Three extra pseudo-events have no line of their own: `IDLE`, `EXPLAIN`, `BEST`.

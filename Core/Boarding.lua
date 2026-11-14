@@ -424,26 +424,26 @@ function B.ReportLines()
   if st.voyages == 0 then return {} end
   local L = ns.L
   local out = {}
-  out[#out + 1] = string.format("  Murloc Boarding Party: %d voyages (%d won), %d murlocs splashed, accuracy %s, time %s",
+  out[#out + 1] = "  " .. string.format(L.RPT_BOARD_STATS,
     st.voyages, st.wins, st.splashed,
     (st.chars + st.typos) > 0 and string.format("%d%%", math.floor(st.chars / (st.chars + st.typos) * 100 + 0.5)) or "-",
     Util.FormatDuration(st.time))
   local bests = {}
   for _, b in ipairs(ns.Progress.BANDS) do
     local best = st.best[b.id]
-    if type(best) == "table" and (best.wpm or 0) > 0 then bests[#bests + 1] = L[b.key] .. " " .. best.wpm .. " WPM" end
+    if type(best) == "table" and (best.wpm or 0) > 0 then bests[#bests + 1] = L[b.key] .. " " .. string.format(L.RPT_WPM, best.wpm) end
   end
-  if #bests > 0 then out[#out + 1] = "  Best typing speed: " .. table.concat(bests, ", ") end
+  if #bests > 0 then out[#out + 1] = "  " .. string.format(L.RPT_BOARD_BEST, table.concat(bests, ", ")) end
   local routes = {}
   for _, r in ipairs(B.ROUTES) do
-    routes[#routes + 1] = L[r.key] .. (B.Unlocked(r.id) and "" or " (locked)")
+    routes[#routes + 1] = L[r.key] .. (B.Unlocked(r.id) and "" or (" (" .. L.RPT_LOCKED .. ")"))
   end
-  out[#out + 1] = "  Routes: " .. table.concat(routes, ", ")
+  out[#out + 1] = "  " .. string.format(L.RPT_BOARD_ROUTES, table.concat(routes, ", "))
   local last = st.log[1]
   if last then
     local route = B.ROUTE_BY_ID[last.route]
-    out[#out + 1] = string.format("  Last voyage: %s, %s, %d WPM, %d%% accuracy", route and L[route.key] or tostring(last.route),
-      last.won and "won" or "lost", last.wpm or 0, last.accuracy or 0)
+    out[#out + 1] = "  " .. string.format(L.RPT_BOARD_LAST, route and L[route.key] or tostring(last.route),
+      last.won and L.RPT_WON or L.RPT_LOST, last.wpm or 0, last.accuracy or 0)
   end
   return out
 end

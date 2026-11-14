@@ -61,19 +61,17 @@ A.SUBJECT_POSE = {
   mechanics = "teaching", -- drawing tactics on the Training Ring chalkboard
 }
 
--- v1.0 host portraits: the other characters get the same two sizes as Fizzwick:
+-- v0.15 host portraits: Zixi and Quill get the same two sizes as Fizzwick:
 --   <id>_portrait.tga (512x512 full figure) and <id>_portrait_head.tga (256x256 crop).
--- Until Hex's art arrives, a tasteful placeholder is drawn from the game at runtime:
--- the host's subject icon in a framed slot (the Tidehunter keeps its in-game murloc model).
-A.HOST_ORDER = { "zixi", "quill", "tidehunter" }
+-- Until Hex's approved art is dropped in, a tasteful placeholder is drawn from the game at
+-- runtime: the host's subject icon in a framed slot. The Murloc Tidehunter has no art slot
+-- by Hex's decision: it always uses the in-game murloc model (UI/Boarding.lua).
+A.HOST_ORDER = { "zixi", "quill" }
 A.HOSTS = {
   zixi = { nameKey = "HOST_ZIXI", modules = { lore = true, lorequiz = true },
     cast = { nameKey = "HOST_ZIXI", icon = "Interface\\Icons\\INV_Misc_Book_09" } },
   quill = { nameKey = "HOST_QUILL", modules = { scribe = true },
     cast = { nameKey = "HOST_QUILL", icon = "Interface\\Icons\\INV_Scroll_03" } },
-  tidehunter = { nameKey = "BOARD_BOSS_NAME", modules = {}, -- the Murloc Boarding Party boss
-    cast = { nameKey = "BOARD_BOSS_NAME", displays = { 1995 }, creatures = { 127 },
-      icon = "Interface\\Icons\\INV_Misc_Head_Murloc_01" } },
 }
 
 local function has(manifest, name, missing)
