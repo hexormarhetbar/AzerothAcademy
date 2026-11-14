@@ -2525,6 +2525,7 @@ do
           bus:Send(c, msg, channel, target)
         end,
         band = function() return cns.Progress.GetBand() end,
+        course = function() return cns.Progress.account.settings.tongues.course end,
         display = function() return name end,
         settings = function() return c.st end,
         context = function() return c.ctx end,
@@ -2687,6 +2688,62 @@ do
   vb:Run(2)
   ok(not vc.E.invite and vb:Has(vc, "version"), "old client tells its player about the version gap")
   ok(vb:Has(va, "version") and va.E.duel == nil, "host learns the version gap and the 1:1 duel closes")
+
+  -- (c2) v1.1 protocol 2: classic subjects still go out as protocol 1 (a v1.0 client can join),
+  -- language subjects as protocol 2 (a v1.0 client answers VER and never joins)
+  ok(va.ns.Duel.ProtoFor("scribe") == 1 and va.ns.Duel.ProtoFor("kana") == 2 and va.ns.DuelProto.VERSION == 2, "v1.1: protocol 1 for classic, 2 for language subjects")
+  local ob = newBus({ seed = 19 })
+  local oNew = ob:Add("Fresh", "adept", { group = 7 })
+  local oOld = ob:Add("Classic", "adept", { group = 7 })
+  oOld.ns.DuelProto.VERSION = 1 -- a v1.0 client: speaks protocol 1 only
+  oNew.E:Host("runeforger", 5, "PARTY"); ob:Run(0.5)
+  ok(oOld.E.invite ~= nil, "v1.0 client still gets a v1.1 host's classic invite")
+  oOld.E:Accept(); ob:Run(1)
+  ok(oNew.E:Joined() == 2, "v1.0 client joins a classic duel hosted on v1.1")
+  oNew.E:Close(); ob:Run(2)
+  local ob2 = newBus({ seed = 23 })
+  local lNew = ob2:Add("Fresh", "adept", { group = 8 })
+  local lOld = ob2:Add("Classic", "adept", { group = 8 })
+  lOld.ns.DuelProto.VERSION = 1
+  lNew.E:Host("kana", 5, "WHISPER", "Classic"); ob2:Run(2)
+  ok(not lOld.E.invite and ob2:Has(lOld, "version") and ob2:Has(lNew, "version"), "v1.0 client cannot join a language duel: both sides told about the version gap")
+
+  -- (c3) language duels between v1.1 clients: kana race, own-course word race, co-op phrasebook
+  local lb = newBus({ seed = 29 })
+  local ka = lb:Add("Kenji", "magister", { group = 9, skill = 1, think = 2 })
+  local kb = lb:Add("Lucia", "initiate", { group = 9, skill = 1, think = 2 })
+  ka.E:Host("kana", 5, "PARTY"); lb:Run(0.5); kb.E:Accept(); lb:Run(1)
+  ok(ka.E:Start(), "kana race starts")
+  lb:Run(60)
+  ok(state(ka) == "done" and state(kb) == "done", "kana race reaches results")
+  local kaSet = ka.E.duel.set
+  ok(kaSet and kaSet[1].moduleId == "tongues_ja", "kana race uses the Japanese course")
+  ka.E:Close(); kb.E:Close(); lb:Run(2)
+  kb.ns.Progress.account.settings.tongues.course = "es"
+  ka.E:Host("words", 5, "PARTY"); lb:Run(0.5); kb.E:Accept(); lb:Run(1); ka.E:Start(); lb:Run(1)
+  local ownA, ownB = ka.E.duel and ka.E.duel.set, kb.E.duel and kb.E.duel.set
+  ok(ownA and ownB and ownA[1].nodeId:find("^wt_ja_") and ownB[1].nodeId:find("^wt_es_"), "word race: each racer races on their own course")
+  lb:Run(60); ka.E:Close(); kb.E:Close(); lb:Run(2)
+  ka.E:Host("phrasebook", 5, "PARTY"); lb:Run(0.5); kb.E:Accept(); lb:Run(1)
+  ok(ka.E:Start(), "phrasebook starts with exactly two traders")
+  lb:Run(0.5)
+  local pa, pbk = ka.E.duel, kb.E.duel
+  ok(pa.role ~= pbk.role and pa.set[1].line ~= pbk.set[1].line, "phrasebook: the two traders own alternate lines")
+  ok(pa.set[1].answer ~= nil and pa.set[2].line - pa.set[1].line == 2, "phrasebook: every other line of the same dialogue")
+  lb:Run(80)
+  ok(state(ka) == "done" and pa.team and pbk.team and pa.team.total == 10 and not pa.reward.win, "phrasebook ends with one team result and no winner")
+  ka.E:Close(); kb.E:Close(); lb:Run(2)
+  local three = lb:Add("Third", "adept", { group = 9 })
+  ka.E:Host("phrasebook", 5, "PARTY"); lb:Run(0.5); kb.E:Accept(); three.E:Accept(); lb:Run(1)
+  local okThree, whyThree = ka.E:Start()
+  ok(not okThree and whyThree == "two", "phrasebook refuses more than two traders")
+  ka.E:Close(); lb:Run(2)
+  -- parent controls still apply (PIN-protected Settings): duels off => no language duel either
+  kb.st.enabled = false
+  ka.E:Host("kana", 5, "WHISPER", "Lucia"); lb:Run(2)
+  ok(not kb.E.invite, "duels switched off in Settings block language duels too")
+  kb.st.enabled = true
+  ka.E:Close(); lb:Run(2)
 
   -- (d) disconnect mid-race: racer vanishes, host finishes and ranks them last
   local db = newBus({ seed = 11 })
@@ -3462,6 +3519,271 @@ do
       ok(okG and (line == nil or (type(line) == "string" and not line:find("%%[ds]"))), loc .. ": Fizzwick line for " .. ev)
     end
   end
+end
+
+-------------------------------------------------------------------------
+-- v1.1: language picker, optional PIN, area selection, World Tongues
+-------------------------------------------------------------------------
+do
+  -- (a) language picker: live switch, persisted, auto, aliases, unknown codes
+  local LN = newNS()
+  local acct = {}
+  LN.Progress.Bind(acct, {})
+  ok(acct.settings.language == "auto" and LN.locale == "enUS", "v1.1: language defaults to auto (game language)")
+  local L1 = LN.L
+  ok(LN.Progress.SetLanguage("deDE") == "deDE" and L1.BACK == LN.LocaleData.deDE.BACK and acct.settings.language == "deDE", "switching to German changes ns.L live and is saved")
+  ok(LN.Progress.SetLanguage("koKR") == "koKR" and L1.BACK == LN.LocaleData.koKR.BACK, "switching to Korean")
+  ok(L1.NO_SUCH_KEY_ABC == "NO_SUCH_KEY_ABC" and L1.ADDON_TITLE == "Azeroth Academy", "fallback chain after a switch")
+  ok(LN.Progress.SetLanguage("esMX") == "esES" and acct.settings.language == "esES", "esMX maps to the Spanish table")
+  ok(LN.Progress.SetLanguage("xxXX") == nil and acct.settings.language == "esES", "unknown codes are refused")
+  ok(LN.Progress.SetLanguage("auto") == "enUS" and L1.BACK == "Back", "auto goes back to the client's language")
+  ok(#LN.LANGUAGE_CHOICES == 10, "10 languages in the picker")
+  for _, c in ipairs(LN.LANGUAGE_CHOICES) do
+    ok(c.code == "enUS" or LN.LocaleData[c.code], "picker language has a table: " .. c.code)
+  end
+  local seenNames = {}
+  for _, c in ipairs(LN.LANGUAGE_CHOICES) do ok(not seenNames[c.name], "native name unique: " .. c.name); seenNames[c.name] = true end
+  -- saved choice applies at login, even on a client in another language
+  local LK = newNS("frFR")
+  LK.Progress.Bind({ settings = { language = "zhTW" } }, {})
+  ok(LK.locale == "zhTW" and LK.L.BACK == LK.LocaleData.zhTW.BACK, "saved language applies on login (French client, Traditional Chinese chosen)")
+  local LB = newNS()
+  LB.Progress.Bind({ settings = { language = "klingon" } }, {})
+  ok(LB.Progress.account.settings.language == "auto" and LB.locale == "enUS", "a broken saved language falls back to auto")
+
+  -- (b) schema 8 migration keeps an existing PIN; the PIN is optional now
+  local MP8 = newNS()
+  local old = { version = 7, settings = { dailyCap = 40 }, pin = { salt = "123456", hash = "x" } }
+  MP8.Progress.Bind(old, { version = 7, profile = { band = "magister" } })
+  ok(old.version == 8 and MP8.Progress.SCHEMA == 8 and MP8.Progress.upgradedFrom == 7, "v1.0 -> v1.1 schema 8")
+  ok(old.pin and old.pin.hash == "x" and MP8.Progress.HasPin(), "an existing PIN is kept by the migration")
+  ok(old.settings.language == "auto" and type(old.settings.areas) == "table" and old.settings.tongues.course == "ja", "new settings filled in")
+  local NP = newNS(); NP.Progress.Bind({}, {})
+  ok(not NP.Progress.HasPin(), "new installs have no PIN")
+  NP.Progress.SetPin("4321")
+  ok(NP.Progress.HasPin() and NP.Progress.CheckPin("4321") and not NP.Progress.CheckPin("1111"), "a parent can still set a PIN")
+  NP.Progress.ClearPin()
+  ok(not NP.Progress.HasPin() and NP.Progress.CheckPin(""), "and remove it again")
+
+  -- (c) areas to show
+  local AR = newNS(); AR.Progress.Bind({}, {}); AR.Progress.SetBand("adept")
+  local areas = AR.Modules.Areas()
+  local areaIds = {}
+  for _, a in ipairs(areas) do areaIds[#areaIds + 1] = a.id end
+  ok(#areas == 8, "8 areas: " .. table.concat(areaIds, ","))
+  local tongueArea
+  for _, a in ipairs(areas) do if a.id == "tongues" then tongueArea = a end end
+  ok(tongueArea and #tongueArea.modules == 2 and tongueArea.nameKey == "MOD_TONGUES", "World Tongues is one area with both courses")
+  ok(#AR.Modules.Visible() == 8, "all areas shown by default")
+  ok(AR.Progress.SetAreaShown("lore", false) and not AR.Modules.IsShown("lore") and not AR.Modules.IsShown("lorequiz"), "hiding Lore hides the Lore Quiz too")
+  ok(#AR.Modules.Visible() == 7, "hidden area leaves the hub list")
+  local duelLore = false
+  for _, s in ipairs(AR.Duel.Subjects()) do if s.module == "lore" or s.module == "lorequiz" then duelLore = true end end
+  ok(not duelLore, "hidden areas are not offered as duel subjects")
+  for _, a in ipairs(areas) do if a.id ~= "tongues" then AR.Progress.SetAreaShown(a.id, false) end end
+  ok(#AR.Modules.Visible() == 1 and AR.Modules.Visible()[1].id == "tongues_ja", "languages only: one tile left")
+  ok(not AR.Progress.SetAreaShown("tongues", false) and AR.Modules.IsShown("tongues_ja"), "the last area cannot be hidden")
+  -- a hidden area's reviews are not due
+  local rec = AR.Progress.GetTierRec("counting", 1)
+  rec.mastered = true; AR.Review.Schedule(rec, 1); rec.review.due = 1
+  local function dueHas(id) for _, e in ipairs(AR.Review.Due()) do if e.nodeId == id then return true end end end
+  ok(not dueHas("counting"), "no reviews from hidden areas")
+  AR.Progress.SetAreaShown("runeforger", true)
+  ok(dueHas("counting"), "reviews return when the area is shown again (progress kept)")
+
+  -- (d) World Tongues content: exact kana tables, Hepburn romaji, numbers, kanji
+  local TD, WT = AR.TonguesData, AR.Tongues
+  local function utf8len(s) local _, n = s:gsub("[^\128-\191]", ""); return n end
+  local H46 = "あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん"
+  local K46 = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン"
+  local R46 = "a i u e o ka ki ku ke ko sa shi su se so ta chi tsu te to na ni nu ne no ha hi fu he ho ma mi mu me mo ya yu yo ra ri ru re ro wa wo n"
+  local function join(t, i) local o = {} for _, e in ipairs(t) do o[#o + 1] = e[i] end return table.concat(o, i == 1 and "" or " ") end
+  ok(#TD.hiragana == 46 and join(TD.hiragana, 1) == H46 and join(TD.hiragana, 2) == R46, "46 hiragana in gojuuon order with Hepburn romaji")
+  ok(#TD.katakana == 46 and join(TD.katakana, 1) == K46 and join(TD.katakana, 2) == R46, "46 katakana match the hiragana sounds")
+  local V25 = "ga gi gu ge go za ji zu ze zo da ji zu de do ba bi bu be bo pa pi pu pe po"
+  ok(#TD.hiraganaVoiced == 25 and join(TD.hiraganaVoiced, 1) == "がぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽ" and join(TD.hiraganaVoiced, 2) == V25, "25 hiragana with dakuten / handakuten")
+  ok(#TD.katakanaVoiced == 25 and join(TD.katakanaVoiced, 1) == "ガギグゲゴザジズゼゾダヂヅデドバビブベボパピプペポ" and join(TD.katakanaVoiced, 2) == V25, "25 katakana with dakuten / handakuten")
+  for i, e in ipairs(TD.hiragana) do
+    local k = TD.katakana[i][1]
+    ok(utf8len(e[1]) == 1 and e[1]:byte(1) == 0xE3, "one kana character: " .. e[1])
+    -- hiragana U+3041.. and katakana U+30A1.. are exactly 0x60 apart
+    local function cp(s) local a, b, c = s:byte(1, 3); return (a % 16) * 4096 + (b % 64) * 64 + (c % 64) end
+    ok(cp(k) - cp(e[1]) == 0x60, "katakana " .. k .. " pairs with hiragana " .. e[1])
+  end
+  local nums = { [1] = { "いち", "ichi" }, [4] = { "よん", "yon" }, [7] = { "なな", "nana" }, [9] = { "きゅう", "kyuu" }, [10] = { "じゅう", "juu" },
+    [11] = { "じゅういち", "juuichi" }, [14] = { "じゅうよん", "juuyon" }, [20] = { "にじゅう", "nijuu" }, [37] = { "さんじゅうなな", "sanjuunana" },
+    [40] = { "よんじゅう", "yonjuu" }, [99] = { "きゅうじゅうきゅう", "kyuujuukyuu" }, [100] = { "ひゃく", "hyaku" } }
+  for n, want in pairs(nums) do
+    local e = TD.Number(n)
+    ok(e[1] == want[1] and e[2] == want[2] and e[3] == tostring(n), "number " .. n .. " = " .. want[1] .. " (" .. want[2] .. ")")
+  end
+  ok(#TD.numbers == 100, "numbers 1-100")
+  local kseen = {}
+  for _, e in ipairs(TD.kanji) do ok(utf8len(e[1]) == 1 and not kseen[e[1]], "kanji unique, one character: " .. e[1]); kseen[e[1]] = true end
+  ok(#TD.kanji == 60, "60 beginner kanji")
+  local KANJI = { ["一"] = "ichi", ["十"] = "juu", ["百"] = "hyaku", ["千"] = "sen", ["日"] = "hi", ["月"] = "tsuki", ["山"] = "yama",
+    ["川"] = "kawa", ["人"] = "hito", ["木"] = "ki", ["水"] = "mizu", ["火"] = "hi", ["本"] = "hon", ["大"] = "dai", ["小"] = "shou" }
+  for _, e in ipairs(TD.kanji) do if KANJI[e[1]] then ok(e[2] == KANJI[e[1]], "kanji reading " .. e[1] .. " = " .. KANJI[e[1]]) end end
+
+  -- every kana-only word/sentence: its romaji must be the Hepburn reading of its kana
+  local map = {}
+  for i, e in ipairs(TD.hiragana) do map[e[1]] = e[2]; map[TD.katakana[i][1]] = e[2] end
+  for i, e in ipairs(TD.hiraganaVoiced) do map[e[1]] = e[2]; map[TD.katakanaVoiced[i][1]] = e[2] end
+  local small = { ["ゃ"] = "ya", ["ゅ"] = "yu", ["ょ"] = "yo", ["ャ"] = "ya", ["ュ"] = "yu", ["ョ"] = "yo" }
+  local smallV = { ["ィ"] = "i", ["ェ"] = "e", ["ォ"] = "o", ["ァ"] = "a" }
+  local function chars(s) local t = {} for ch in s:gmatch("[%z\1-\127\194-\244][\128-\191]*") do t[#t + 1] = ch end return t end
+  local function hepburn(s)
+    local cs, out, i = chars(s), {}, 1
+    local function at(k) return out[k] end
+    while i <= #cs do
+      local ch, nx = cs[i], cs[i + 1]
+      if ch == "っ" or ch == "ッ" then
+        local r = map[nx or ""] or ""
+        out[#out + 1] = (r:sub(1, 2) == "ch") and "t" or r:sub(1, 1)
+      elseif ch == "ー" then
+        local last = out[#out] or ""
+        out[#out + 1] = last:sub(-1)
+      elseif map[ch] and nx and small[nx] then
+        local r = map[ch]
+        local base = r:sub(1, -2)
+        if base == "sh" or base == "ch" or base == "j" then out[#out + 1] = base .. small[nx]:sub(2)
+        else out[#out + 1] = base .. small[nx] end
+        i = i + 1
+      elseif map[ch] and nx and smallV[nx] then
+        local r = map[ch]
+        out[#out + 1] = (r == "fu" and "f" or r == "u" and "w" or r:sub(1, -2)) .. smallV[nx]
+        i = i + 1
+      elseif map[ch] then
+        out[#out + 1] = map[ch]
+      elseif ch:match("^[%s%.,%?!、。]$") then
+        -- punctuation: nothing
+      else
+        return nil -- kanji or something we do not transliterate
+      end
+      i = i + 1
+    end
+    local _ = at
+    return table.concat(out)
+  end
+  local function squash(s) return (s:lower():gsub("[^a-z]", "")) end
+  -- は / へ / を as particles are read wa / e / o, and ん before a vowel needs no apostrophe here
+  local function matches(native, reading)
+    local h = hepburn(native)
+    if not h then return nil end
+    local want = squash(reading)
+    if h == want then return true end
+    -- try reading every は as wa and every を as o
+    local alt = hepburn((native:gsub("は", "わ")))
+    if alt == want then return true end
+    local cs = chars(native)
+    for i2 = 1, #cs do
+      if cs[i2] == "は" then
+        local copy = {}
+        for j = 1, #cs do copy[j] = cs[j] end
+        copy[i2] = "わ"
+        if hepburn(table.concat(copy)) == want then return true end
+      end
+    end
+    if hepburn((native:gsub("を", "お"))) == want then return true end
+    return false, h
+  end
+  local checked, skipped = 0, 0
+  for _, lesson in ipairs(TD.courses.ja.lessons) do
+    if lesson.kind ~= "kana" and lesson.kind ~= "kanji" then
+      for _, e in ipairs(lesson.entries) do
+        local m, got = matches(e[1], e[2])
+        if m == nil then skipped = skipped + 1
+        else checked = checked + 1; ok(m, "romaji matches kana: " .. e[1] .. " = " .. e[2] .. (got and (" (kana reads " .. got .. ")") or "")) end
+        ok(type(e[3]) == "string" and #e[3] >= 1, "word has a meaning: " .. e[1])
+        ok(e[2]:match("^[a-zA-Z ,%.%?']+$") ~= nil, "romaji is plain ASCII (keyboard-typeable): " .. e[2])
+      end
+    end
+  end
+  for _, dlg in ipairs(TD.dialogues) do
+    for _, e in ipairs(dlg) do
+      local m, got = matches(e[1], e[2])
+      if m == nil then skipped = skipped + 1 else checked = checked + 1; ok(m, "dialogue romaji matches kana: " .. e[1] .. " (" .. tostring(got) .. ")") end
+    end
+  end
+  for _, subj in ipairs(WT.SUBJECTS) do
+    for _, noun in ipairs(WT.NOUNS) do
+      local s = WT.Sentence(subj, noun)
+      local m = matches(s[1], s[2]); checked = checked + 1
+      ok(m, "generated sentence reads right: " .. s[1] .. " = " .. s[2])
+    end
+  end
+  ok(checked >= 100, "romaji checked against the kana for " .. checked .. " words and sentences (" .. skipped .. " with kanji skipped)")
+
+  -- (e) answer checking: macrons, spaces, case, IME input, long-vowel spellings
+  local chk = function(ans, given, native) return WT.Check({ mode = "input", answer = ans, native = native }, given) end
+  ok(chk("arigatou gozaimasu", "Arigatou Gozaimasu") and chk("arigatou gozaimasu", "arigatō gozaimasu") and chk("arigatou gozaimasu", "arigato gozaimasu"), "typed romaji: case, macron and short-vowel spellings accepted")
+  ok(chk("kyuu", "kyū") and chk("kyuu", "kyu") and chk("shi", "SHI") and chk("ka", "か", "か"), "kyū / kyu / IME kana accepted")
+  ok(not chk("shi", "si") and not chk("ka", "") and not chk("tsu", "su"), "wrong romaji rejected")
+  -- (f) generated problems: never two right buttons (じ / ぢ, 日 / 火 share readings)
+  local wtGen, ambiguous, typed, kinds = 0, 0, 0, {}
+  for _, m in ipairs(WT.MODULES) do
+    for _, nodeId in ipairs(AR.Modules.Nodes(m.id, "everyone")) do
+      for level = 1, 5 do
+        for tier = 1, 3 do
+          for _ = 1, math.max(3, math.floor(ITER / 20)) do
+            local p = AR.Modules.Generate(nodeId, level, tier, "practice")
+            wtGen = wtGen + 1
+            kinds[p.kind or "?"] = true
+            if p.mode ~= "choice" then typed = typed + 1 end
+            if p.mode == "choice" then
+              local right = 0
+              for _, c in ipairs(p.choices) do
+                if tostring(c) == tostring(p.answer) then right = right + 1 end
+              end
+              if right ~= 1 then ambiguous = ambiguous + 1 end
+            end
+          end
+        end
+      end
+    end
+  end
+  ok(ambiguous == 0, "World Tongues: every button question has exactly one right answer (" .. wtGen .. " problems)")
+  for _, k in ipairs({ "toReading", "toNative", "meaningToWord", "wordToMeaning", "matching", "blank", "particle", "sentence", "numberToWord", "wordToNumber" }) do
+    ok(kinds[k], "question type used: " .. k)
+  end
+  ok(typed > 0, "typed romaji answers on higher tiers (Magister/Adept)")
+  local mInit = newNS(); mInit.Progress.Bind({}, {}); mInit.Progress.SetBand("initiate")
+  local pInit = mInit.Modules.Generate("wt_ja_hira", 3, 3, "practice")
+  ok(pInit.mode == "choice" and #pInit.choices == 3, "Initiate: always three big buttons")
+  local mMag = newNS(); mMag.Progress.Bind({}, {}); mMag.Progress.SetBand("magister")
+  local pMag = mMag.Modules.Generate("wt_ja_hira", 1, 2, "practice")
+  ok(pMag.mode ~= "choice" or pMag.choiceOnly, "Magister (and grown-ups) type romaji from Rune on")
+  ok(#AR.Modules.Nodes("tongues_ja", "everyone") == 15 and #AR.Modules.Nodes("tongues_es", "everyone") == 3, "Japanese 15 lessons, Spanish 3")
+  -- trials work for the unbanded course (placement / exam stored under 'everyone')
+  ok(AR.Trial.NeedsPlacement("tongues_ja", "magister"), "a placement trial is offered for World Tongues")
+  local tr = AR.Trial.New("tongues_ja", "magister", "placement", 0)
+  ok(tr and tr.band == "everyone" and tr.total == 30, "World Tongues placement: 15 skills x 2")
+  AR.Trial.Skip("tongues_ja", "adept")
+  ok(not AR.Trial.NeedsPlacement("tongues_ja", "magister"), "skipping the placement works for every band")
+
+  local function slurp(path) local fh = assert(io.open(path, "rb")); local d = fh:read("*a"); fh:close(); return d end
+  -- (g) bundled fonts cover every character the addon can draw with them
+  local cov = {}
+  for line in io.lines("Media/Fonts/coverage.txt") do
+    local name, list = line:match("^(%S+)\t(.*)$")
+    if name then cov[name] = {}; for ch in list:gmatch("[%z\1-\127\194-\244][\128-\191]*") do cov[name][ch] = true end end
+  end
+  local function need(font, path)
+    local miss = {}
+    for ch in slurp(path):gmatch("[\194-\244][\128-\191]*") do if not cov[font][ch] then miss[#miss + 1] = ch end end
+    ok(#miss == 0, font .. " covers every character of " .. path .. (#miss > 0 and (": " .. table.concat(miss, ""):sub(1, 60)) or ""))
+  end
+  ok(cov["AzAcadSans-JP.ttf"] and cov["AzAcadSans-KR.ttf"] and cov["AzAcadSans-SC.ttf"] and cov["AzAcadSans-TC.ttf"], "four bundled fonts listed")
+  for _, f in ipairs({ "AzAcadSans-JP.ttf", "AzAcadSans-KR.ttf", "AzAcadSans-SC.ttf", "AzAcadSans-TC.ttf" }) do
+    need(f, "Core/TonguesData.lua"); need(f, "Core/TonguesGen.lua")
+    local fh = io.open("Media/Fonts/" .. f, "rb")
+    ok(fh ~= nil, f .. " is shipped")
+    if fh then local sz = fh:seek("end"); fh:close(); ok(sz > 50000 and sz < 900000, f .. " size " .. sz) end
+  end
+  need("AzAcadSans-JP.ttf", "Locales/Init.lua")
+  for _, loc in ipairs({ "enUS", "deDE", "frFR", "esES", "ptBR", "itIT", "ruRU" }) do need("AzAcadSans-JP.ttf", "Locales/" .. loc .. ".lua") end
+  need("AzAcadSans-KR.ttf", "Locales/koKR.lua"); need("AzAcadSans-SC.ttf", "Locales/zhCN.lua"); need("AzAcadSans-TC.ttf", "Locales/zhTW.lua")
+  ok(slurp("Media/Fonts/OFL.txt"):find("SIL Open Font License", 1, true), "font license shipped")
 end
 
 -------------------------------------------------------------------------

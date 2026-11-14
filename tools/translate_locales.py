@@ -72,11 +72,13 @@ KEEP_ENGLISH = {"ADDON_TITLE", "FZ_NAME", "FZ_PARROT", "HOST_ZIXI", "HOST_QUILL"
 NAMES = ["Zixi Inkspark", "Tamsin Quillfeather", "Magni Bronzebeard", "Thunder Bluff", "Booty Bay", "Steamwheedle",
          "Fizzwick", "Sprocket", "Zixi", "Quill", "Thrall", "Magni", "Gadgetzan", "Azeroth", "Stormwind", "Ironforge",
          "Orgrimmar", "Ratchet", "Undercity", "Darnassus", "Silvermoon", "Exodar", "Tanaris", "Kalimdor",
-         "Eastern Kingdoms", "Durotar", "Elwynn", "Barrens", "Nixa", "Boltby", "WoW", "SavedVariables", "WPM"]
-SUBCMDS = "drill|review|trial|forge|scribe|lore|nature|gnomish|library|mechanics|journal|blueprints|passport|deck|quiz|murloc|minimap|flight|voice|duel|parent|help|status|exam|stamps|cards|tactics|research"
+         "Eastern Kingdoms", "Durotar", "Elwynn", "Barrens", "Nixa", "Boltby", "WoW", "SavedVariables", "WPM",
+         "Noto Sans", "SIL Open Font License", "X wa Y desu", "desu", "-masu"]
+SUBCMDS = "drill|review|trial|forge|scribe|lore|nature|gnomish|library|mechanics|journal|blueprints|passport|deck|quiz|murloc|minimap|flight|voice|duel|parent|help|status|exam|stamps|cards|tactics|research|lang|settings|tongues|spanish"
 FMT = r"%[-+ #0]*\d*(?:\.\d+)?[dsfixX%]"
 PROTECT = re.compile("(" + "|".join([
     r"\|T[^|]*\|t", r"\|c[0-9a-fA-F]{8}", r"\|r", r"\|n", r"\n",
+    r"[\u3040-\u30ff\u4e00-\u9fff]+(?: [a-z]+)?",  # v1.1: kana/kanji (+ its romaji) stay as written
     r"/aa(?: (?:" + SUBCMDS + r"))?(?: (?:\[[^\]]*\]|on\|off|\[name\]))?",
     FMT,
 ] + [re.escape(n) for n in NAMES]) + ")")
