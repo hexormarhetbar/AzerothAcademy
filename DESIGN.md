@@ -1,4 +1,4 @@
-# Azeroth Academy: Architecture (v0.11)
+# Azeroth Academy: Architecture (v0.12)
 
 ## Goals that shape the code
 1. **WoW Forever first, Retail second.** Forever (1.60.1, interface 16001) is a Mainline-family
@@ -487,6 +487,24 @@ or whispers each racer (one-player and random duels).
   `Count/All/FadedCount` take a module id (default `naturalist`, which keeps the v0.9 API), `Sync` covers every book,
   `Str(moduleId, suffix)` reads `L[prefix_SUFFIX]` with the `JOURNAL_*` strings as fallback. The "journal" view takes
   `{ moduleId }` or `{ nodeId, tier }` and otherwise opens the current subject's book.
+
+## Librarian Quests (v0.12)
+
+- **Module `librarian`** (Core/LibrarianData.lua + Core/LibrarianGen.lua), node ids `lib_*`, the same curated +
+  generated mix as Naturalist/Gnomish. Seven curated lists (true/silly, young key words, fact/opinion, notes, sources,
+  citing, research process); the rest is generated from small data tables (24 topics, 12 animals, 5 keyword templates,
+  10 invented books, 5 two-source comparisons, 5 data tables).
+- **Builders (pure, unit-tested):** `LB.Topics(n, distinctFirst)`, `LB.Contents(n, first, maxGap)` (rising start
+  pages, returns the first page after the book), `LB.Index(n)` (ABC order, unique page numbers),
+  `LB.Citation(book, parts)` ("Last, First. Title. Year.", any part can be dropped).
+- **Answers:** shelf/topic/citation buttons, numbers (Modules builds number choices on Spark; typed on Rune/Glyph),
+  typed words via `Naturalist.Check`. `LB.Check` = numeric compare, else `Naturalist.Check`. Tables, indexes, contents
+  pages and citations set `p.code` for the left-aligned layout.
+- **Neutral framing with real libraries:** stamps name Stormwind/Ironforge and Orgrimmar/Thunder Bluff equally often
+  (7 / 7) plus neutral places; the subject suite's `balancedSides` option counts sided words in host strings, book items
+  and curated data and requires the two sides within 2 of each other, instead of banning them.
+- **Library Passport:** `Journal.RegisterBook{ moduleId = "librarian", prefix = "PASSPORT", newEvent = "LIBSTAMP",
+  openEvent = "LIBPASSPORT", sound = "stamp" }`. Slash `/aa passport` maps through `BOOK_SLASH`.
 
 ## Data model (schema 7)
 

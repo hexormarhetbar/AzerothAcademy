@@ -1,4 +1,4 @@
-# Azeroth Academy v0.11.0 (test build)
+# Azeroth Academy v0.12.0 (test build)
 
 A free learning addon for kids ages 5 to 13. Lessons are framed as Academy quests in Azeroth.
 This build has the **Main Hub** and two subjects: **Rune Forger** (math) and, new in v0.3,
@@ -34,6 +34,10 @@ New in v0.11: **Gnomish Engineering**, subject #5 (programming). Tinker Nixa Spr
 Knowledge Exchange, and kids program **Boltby**, a clockwork critter, on a command grid: steps in order, patterns,
 directions, loops, IF/ELSE, debugging, then variables, functions, boolean logic, algorithms and pseudocode. Every
 mastered tier adds a gadget page to the new **Blueprint Binder**, and the subject joins Duel of Wits.
+New in v0.12: **Librarian Quests**, subject #6 (research skills). Head Librarian Tamsin Quillfeather keeps the
+library of the Knowledge Exchange and trades books with libraries of every faction. Kids find the right shelf, sort
+in ABC order, use contents pages and indexes, pick key words, tell fact from opinion, take notes, judge sources, cite
+books, compare two accounts and read data tables. Each mastered tier earns a stamp in the **Library Passport**.
 Progress stays on your computer. The only thing the addon ever sends is Duel of Wits race data, inside the game, to
 the players you race (see "Duel of Wits").
 
@@ -92,6 +96,8 @@ Or tick **Load out of date AddOns** on the AddOns screen.
 | `/aa journal` | Open the Field Journal (v0.9; specimens you collected by mastering Naturalist skills) |
 | `/aa gnomish` | Open the Gnomish Engineering skill list (v0.11; `/aa engineering` and `/aa code` work too) |
 | `/aa blueprints` | Open the Blueprint Binder (v0.11; gadget blueprints you collected by mastering Gnomish Engineering skills; `/aa binder` works too) |
+| `/aa library` | Open the Librarian Quests skill list (v0.12; `/aa librarian` and `/aa research` work too) |
+| `/aa passport` | Open the Library Passport (v0.12; library stamps you earned by mastering Librarian Quests skills; `/aa stamps` works too) |
 | `/aa review` | Start a Review Time round (if any reviews are due) |
 | `/aa trial` | Open the placement trial for the current subject and band |
 | `/aa exam` | Open the mastery exam screen for the current subject (it says how many skills are still needed) |
@@ -129,7 +135,7 @@ A round button with Fizzwick's face sits on the edge of the minimap.
 Race other players who also have Azeroth Academy. Open it from the hub's **Duel of Wits** button, `/aa duel`,
 or shift/middle-click on the minimap button.
 - **Setup:** pick a subject (Rune Forger, Scribe's Scrolls, Typing race, Lore Chronicles, Azeroth Naturalist,
-  the Lore Quiz or, since v0.11, Gnomish Engineering, grid puzzles included), **5** or **10** questions, and who to challenge: **My group** (party or raid), **My guild**,
+  the Lore Quiz or, since v0.11, Gnomish Engineering, grid puzzles included, and since v0.12 Librarian Quests), **5** or **10** questions, and who to challenge: **My group** (party or raid), **My guild**,
   **One player** (type their name), or **Random challenger**. Then **Send challenge**.
 - **Invites:** everyone challenged gets a small pop-up (**Accept** / **No thanks**), even with the Academy closed.
   It says no by itself after 25 seconds, and right away in combat, in a dungeon/raid/battleground, when duels are off
@@ -185,8 +191,8 @@ Flight paths are perfect lesson time, so Fizzwick speaks up a couple of seconds 
 
 - **First run:** pick an age band. **Initiate** is ages 5–7, **Adept** is 8–10, **Magister** is 11–13.
 - **Hub:** shows your rank and progress bar, knowledge shards, bonus minutes earned today
-  against the daily cap, and the module tiles. Rune Forger, Scribe's Scrolls, Lore Chronicles and
-  Azeroth Naturalist are active; the rest say "Coming soon".
+  against the daily cap, and the module tiles. Rune Forger, Scribe's Scrolls, Lore Chronicles,
+  Azeroth Naturalist, Gnomish Engineering and Librarian Quests are active; Mechanics Academy says "Coming soon".
 - **Rune Forger:** 5 skills per band, and each skill has 3 tiers: **Spark → Rune → Glyph**.
   - Initiate: Counting, Adding within 10, Adding within 20, Subtracting within 20, More or Less
   - Adept: Times Tables, Division, Place Value, Fractions of a Whole, Word Problems
@@ -323,6 +329,28 @@ Flight paths are perfect lesson time, so Fizzwick speaks up a couple of seconds 
   tier's gadget blueprint (45 pages: name, what it's built for, a note about the skill, an in-game icon). Same band
   tabs, grid, smudged-lines-then-**Review now**, **Go collect it!**, reward-screen **Open Blueprint Binder** button,
   skill-list link, hub tile **Binder** button and `/aa blueprints`. Account-wide like the journal.
+- **Librarian Quests (new in v0.12):** Head Librarian Tamsin Quillfeather (original, neutral) runs the library of
+  the Knowledge Exchange in Gadgetzan and swaps books with Stormwind's Royal Library, Orgrimmar's Valley of Wisdom and
+  Dalaran's Violet Citadel alike. Same tiers, rewards, trial ("The Librarian's Reading Room"), reviews and exam
+  ("Research Mastery Exam") as the other subjects. All questions are original; shelves, contents pages, indexes,
+  citations, two-source comparisons and data tables are generated, so the numbers change every time.
+  - Initiate (5–7): Finding the Shelf (topic shelves, then letter ranges A-H / I-Q / R-Z), ABC Order (first or last
+    word, then words with the same first letter), Contents Page (which page / which part), Key Words (the word to look
+    for), True or Silly (real facts vs make-believe, fiction vs nonfiction). Always 3 big buttons.
+  - Adept (8–10): Using an Index (first page, which topic, how many pages), Chapters (which chapter a page is in, how
+    long a chapter is), Search Words (turn a question into search words, spot the worst ones), Fact or Opinion,
+    Taking Notes (best short note, headings, writing the source next to each fact).
+  - Magister (11–13): Reliable Sources (who, when, why; bias; primary vs secondary), Citing Sources (Author. Title. Year.,
+    what's missing, plagiarism, paraphrasing, common knowledge), Comparing Sources (what two accounts agree on, where
+    they differ, which is more reliable, how far apart the numbers are), Reading Tables (look up, most/fewest,
+    difference, total), Research Quest (skimming vs scanning, research steps, glossary, index).
+  - **Typed answers** on Rune, Glyph and trials for Adept and Magister: page numbers, chapter lengths, table values,
+    *Fact*/*Opinion*, *primary*/*secondary*, the missing citation part and a few research words. Tables, indexes and
+    citations are shown left-aligned like a page of a book.
+- **Library Passport (new in v0.12):** mastering a Librarian Quests tier stamps that tier's library stamp (45 stamps from
+  Stormwind, Ironforge, Orgrimmar and Thunder Bluff in equal numbers plus Dalaran, Gadgetzan and other neutral places).
+  Same band tabs, fading-ink-then-**Review now**, **Go collect it!**, reward-screen **Open Library Passport** button,
+  skill-list link, hub tile **Passport** button and `/aa passport`. Account-wide like the journal.
 - **In-flight science:** if Azeroth Naturalist was the last subject you opened, flight rounds pick a
   "look down" skill first (Zone Sorting, Day and Night, Seasons; Water Cycle, Food Chains, Adaptations;
   Ecosystems, Energy, Forces) and Fizzwick says something like "Look down! Every zone below is a habitat."
@@ -703,6 +731,28 @@ Azeroth Academy v0.10.0** (two accounts, or a friend), both with an age band pic
 147. [ ] Duel of Wits setup shows 7 subjects in two rows of 4 (Gnomish Engineering included) and nothing overlaps the question-count and "Who" rows. Race on Gnomish Engineering: grid questions show the grid in the race card.
 148. [ ] Parent Panel export ends with both "Field Journal: N / 45" and "Blueprint Binder: N / 45" lines.
 
+**Librarian Quests and the Library Passport (v0.12)**. Restart the game client once (new sound and voice files).
+
+149. [ ] The hub shows a **Librarian Quests** tile; only **Mechanics Academy** is still "Coming soon". The tile offers **The Librarian's Reading Room**.
+150. [ ] A round starts with a page sound and Fizzwick saying "Shh, library voices! Let's go find some answers." (voice and bubble).
+151. [ ] Initiate **Finding the Shelf**, **ABC Order** and **Contents Page**: the shelf list and contents list are left-aligned and easy to read; the answer really is on the right shelf / page.
+152. [ ] Adept **Using an Index** and **Chapters**: the index is in ABC order; chapter lengths count both the first and last page. On Rune/Glyph you type page numbers.
+153. [ ] Magister **Citing Sources** (Last, First. Title. Year.), **Comparing Sources** (two accounts A and B) and **Reading Tables**: readable, and the numbers add up. Type *author*, *title* or *year* for a missing citation part.
+154. [ ] Read questions in each band. Tell me about anything confusing, too hard/easy for the age, or anything that feels one-sided between Alliance and Horde.
+155. [ ] Master a Librarian Quests tier: "New stamp for your Library Passport: ...", a stamp sound, Fizzwick says "A new stamp for your Library Passport! Well researched!", and the reward screen shows **Open Library Passport**, which opens on the new stamp ("Library: ...").
+156. [ ] `/aa passport`, the hub tile's **Passport** button and the skill list's **Library Passport** link open the passport; **Back** returns to Librarian Quests. `/aa research` opens the subject.
+157. [ ] A day later, a Librarian stamp says "The ink is fading!" with **Review now**; passing restores it.
+158. [ ] Duel of Wits setup shows 8 subjects in two rows of 4 (Librarian Quests included); a Librarian race shows tables and citations in the race card.
+159. [ ] Parent Panel export also lists "Library Passport: N / 45 stamps collected."
+
+## Known limits (v0.12)
+
+- **Research is practised on short texts in the card**, not real books or web searches; the libraries and books in the
+  questions are invented for the Academy (no real titles or authors).
+- **Librarian duels need v0.12 on every racer** (older clients don't answer the invite, as with Gnomish duels).
+- **No in-flight Librarian skills**: flight rounds on Librarian Quests use normal skill picks.
+- **25 lines are spoken now** (2 new Librarian lines); one new sound effect (`stamp`).
+
 ## Known limits (v0.11)
 
 - **Grid puzzles are drawn with icons, not animated.** Boltby doesn't walk the path yet; kids trace it themselves.
@@ -824,6 +874,8 @@ AzerothAcademy/
     Journal.lua             collection books (v0.11): Field Journal + Blueprint Binder share one account-wide store
     GnomishData.lua         Gnomish Engineering curated questions + 45 blueprint pages (original writing)
     GnomishGen.lua          Gnomish Engineering (module #5): grid engine (moves, turns, loops, BFS), 15 generators, checker
+    LibrarianData.lua       Librarian Quests curated questions, topics, invented books, comparisons, tables, 45 stamps (original)
+    LibrarianGen.lua        Librarian Quests (module #6): shelves, contents, index, citation, comparison and table generators
     Art.lua                 posed art rules: pose per event/subject, head crops, Sprocket states, fallbacks
     SkillIcons.lua          per-skill in-game icon paths
     BoardingData.lua        Murloc Boarding Party crew orders + Tidehunter sentences (original writing)
@@ -946,6 +998,21 @@ originals and face-centered head crops, and wrote a 26-entry manifest.
 For v0.5, `tools/convert_art.sh` was run with ImageMagick 7.1.2 on test PNGs. It produced 512x512 RGBA TGAs, a 1024x256 (4-frame) and a 2048x256 (8-frame) strip, and a correct manifest. Removed files dropped out of the manifest, and a bad `STRIP_FRAMES` was rejected.
 
 ## Changelog
+
+**v0.12.0**
+- **Librarian Quests (research skills), subject #6:** 15 skills across Initiate / Adept / Magister with the usual
+  Spark → Rune → Glyph mastery, placement trial ("The Librarian's Reading Room"), spaced review, mastery exam, shards,
+  bonus minutes and the parent report. Host: Head Librarian Tamsin Quillfeather (original, neutral). 69 curated
+  questions plus generators for shelves, ABC order, contents pages, indexes, search words, citations, two-source
+  comparisons and data tables.
+- **Library Passport:** 45 library stamps on the shared collection system; Alliance and Horde libraries appear equally
+  often (checked by the harness), plus neutral ones.
+- **Duel of Wits:** Librarian Quests is a duel subject (8 subjects, two rows of 4).
+- **Fizzwick:** 5 new events (round start, right, wrong, new stamp, passport) with 15 lines, 2 voice clips and the
+  `stamp` sound effect (generated in the v0.11 audio batch, no new credits).
+- **Slash:** `/aa library` (`librarian`, `research`), `/aa passport` (`stamps`).
+- **Tests:** harness section 25 (citation format, contents/index builders, balanced faction mentions, ABC/table/contents
+  answers re-checked for every generated problem) and a UI smoke pass for the subject and its passport.
 
 **v0.11.0**
 - **Gnomish Engineering (programming), subject #5:** 15 skills across Initiate / Adept / Magister with the usual

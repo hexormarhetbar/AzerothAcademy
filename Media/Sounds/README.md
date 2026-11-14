@@ -51,6 +51,7 @@ that file again until the next `/reload`. You can replace any file with your own
 | `countdown.ogg` | Each beat of the Duel of Wits 3-2-1 countdown (v0.10) | 0.5-0.8 s | RAID_WARNING (8959) |
 | `duelwin.ogg` | You win a Duel of Wits race (v0.10) | 1.2-2.0 s | UI_EPICLOOT_TOAST (31578), LEVELUPSOUND (888) |
 | `gears.ogg` | A Gnomish Engineering round starts, or a new blueprint is collected (v0.11) | 0.6-1.2 s | PUT_DOWN_GEMS (1204), then IG_ABILITY_OPEN (834) |
+| `stamp.ogg` | A new stamp is added to the Library Passport (v0.12) | 0.5-0.9 s | IG_ABILITY_PAGE_TURN (836), then IG_QUEST_LIST_COMPLETE (878) |
 
 ## Sound-effect briefs
 
@@ -79,6 +80,7 @@ original sound and none imitated any game's audio.
 - **gurgle.ogg:** "Original silly fish-creature gurgle, wet bubbly warble rising in pitch, comic and cute, not a copy of any game creature."
 - **flight.ogg:** "Friendly little airship bell and propeller whirr, a bright two-note 'ding-ding' inviting you to a lesson, cartoon goblin gadget."
 - **gears.ogg:** "Small clockwork gears whirring and clicking into place, ending with a tiny cheerful bell ding, cartoon gadget workshop, short and friendly."
+- **stamp.ogg (v0.12):** "A rubber stamp thunks onto a paper passport page with a soft ink press, followed by a tiny bright sparkle chime, cozy library, short and friendly"
 - **page.ogg:** "A single soft paper page turning in an old leather field notebook, short and crisp, gentle, no music."
 - **specimen.ogg:** "Cheerful nature discovery chime: a bright magical sparkle with a tiny leafy rustle and a happy two-note marimba ding, cartoon, short."
 - **countdown.ogg (v0.10):** "Single soft wooden clock tick with a gentle bright chime, friendly game countdown beep, clean, no voice." (0.8 s requested)
@@ -129,6 +131,8 @@ Some of Fizzwick's lines are spoken aloud by an **original designed voice**.
 | `VO/duel_done.ogg` | "Great race! Every duel makes your brain stronger." (`FZ_DUELDONE_1`) | A duel ends and you did not win (v0.10) |
 | `VO/ge_start.ogg` | "Goggles down, wrenches up! Boltby is ready for orders." (`FZ_GESTART_1`) | A Gnomish Engineering round starts (v0.11) |
 | `VO/ge_blueprint.ogg` | "A new blueprint! Into the Binder it goes!" (`FZ_GEBLUEPRINT_1`) | New Blueprint Binder page (v0.11) |
+| `VO/lib_start.ogg` | "Shh, library voices! Let's go find some answers." (`FZ_LIBSTART_1`) | A Librarian Quests round starts (v0.12) |
+| `VO/lib_stamp.ogg` | "A new stamp for your Library Passport! Well researched!" (`FZ_LIBSTAMP_1`) | New Library Passport stamp (v0.12) |
 
 ## Voice design brief (original)
 

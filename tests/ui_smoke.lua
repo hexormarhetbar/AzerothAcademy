@@ -320,7 +320,7 @@ if ns.Hub.current ~= "home" then fail("expected home view after band pick") end
 if ns.Progress.GetBand() == nil then fail("band not saved") end
 
 -- Coming-soon module + active module
-click("^Librarian Quests$") -- coming soon tile: prints, stays home
+click("^Mechanics Academy$") -- coming soon tile: prints, stays home
 if ns.Hub.current ~= "home" then fail("coming-soon tile should not navigate") end
 click("^Rune Forger$")
 -- v0.2: first visit offers The Forgemaster's Trial
@@ -770,7 +770,7 @@ if not exportText then fail("export text not shown") else
   end
 end
 local guardScope = 0
-while not findButton("^Report: All subjects$") and guardScope < 5 do click("^Report: "); guardScope = guardScope + 1 end
+while not findButton("^Report: All subjects$") and guardScope < 12 do click("^Report: "); guardScope = guardScope + 1 end
 local allText = exportBox() or ""
 if not (allText:find("SCRIBE'S SCROLLS", 1, true) and allText:find("RUNE FORGER", 1, true)) then fail("All subjects export should include both") end
 click("^Close$")
@@ -1562,7 +1562,7 @@ do
   ns.Progress.account.settings.unlockAllTiers = false
   ns.Hub.Open("home")
   if not findButton("^Azeroth Naturalist$") then fail("Azeroth Naturalist should be a real hub tile") end
-  if findButton("^Librarian Quests$") == nil and #ns.Hub.Tiles() < 6 then fail("coming-soon tiles still listed") end
+  if findButton("^Mechanics Academy$") == nil and #ns.Hub.Tiles() < 6 then fail("coming-soon tiles still listed") end
   click("^Azeroth Naturalist$")
   if ns.Hub.current ~= "trial" or not visibleText("^The Field Warden's Survey$") then fail("Naturalist tile should open The Field Warden's Survey") end
   click("^Begin the Trial$")
@@ -1826,6 +1826,33 @@ step("v0.11 gnomish engineering", function()
       -- duel setup lists the new subject
       ns.Hub.Open("duel")
       if not findButton("Gnomish Engineering") then fail("duel setup lists Gnomish Engineering") end
+    end,
+  })
+end)
+
+step("v0.12 librarian quests", function()
+  subjectSmoke({
+    id = "librarian", tile = "Librarian Quests", prefix = "PASSPORT",
+    startEvent = "LIBSTART", newEvent = "LIBSTAMP", openEvent = "LIBPASSPORT",
+    slashBook = "passport", slashSubject = "library", startVoice = "lib_start",
+    extra = function()
+      -- tables and indexes are shown left-aligned like a page of a book
+      ns.RuneForger.StartRound("lib_tables", 1)
+      local p = ns.RuneForger.session.problem
+      if not p.code then fail("data tables use the left-aligned page layout") end
+      ns.Hub.GetView("problem"):Answer(p.answer)
+      if ns.RuneForger.session.firstCorrect ~= 1 then fail("table answer accepted") end
+      runTimers()
+      ns.RuneForger.session = nil
+      ns.RuneForger.StartRound("lib_factopinion", 1)
+      if ns.Hub.GetView("problem").grid:IsShown() then fail("no grid on library questions") end
+      ns.RuneForger.session = nil
+      ns.Hub.Open("duel")
+      if not findButton("Librarian Quests") then fail("duel setup lists Librarian Quests") end
+      slash("research")
+      if ns.Lessons.CurrentModule().id ~= "librarian" then fail("/aa research opens Librarian Quests") end
+      slash("stamps")
+      if ns.Hub.current ~= "journal" or ns.Hub.GetView("journal").moduleId ~= "librarian" then fail("/aa stamps opens the passport") end
     end,
   })
 end)

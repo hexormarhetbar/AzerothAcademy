@@ -25,6 +25,8 @@ G.EVENTS = {
   "DUELINVITE", "DUELSTART", "DUELWIN", "DUELDONE", "DUELWAIT",
   -- v0.11: Gnomish Engineering
   "GESTART", "GECORRECT", "GEWRONG", "GEBLUEPRINT", "GEBINDER",
+  -- v0.12: Librarian Quests
+  "LIBSTART", "LIBCORRECT", "LIBWRONG", "LIBSTAMP", "LIBPASSPORT",
 }
 
 -- Who can appear and how the UI should try to show them. Model IDs are tried in

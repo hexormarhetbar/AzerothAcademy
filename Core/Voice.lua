@@ -49,6 +49,9 @@ V.LINES = {
   -- v0.11 Gnomish Engineering
   FZ_GESTART_1 = { file = "ge_start", dur = 4.4 },
   FZ_GEBLUEPRINT_1 = { file = "ge_blueprint", dur = 3.3, big = true },
+  -- v0.12 Librarian Quests
+  FZ_LIBSTART_1 = { file = "lib_start", dur = 3.4 },
+  FZ_LIBSTAMP_1 = { file = "lib_stamp", dur = 4.2, big = true },
 }
 -- event -> clip that fits every line of the event
 V.EVENT_CLIPS = {

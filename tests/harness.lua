@@ -2789,7 +2789,18 @@ local function subjectSuite(cfg)
   local id = cfg.id
   local stats = { gen = 0, items = {} }
   subjectStats[id] = stats
+  local sideCount = { a = 0, h = 0 }
+  local aSide = { Stormwind = true, Ironforge = true, Darnassus = true, Alliance = true }
   local function neutral(s, tag)
+    if cfg.balancedSides then
+      -- libraries of every faction are fine, as long as both sides appear equally often
+      for _, w in ipairs(sidedWords) do
+        if tostring(s):find(w, 1, true) then
+          if aSide[w] then sideCount.a = sideCount.a + 1 else sideCount.h = sideCount.h + 1 end
+        end
+      end
+      return
+    end
     if cfg.allowSides then return end
     for _, w in ipairs(sidedWords) do ok(not tostring(s):find(w, 1, true), tag .. " stays faction-neutral (" .. w .. ")") end
   end
@@ -2878,6 +2889,11 @@ local function subjectSuite(cfg)
       ok(c[1] > 0 and c[2] > 0 and c[3] > 0, nodeId .. " covers levels 1-3 (" .. c[1] .. "/" .. c[2] .. "/" .. c[3] .. ")")
       stats.items[node.band] = (stats.items[node.band] or 0) + #list
     end
+  end
+
+  if cfg.balancedSides then
+    ok(sideCount.a > 0 and math.abs(sideCount.a - sideCount.h) <= 2,
+      string.format("%s names Alliance and Horde places equally (%d / %d)", id, sideCount.a, sideCount.h))
   end
 
   -- generator sweep: every node x level x tier x purpose
@@ -3075,6 +3091,68 @@ do
           end
         end
         ok(fixes >= 1, tag .. " the bug step has a fix")
+      end
+    end,
+  })
+end
+
+-------------------------------------------------------------------------
+-- 25. v0.12: Librarian Quests - research generators, Library Passport
+-------------------------------------------------------------------------
+do
+  local ltns = newNS()
+  local LB, LD = ltns.Librarian, ltns.LibrarianData
+  local b = { title = "Maps", first = "Ann", last = "Lee", year = 2020 }
+  ok(LB.Citation(b, {}) == "Lee, Ann. Maps. 2020.", "citation: Last, First. Title. Year.")
+  ok(LB.Citation(b, { title = false }) == "Lee, Ann. 2020.", "citation without a title")
+  local rows, after = LB.Contents(4, 3, 6)
+  local okRows = #rows == 4 and rows[1].page == 3
+  for i = 2, #rows do okRows = okRows and rows[i].page > rows[i - 1].page + 2 end
+  ok(okRows and after > rows[4].page, "contents pages go up")
+  local idx = LB.Index(5)
+  local okIdx, pages = true, {}
+  for i, r in ipairs(idx) do
+    if i > 1 then okIdx = okIdx and idx[i - 1].topic < r.topic end
+    for _, pg in ipairs(r.pages) do okIdx = okIdx and not pages[pg]; pages[pg] = true end
+  end
+  ok(okIdx, "index is in ABC order with unique pages")
+  local t3 = LB.Topics(6, true)
+  local f = {}
+  for _, t in ipairs(t3) do ok(not f[t:sub(1, 1)], "distinct first letters: " .. t); f[t:sub(1, 1)] = true end
+  ok(ltns.Art.SUBJECT_POSE.librarian == "researching", "Fizzwick researches in the library")
+  ok(ltns.Modules.Get("librarian") and not ltns.Modules.Get("librarian").hidden, "librarian has a hub tile")
+  ok(ltns.Voice.LINES.FZ_LIBSTART_1 and ltns.Voice.LINES.FZ_LIBSTAMP_1.big, "librarian voice lines")
+  ok(ltns.SoundEvents.EVENTS.stamp, "stamp sound")
+  for _, c in ipairs(LD.COMPARE) do
+    ok(select(2, c.a:gsub("%%d", "")) == 1 and select(2, c.b:gsub("%%d", "")) == 1, "compare template has one number each: " .. c.thing)
+  end
+
+  subjectSuite({
+    id = "librarian", nameKey = "MOD_LIBRARIAN", prefix = "PASSPORT", lists = LB.LISTS,
+    keys = { "LIB_LORE", "LIB_TITLE", "LIB_TRIAL", "LIB_EXAM", "LIB_TRIAL_LORE", "LIB_EXAM_LORE", "LIB_TRIAL_RESULT", "LIB_EXAM_PASS", "LIB_TRIAL_RIGHT", "LIB_TRIAL_WRONG" },
+    events = { "LIBSTART", "LIBCORRECT", "LIBWRONG", "LIBSTAMP", "LIBPASSPORT" },
+    maxText = LB.MAX_TEXT, maxChoice = LB.MAX_CHOICE, numeric = true, balancedSides = true,
+    noTyped = { lib_keywords = true, lib_notes = true },
+    perProblem = function(_, p, tag)
+      if p.nodeId == "lib_abc" and p.mode == "choice" then
+        local words = {}
+        for _, c in ipairs(p.choices) do words[#words + 1] = c end
+        table.sort(words)
+        local want = p.text:find("LAST", 1, true) and words[#words] or words[1]
+        ok(p.answer == want, tag .. " ABC answer is really first/last")
+      end
+      if p.nodeId == "lib_tables" then
+        local vals = {}
+        for v in p.text:gmatch(": (%d+)\n") do vals[#vals + 1] = tonumber(v) end
+        if p.text:find("total", 1, true) then
+          local sum = 0
+          for _, v in ipairs(vals) do sum = sum + v end
+          ok(sum == p.answer, tag .. " table total adds up")
+        end
+      end
+      if p.nodeId == "lib_toc_simple" and type(p.answer) == "number" then
+        local topic = p.text:match("does (.-) start%?")
+        ok(topic and p.text:find(topic .. " ..... " .. p.answer, 1, true), tag .. " contents answer matches its row")
       end
     end,
   })

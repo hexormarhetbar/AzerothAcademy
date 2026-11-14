@@ -44,6 +44,9 @@ A.EVENT_POSE = {
   DUELWAIT = "thinking",
   -- v0.11 Gnomish Engineering
   GESTART = "tinkering", GECORRECT = "excited", GEWRONG = "encouraging", GEBLUEPRINT = "excited", GEBINDER = "proud",
+  -- v0.12 Librarian Quests
+  LIBSTART = "researching", LIBCORRECT = "excited", LIBWRONG = "encouraging", LIBSTAMP = "celebrating",
+  LIBPASSPORT = "proud",
 }
 
 -- While a problem waits for an answer, Fizzwick works on something that fits the subject.

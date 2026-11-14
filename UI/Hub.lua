@@ -239,8 +239,7 @@ end)
 H.COMING_SOON = {
   { id = "scribe",     key = "MOD_SCRIBE",     icon = "Interface\\Icons\\INV_Inscription_Scroll" },
   { id = "gnomish",    key = "MOD_GNOMISH",    icon = "Interface\\Icons\\INV_Misc_Gear_01" },
-  { id = "librarian",  key = "MOD_LIBRARIAN",  icon = "Interface\\Icons\\INV_Misc_Book_11" },
-  { id = "mechanics",  key = "MOD_MECHANICS",  icon = "Interface\\Icons\\Ability_Warrior_DefensiveStance" },
+    { id = "mechanics",  key = "MOD_MECHANICS",  icon = "Interface\\Icons\\Ability_Warrior_DefensiveStance" },
 }
 
 function H.Tiles()

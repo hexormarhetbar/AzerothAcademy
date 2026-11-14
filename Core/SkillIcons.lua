@@ -43,6 +43,13 @@ local I = {
   ge_debug = "INV_Misc_Wrench_01", ge_events = "INV_Misc_PocketWatch_01",
   ge_variables = "INV_Battery_01", ge_functions = "INV_Gizmo_01", ge_boolean = "INV_Misc_Key_01",
   ge_algorithms = "INV_Misc_Rune_01", ge_pseudocode = "INV_Misc_Note_05",
+  -- Librarian Quests (v0.12)
+  lib_shelves = "INV_Misc_Key_03", lib_abc = "INV_Scroll_01", lib_toc_simple = "INV_Misc_Book_10",
+  lib_keywords_young = "INV_Misc_Key_02", lib_truesilly = "Spell_Holy_HolyBolt",
+  lib_index = "INV_Scroll_08", lib_toc = "INV_Scroll_07", lib_keywords = "INV_Misc_Key_04",
+  lib_factopinion = "Spell_Holy_Restoration", lib_notes = "INV_Scroll_04",
+  lib_sources = "Spell_Holy_MindSooth", lib_citing = "INV_Scroll_06", lib_compare = "Ability_Hunter_SniperShot",
+  lib_tables = "INV_Misc_Coin_05", lib_skim = "INV_Misc_Eye_01",
 }
 ns.SkillIcons = {}
 for id, name in pairs(I) do ns.SkillIcons[id] = P .. name end

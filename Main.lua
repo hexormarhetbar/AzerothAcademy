@@ -54,10 +54,12 @@ local SUBJECT_SLASH = {
   forge = "runeforger", scribe = "scribe", lore = "lore", quiz = "lorequiz",
   nature = "naturalist", naturalist = "naturalist", science = "naturalist",
   gnomish = "gnomish", engineering = "gnomish", code = "gnomish", coding = "gnomish",
+  library = "librarian", librarian = "librarian", research = "librarian",
 }
 local BOOK_SLASH = {
   journal = "naturalist", bestiary = "naturalist",
   blueprints = "gnomish", binder = "gnomish",
+  passport = "librarian", stamps = "librarian",
 }
 
 SlashCmdList.AZEROTHACADEMY = function(msg)
