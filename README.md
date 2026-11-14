@@ -864,3 +864,7 @@ For v0.5, `tools/convert_art.sh` was run with ImageMagick 7.1.2 on test PNGs. It
 - New slash commands: `/aa review`, `/aa trial`, `/aa exam`.
 
 **v0.1.0**: first test build (hub, Rune Forger, progression, Parent Panel).
+
+## License
+
+Azeroth Academy is released under the [MIT License](LICENSE). You are free to use, modify, and share it, as long as you keep the copyright notice and credit: "Azeroth Academy by HexorMarhetbar". Original art, sounds, and Professor Fizzwick's voice are part of the project and covered by the same license. World of Warcraft is a trademark of Blizzard Entertainment; this addon is fan-made and not affiliated with Blizzard.
