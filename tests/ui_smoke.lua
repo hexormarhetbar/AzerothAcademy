@@ -2303,6 +2303,134 @@ step("v0.10 duel of wits", function()
   hub:Hide()
 end)
 
+-------------------------------------------------------------------------
+-- v1.1: language picker (live), Settings merge, areas to show, World Tongues
+-------------------------------------------------------------------------
+step("v1.1 language / areas / World Tongues", function()
+  local clientLoc = ns.ClientLocale()
+  slash("")
+  hub = named.AzerothAcademyHub
+  ns.Hub.ShowView("home")
+  -- globe button on home opens the picker
+  local globe = ns.Hub.GetView("home").langBtn
+  if globe then globe:Click() else ns.Hub.ShowView("language", "home") end
+  if ns.Hub.current ~= "language" then fail("language view opens") end
+  local lv = ns.Hub.GetView("language")
+  if #lv.buttons ~= 11 then luaFail("language view: Auto + 10 languages, got " .. #lv.buttons) end
+  -- click Deutsch: whole window rebuilds in German, live
+  local de
+  for _, b in ipairs(lv.buttons) do if b.code == "deDE" then de = b end end
+  de:Click()
+  if ns.locale ~= "deDE" or ns.L.BACK ~= ns.LocaleData.deDE.BACK then luaFail("picking Deutsch switches live") end
+  if ns.Progress.account.settings.language ~= "deDE" then luaFail("choice saved per account") end
+  hub = named.AzerothAcademyHub
+  if not (hub and hub:IsShown() and ns.Hub.current == "language") then luaFail("window reopens on the picker after a switch") end
+  ns.Hub.ShowView("home")
+  scanTexts("home in German")
+  local germanTile = false
+  for _, w in ipairs(allFrames) do if w:IsVisible() and (w.__text or "") == ns.LocaleData.deDE.MOD_SCRIBE then germanTile = true end end
+  if not germanTile then luaFail("hub tiles are drawn in German after the switch") end
+  -- /aa lang ja-style codes; a CJK language uses the bundled font on a Latin client
+  slash("lang ko")
+  if ns.locale ~= "koKR" then luaFail("/aa lang ko") end
+  if clientLoc ~= "koKR" and not ns.Compat.FONT:find("AzAcadSans%-KR") then luaFail("Korean on a non-Korean client uses the bundled Korean font, got " .. tostring(ns.Compat.FONT)) end
+  ns.Hub.ShowView("home"); scanTexts("home in Korean")
+  slash("lang zh")
+  if ns.locale ~= "zhCN" then luaFail("/aa lang zh -> zhCN") end
+  slash("lang zhtw")
+  if ns.locale ~= "zhTW" then luaFail("/aa lang zhtw") end
+  ns.Hub.ShowView("home"); scanTexts("home in Traditional Chinese")
+  local before = ns.locale
+  slash("lang klingon")
+  if ns.locale ~= before then luaFail("unknown language changes nothing") end
+  slash("lang")
+  slash("lang auto")
+  if ns.locale ~= clientLoc or ns.Progress.account.settings.language ~= "auto" then luaFail("/aa lang auto returns to the game language") end
+  if ns.Compat.FONT ~= ns.Compat.CLIENT_FONT then luaFail("auto restores the client font") end
+  hub = named.AzerothAcademyHub
+
+  -- Settings: PIN is set (1234) from the earlier test, so Areas is gated
+  slash("settings")
+  local pv2 = ns.Hub.GetView("parent")
+  if ns.Hub.current ~= "parent" or pv2.unlocked then luaFail("Settings locked while a PIN is set") end
+  ns.Hub.ShowView("areas")
+  if ns.Hub.current ~= "parent" then luaFail("areas view is behind the PIN") end
+  local pinBox
+  for _, w in ipairs(allFrames) do if w.__kind == "EditBox" and w:IsVisible() then pinBox = pinBox or w end end
+  pinBox:SetText("1234"); click("^Unlock$")
+  if not pv2.unlocked then luaFail("unlock Settings") end
+  click("^Areas to Show$")
+  if ns.Hub.current ~= "areas" then luaFail("Areas to Show button") end
+  click("Lore Chronicles")
+  if ns.Modules.IsShown("lore") then luaFail("area toggle hides Lore") end
+  local tiles = ns.Hub.Tiles()
+  if #tiles ~= 7 then luaFail("hidden area leaves the hub: " .. #tiles .. " tiles") end
+  if not ns.Hub.GetView("parent").unlocked then luaFail("Settings stays unlocked across the area rebuild") end
+  slash("lore")
+  if ns.Hub.current == "forge" and ns.Lessons.moduleId == "lore" then luaFail("hidden area's slash command does not open it") end
+  ns.Hub.ShowView("areas")
+  click("Lore Chronicles")
+  if not ns.Modules.IsShown("lore") or #ns.Hub.Tiles() ~= 8 then luaFail("area shown again") end
+  -- Settings has the language button too
+  ns.Hub.ShowView("parent")
+  click("^Language")
+  if ns.Hub.current ~= "language" then luaFail("Settings -> Language") end
+  click("^Back$")
+  if ns.Hub.current ~= "parent" then luaFail("language Back returns to Settings") end
+
+  -- World Tongues: tile -> placement trial offered -> skip -> paged skill list -> study -> round
+  ns.Hub.ShowView("home")
+  click("^World Tongues$")
+  if ns.Hub.current == "trial" then click("^Skip for now$") end
+  if not (ns.Hub.current == "forge" and ns.Lessons.moduleId == "tongues_ja") then luaFail("World Tongues tile opens the Japanese course, got " .. tostring(ns.Hub.current) .. "/" .. tostring(ns.Lessons.moduleId)) end
+  if not visibleText("^Hiragana") then fail("first lesson Hiragana listed") end
+  click("^>$")
+  if not visibleText("Katakana %(dakuten") and not visibleText("Colors") then fail("skill list pages forward") end
+  click("Study the Lessons")
+  if ns.Hub.current ~= "tonguesstudy" then luaFail("study view opens") end
+  if not visibleText("^あ  a") and not visibleText("あ") then fail("study page shows the kana chart") end
+  click("^Next lesson >$"); click("^Next lesson >$")
+  click("^>$")
+  click("^Practice$")
+  if not (ns.Lessons.session and ns.Hub.current == "problem") then luaFail("Practice starts a World Tongues round") else
+    local pvw = ns.Hub.GetView("problem")
+    if not (pvw.courseFont and pvw.courseFont:find("AzAcadSans")) and ns.Compat.CLIENT_LOCALE ~= "jaJP" then
+      -- every non-Japanese client draws the course with a bundled font that has kana and kanji
+      luaFail("World Tongues round uses the bundled course font, got " .. tostring(pvw.courseFont))
+    end
+    local guard = 0
+    while ns.Lessons.session and guard < 40 do
+      guard = guard + 1
+      local s = ns.Lessons.session
+      if s.problemDone then
+        local nb = findButton("^Next$"); if nb then nb:Click() else pvw:Advance() end
+      else
+        pvw:Answer(s.problem.answer)
+      end
+      clock = clock + 2; runTimers(); update(0.5)
+    end
+    if ns.Hub.current ~= "reward" then luaFail("World Tongues round finishes, got " .. tostring(ns.Hub.current)) end
+  end
+  -- Spanish course from the study view's course button
+  ns.Hub.ShowView("tonguesstudy")
+  click("日本語 >$")
+  if ns.Progress.account.settings.tongues.course ~= "es" then luaFail("course button switches to Spanish") end
+  click("^Practice$")
+  if not (ns.Lessons.session and ns.Lessons.session.problem.moduleId == "tongues_es") then luaFail("Spanish practice round") end
+  ns.Lessons.session = nil
+  slash("japanese")
+  if ns.Lessons.moduleId ~= "tongues_ja" then luaFail("/aa japanese opens the Japanese course") end
+  -- Remove the PIN again: Settings opens straight away
+  ns.Hub.ShowView("parent")
+  click("^Remove PIN$")
+  if ns.Progress.HasPin() then luaFail("Remove PIN") end
+  hub:Hide()
+  slash("settings")
+  if not ns.Hub.GetView("parent").unlocked then luaFail("no PIN -> Settings open") end
+  hub:Hide()
+end)
+hub = named.AzerothAcademyHub
+
 slash("status"); slash("help"); slash("nudge"); slash("nudge")
 runTimers()
 update(1)

@@ -339,6 +339,7 @@ H.RegisterView("home", function(parent)
   end)
   langBtn:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
   v.langBtn = langBtn
+  v.langBtn = langBtn
 
   -- Right side: module grid
   local header = W.Header(v, L.CHOOSE_LESSON, 15, 330)
