@@ -22,10 +22,24 @@ H.RegisterView("areas", function(parent)
     b:SetPoint("TOPLEFT", 4 + ((i - 1) % 2) * 274, -100 - math.floor((i - 1) / 2) * 38)
     buttons[#buttons + 1] = { b = b, area = area }
   end
+  -- v1.1: which World Tongues course the word duel and the study page use (also switchable on the study page)
+  local courseBtn = W.Button(v, "", 264, 26, function()
+    local T = ns.Progress.account.settings.tongues
+    local order = ns.TonguesData.order
+    local i = 1
+    for j, id in ipairs(order) do if id == T.course then i = j end end
+    T.course = order[i % #order + 1]
+    v:OnShowView()
+  end, 11)
+  courseBtn:SetPoint("TOPLEFT", 4, -100 - math.ceil(#buttons / 2) * 38 - 10)
+  W.SetButtonFontFace(courseBtn, ns.Compat.CourseFont(), 11)
+  v.courseBtn = courseBtn
   function v:OnShowView()
     -- Same optional PIN gate as other Settings controls; no bypass via the view API.
     local settings = H.GetView("parent")
     if ns.Progress.HasPin() and not (settings and settings.unlocked) then H.ShowView("parent"); return end
+    local course = ns.TonguesData.courses[ns.Progress.account.settings.tongues.course] or ns.TonguesData.courses.ja
+    courseBtn:SetText(string.format(L.WT_SETTINGS_COURSE, course.name))
     for _, entry in ipairs(buttons) do
       entry.b:SetText((ns.Progress.IsAreaShown(entry.area.id) and "|cff66ff88[x] " or "|cffaaaaaa[ ] ") .. L[entry.area.nameKey] .. "|r")
     end

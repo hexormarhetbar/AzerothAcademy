@@ -3718,6 +3718,7 @@ do
   local chk = function(ans, given, native) return WT.Check({ mode = "input", answer = ans, native = native }, given) end
   ok(chk("arigatou gozaimasu", "Arigatou Gozaimasu") and chk("arigatou gozaimasu", "arigatō gozaimasu") and chk("arigatou gozaimasu", "arigato gozaimasu"), "typed romaji: case, macron and short-vowel spellings accepted")
   ok(chk("kyuu", "kyū") and chk("kyuu", "kyu") and chk("shi", "SHI") and chk("ka", "か", "か"), "kyū / kyu / IME kana accepted")
+  ok(chk("kin'youbi", "kinyoubi") and chk("kin'youbi", "kin'yōbi"), "apostrophe after n is optional when typing")
   ok(not chk("shi", "si") and not chk("ka", "") and not chk("tsu", "su"), "wrong romaji rejected")
   -- (f) generated problems: never two right buttons (じ / ぢ, 日 / 火 share readings)
   local wtGen, ambiguous, typed, kinds = 0, 0, 0, {}

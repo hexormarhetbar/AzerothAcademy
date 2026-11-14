@@ -2369,6 +2369,12 @@ step("v1.1 language / areas / World Tongues", function()
   slash("lore")
   if ns.Hub.current == "forge" and ns.Lessons.moduleId == "lore" then luaFail("hidden area's slash command does not open it") end
   ns.Hub.ShowView("areas")
+  local cb = ns.Hub.GetView("areas").courseBtn
+  if not textMatches(cb.__text, "^World Tongues course: Japanese") then fail("course button label") end
+  cb:Click()
+  if ns.Progress.account.settings.tongues.course ~= "es" then luaFail("Areas: World Tongues course button switches to Spanish") end
+  cb:Click()
+  if ns.Progress.account.settings.tongues.course ~= "ja" then luaFail("and back to Japanese") end
   click("Lore Chronicles")
   if not ns.Modules.IsShown("lore") or #ns.Hub.Tiles() ~= 8 then luaFail("area shown again") end
   -- Settings has the language button too

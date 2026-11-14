@@ -155,7 +155,7 @@ D.numbers = numbers
 local days = {
  {"にちようび","nichiyoubi","Sunday"},{"げつようび","getsuyoubi","Monday"},
  {"かようび","kayoubi","Tuesday"},{"すいようび","suiyoubi","Wednesday"},
- {"もくようび","mokuyoubi","Thursday"},{"きんようび","kinyoubi","Friday"},
+ {"もくようび","mokuyoubi","Thursday"},{"きんようび","kin'youbi","Friday"},
  {"どようび","doyoubi","Saturday"},
 }
 local function join(a,b) local t={};for _,e in ipairs(a) do t[#t+1]=e end;for _,e in ipairs(b) do t[#t+1]=e end;return t end
