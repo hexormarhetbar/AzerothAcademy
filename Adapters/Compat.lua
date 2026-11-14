@@ -262,6 +262,30 @@ function C.PlayVoice(path, interrupt)
   return false
 end
 
+-- v1.2 World Tongues: play one language clip (`clip` from ns.TonguesAudio). Stops the clip
+-- before it (a replay never overlaps itself), uses the same channel and the same sound
+-- switch as everything else, and tells ns.TonguesAudio whether it played, so a missing
+-- file is remembered and the UI can fall back to text. Returns true when it plays.
+function C.PlayTongue(clip)
+  local TA = ns.TonguesAudio
+  if not (TA and clip) then return false end
+  if not TA.Available() then return false end
+  if not PlaySoundFile then return false end
+  if C.tongueHandle and StopSound then pcall(StopSound, C.tongueHandle, 100) end
+  C.tongueHandle = nil
+  local channel = ns.SoundEvents and ns.SoundEvents.Channel(soundSettings()) or "SFX"
+  local ok, willPlay, handle = pcall(PlaySoundFile, TA.Path(clip), channel)
+  local played = ok and willPlay and true or false
+  TA.Result(clip, played)
+  if played then C.tongueHandle, C.lastTongue = handle, TA.Path(clip) end
+  return played
+end
+
+function C.StopTongue()
+  if C.tongueHandle and StopSound then pcall(StopSound, C.tongueHandle, 100) end
+  C.tongueHandle = nil
+end
+
 -- Faction of the player: "Horde", "Alliance", "Neutral" or nil.
 function C.Faction()
   if not UnitFactionGroup then return nil end

@@ -46,6 +46,8 @@ Core\LibrarianGen.lua
 Core\MechanicsData.lua
 Core\MechanicsGen.lua
 Core\TonguesData.lua
+Core\TonguesClips.lua
+Core\TonguesAudio.lua
 Core\TonguesGen.lua
 Core\Guide.lua
 Core\SoundEvents.lua

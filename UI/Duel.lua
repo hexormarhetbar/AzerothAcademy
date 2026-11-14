@@ -488,6 +488,20 @@ H.RegisterView("duel", function(parent)
   local qtext = W.Text(card, 16, "", W.WHITE, "CENTER")
   qtext:SetWidth(520)
   v.qtext = qtext
+  -- v1.2 World Tongues co-op: hear the partner's line (the line is also written on the card)
+  local playBtn = W.Button(card, L.WT_REPLAY, 90, 22, function() v:PlayClip() end, 12)
+  playBtn:SetPoint("TOPRIGHT", card, "TOPRIGHT", -6, -4)
+  playBtn:Hide()
+  v.playBtn = playBtn
+  function v:PlayClip()
+    local E = DU.engine
+    local p = E and E:Current()
+    local TA = ns.TonguesAudio
+    local clip = p and p.audioFile and TA and TA.ByFile(p.audioFile)
+    local played = clip and C.PlayTongue(clip) or false
+    if not played and not (clip and TA.Available()) then playBtn:Hide() end
+    return played
+  end
   -- v0.11: Gnomish Engineering grid puzzles
   local grid = W.Grid(card, 6, 18)
   grid:SetPoint("TOPLEFT", card, "TOPLEFT", 10, -24)
@@ -557,9 +571,15 @@ H.RegisterView("duel", function(parent)
       self.qtext:SetText(d and d.state == "race" and L.DUEL_WAITING or "")
       self.qtext:ClearAllPoints()
       self.qtext:SetPoint("CENTER", card, "CENTER", 0, 0)
+      self.playBtn:Hide()
       return
     end
-    if self.shownIdx ~= idx then self.shownIdx = idx end
+    if self.shownIdx ~= idx then
+      self.shownIdx = idx
+      if p.audioFile then self:PlayClip() end
+    end
+    local TA = ns.TonguesAudio
+    if p.audioFile and TA and TA.Available() and TA.ByFile(p.audioFile) then self.playBtn:Show() else self.playBtn:Hide() end
     self.qhead:SetText(string.format(L.DUEL_QUESTION, idx, d.length))
     local count = p.icons and p.icons.count or 0
     for i, t in ipairs(self.icons) do

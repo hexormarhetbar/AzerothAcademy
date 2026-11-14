@@ -8,11 +8,15 @@
 --   Adept (8-10)    4 buttons; typed romaji on Glyph
 --   Magister (11-13 and grown-up learners) 4 buttons on Spark, typed romaji from Rune on
 -- Question types: kana -> romaji, romaji -> kana, meaning -> word, word -> meaning,
--- fill in the blank (X wa Y desu), matching (three pairs at once). No audio is needed.
+-- fill in the blank (X wa Y desu), matching (three pairs at once), and (v1.2) Listen: hear a
+-- clip, then pick the kana / word, the meaning, or type the romaji (Magister). Listen only
+-- appears when the entry has a clip and sound is on (ns.TonguesAudio); everything else
+-- works without audio.
 -- Pure Lua (no WoW API). All Japanese text is drawn with the bundled course font.
 local _, ns = ...
 local Util = ns.Util
 local D = ns.TonguesData
+local TA = ns.TonguesAudio
 local random = Util.Random
 
 local WT = {}
@@ -172,6 +176,61 @@ function Q.matching(lesson, e, pool)
     explain = table.concat(parts, "\n"), kind = "matching" }
 end
 
+-- v1.2 Listen: a clip plays (and replays from the card's play button); the kid answers with
+-- what they heard. Every listen problem carries `fallbackText`: the same question with the
+-- word written out, shown instead if the clip will not play after all (UI/Lessons.lua).
+local function soundDistractors(lesson, pool, e, field, n)
+  local key = TA.SoundKey(lesson.course, e[1])
+  local cand = {}
+  for _, o in ipairs(pool) do if TA.SoundKey(lesson.course, o[1]) ~= key then cand[#cand + 1] = o end end
+  local all = {}
+  for _, o in ipairs(lesson.entries) do if TA.SoundKey(lesson.course, o[1]) ~= key then all[#all + 1] = o end end
+  return WT.Distractors(cand, e, field, n, all)
+end
+WT.SoundDistractors = soundDistractors
+
+local function withAudio(p, clip)
+  p.audio, p.audioFile, p.audioDur = TA.Path(clip), clip.file, clip.dur
+  return p
+end
+
+-- hear it, pick the kana / word (buttons)
+function Q.listenNative(lesson, e, pool, clip)
+  local wrong = soundDistractors(lesson, pool, e, 1, WT.Buttons())
+  local fb = Q.toNative(lesson, e, pool)
+  return withAudio({ text = L().WT_Q_LISTEN_NATIVE, answer = e[1], choices = choices(e[1], wrong),
+    fallbackText = fb.text, hint = L().WT_H_LISTEN, explain = explain(e), kind = "listenNative" }, clip)
+end
+
+-- hear it, give the reading: buttons, or typed romaji (Magister from Rune, Adept on Glyph)
+function Q.listenReading(lesson, e, pool, clip)
+  local n = WT.Buttons()
+  local alts = (TA.SoundKey(lesson.course, e[1]) == "ja_k_o" and e[2] ~= "o") and { "o" } or nil -- を sounds like お
+  return withAudio({ text = lesson.course == "ja" and L().WT_Q_LISTEN_READ or L().WT_Q_LISTEN_SPELL,
+    answer = e[2], native = e[1], alts = alts,
+    distractors = soundDistractors(lesson, pool, e, 2, n), maxChoices = n,
+    fallbackText = fmt("WT_Q_READ", e[1]), hint = L().WT_H_LISTEN, explain = explain(e), kind = "listenReading" }, clip)
+end
+
+-- hear a word or phrase, pick what it means (buttons)
+function Q.listenMeaning(lesson, e, pool, clip)
+  local wrong = soundDistractors(lesson, pool, e, 3, WT.Buttons())
+  return withAudio({ text = L().WT_Q_LISTEN_MEANING, answer = e[3], choices = choices(e[3], wrong),
+    fallbackText = fmt("WT_Q_MEANS", e[1], e[2]), hint = L().WT_H_LISTEN, explain = explain(e), kind = "listenMeaning" }, clip)
+end
+
+-- Which listen question for this entry (nil when it has no playable clip).
+function WT.ListenType(lesson, e, level)
+  if not lesson.course or not TA.ClipIfAvailable(lesson.course, e[1]) then return nil end
+  if lesson.kind == "kana" then
+    if level >= 2 and random(1, 2) == 1 then return "listenReading" end
+    return WT.Unique(lesson.entries, e, 2) and "listenNative" or "listenReading"
+  end
+  if e[3] == nil then return nil end
+  if level >= 3 and random(1, 3) == 1 then return "listenReading" end
+  return WT.Unique(lesson.entries, e, 3) and "listenMeaning" or "listenReading"
+end
+
 -- numbers: digits -> word, word -> digits (typeable)
 function Q.number(lesson, level)
   local top = ({ 10, 20, 50 })[level] or 100
@@ -282,8 +341,12 @@ function WT.PhrasebookSet(rng, length, role)
     else
       text = fmt("WT_PB_OPEN", L()["WT_PB_" .. speaker], ln[3])
     end
-    out[#out + 1] = { text = text, answer = ln[1], choices = choicesList, mode = "choice", choiceOnly = true,
+    local p = { text = text, answer = ln[1], choices = choicesList, mode = "choice", choiceOnly = true,
       nodeId = "wt_ja_phrases", moduleId = "tongues_ja", level = 1, tier = 1, explain = explain(ln), coop = true, line = i }
+    -- v1.2: hear the partner's line (the text stays on the card, so no fallback is needed)
+    local clip = prev and TA.ClipIfAvailable("ja", prev[1])
+    if clip then withAudio(p, clip) end
+    out[#out + 1] = p
     i = i + 2
   end
   return out
@@ -305,6 +368,9 @@ function WT.Generate(lesson, level)
   else
     types = level >= 3 and { "wordToMeaning", "meaningToWord", "toReading", "toNative" } or { "wordToMeaning", "meaningToWord" }
   end
+  -- v1.2: about one question in three is a Listen question when the entry has a clip
+  local lt = WT.ListenType(lesson, e, level)
+  if lt and random(1, 3) == 1 then return Q[lt](lesson, e, pool, TA.Clip(lesson.course, e[1])) end
   local t = types[random(1, #types)]
   if t == "toNative" and not WT.Unique(lesson.entries, e, 2) then t = "toReading" end
   if t == "meaningToWord" and not WT.Unique(lesson.entries, e, 3) then t = "wordToMeaning" end
@@ -334,6 +400,7 @@ for ci, cid in ipairs(D.order) do
     nodes[nodeId] = { key = key, descKey = key .. "_DESC", icon = course.icon,
       gen = function(level) return WT.Generate(lesson, level) end }
     WT.LESSON_BY_NODE[nodeId] = lesson
+    lesson.course = cid -- v1.2: Listen questions look clips up per course
     list[#list + 1] = nodeId
   end
   local id = "tongues_" .. cid

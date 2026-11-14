@@ -378,6 +378,13 @@ H.RegisterView("problem", function(parent)
 
   local qtext = W.Text(card, 20, "", W.WHITE, "CENTER")
   qtext:SetWidth(520)
+
+  -- v1.2 World Tongues Listen: play / replay the clip. If it will not play (sound off, file
+  -- missing), the card falls back to the written question and the button goes away.
+  local playBtn = W.Button(card, L.WT_PLAY, 96, 26, function() v:PlayClip(true) end, 13)
+  playBtn:SetPoint("TOPRIGHT", card, "TOPRIGHT", -8, -8)
+  playBtn:Hide()
+  v.playBtn = playBtn
   -- v0.11: Gnomish Engineering command grid (left side of the card)
   local grid = W.Grid(card, 6, 22)
   grid:SetPoint("LEFT", card, "LEFT", 12, 0)
@@ -480,6 +487,8 @@ H.RegisterView("problem", function(parent)
       W.SetFontSize(qtext, size)
     end
     qtext:SetText(p.text)
+    playBtn:Hide()
+    if p.audioFile then self:PlayClip(false) end
     -- v1.1 World Tongues: kana, kanji and accents need the bundled course font
     local pm = ns.Modules.Get(p.moduleId or "")
     local courseFont = pm and pm.courseFont and C.CourseFont() or nil
@@ -552,6 +561,29 @@ H.RegisterView("problem", function(parent)
       p.cameoShown = true
       ns.GuideUI.Say("LORECAMEO", L[ns.Lore.CAMEOS[p.cameo]])
     end
+  end
+
+  -- Play the problem's clip. Falls back to text when it cannot play; `replay` = button press.
+  function v:PlayClip(replay)
+    local p = RF.session and RF.session.problem
+    if not (p and p.audioFile) then playBtn:Hide(); return false end
+    local TA = ns.TonguesAudio
+    local clip = TA and TA.ByFile(p.audioFile)
+    local played = clip and C.PlayTongue(clip) or false
+    v.lastClipPlayed = played
+    if played then
+      playBtn:SetText(L.WT_REPLAY)
+      playBtn:Show()
+      p.audioPlayed = true
+    elseif not p.audioPlayed or not (TA and TA.Available()) or not clip then
+      -- never heard (or sound was switched off / the file is gone): ask in writing instead
+      playBtn:Hide()
+      if p.fallbackText then
+        p.text, p.audioFile, p.audio = p.fallbackText, nil, nil
+        qtext:SetText(p.text)
+      end
+    end
+    return played
   end
 
   function v:Advance()

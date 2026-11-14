@@ -26,13 +26,21 @@ H.RegisterView("tonguesstudy", function(parent)
   local note = W.Text(v, 11, "", W.WHITE)
   note:SetPoint("TOPLEFT", 4, -85); note:SetWidth(540)
   W.SetFontFace(note, C.CourseFont(), 11)
-  local lines = {}
+  local lines, plays = {}, {}
   for i = 1, 8 do
     local t = W.Text(v, 13, "", W.WHITE)
     t:SetPoint("TOPLEFT", 6, -156 - (i - 1) * 29); t:SetWidth(535)
     W.SetFontFace(t, C.CourseFont(), 13)
     lines[i] = t
+    -- v1.2: hear the entry (only when it has a clip and sound is on)
+    local b = W.Button(v, L.WT_PLAY_SHORT, 50, 22, function(self)
+      if self.clip and not C.PlayTongue(self.clip) then v:Render() end -- failed: hide what cannot play
+    end, 11)
+    b:SetPoint("TOPLEFT", 4, -152 - (i - 1) * 29)
+    b:Hide()
+    plays[i] = b
   end
+  v.plays = plays
   local prev = W.Button(v, "<", 36, 24, function() v.page = v.page - 1; v:Render() end)
   prev:SetPoint("BOTTOMLEFT", 4, 42)
   local pageText = W.Text(v, 11, "", W.GRAY)
@@ -67,9 +75,19 @@ H.RegisterView("tonguesstudy", function(parent)
     local pages = math.max(1, math.ceil(#lesson.entries / #lines))
     self.page = ns.Util.Clamp(self.page, 1, pages)
     pageText:SetText(string.format(L.PAGE_OF, self.page, pages))
+    local TA = ns.TonguesAudio
+    local audio = TA and TA.Available()
+    local any = false
     for i, t in ipairs(lines) do
       local e = lesson.entries[(self.page - 1) * #lines + i]
       t:SetText(e and ns.Tongues.Explain(e) or "")
+      local clip = audio and e and TA.Clip(self.course, e[1]) or nil
+      plays[i].clip = clip
+      if clip then plays[i]:Show(); any = true else plays[i]:Hide() end
+    end
+    for i, t in ipairs(lines) do
+      t:ClearAllPoints()
+      t:SetPoint("TOPLEFT", any and 60 or 6, -156 - (i - 1) * 29); t:SetWidth(any and 481 or 535)
     end
     if self.page == 1 then prev:Disable() else prev:Enable() end
     if self.page == pages then nextBtn:Disable() else nextBtn:Enable() end
