@@ -25,6 +25,17 @@ function W.SetFontSize(fs, size, flags)
   end
 end
 
+-- v1.1: a specific font file (bundled CJK / course font), falling back to the UI font.
+function W.SetFontFace(fs, font, size, flags)
+  local ok, res = pcall(fs.SetFont, fs, font or C.FONT, size or 12, flags or "")
+  if not ok or res == false or not fs:GetFont() then W.SetFontSize(fs, size, flags) end
+end
+
+function W.SetButtonFontFace(b, font, size)
+  local fs = b.GetFontString and b:GetFontString()
+  if fs then W.SetFontFace(fs, font, size) end
+end
+
 function W.SetButtonFontSize(b, size)
   local fs = b.GetFontString and b:GetFontString()
   if fs then W.SetFontSize(fs, size) end

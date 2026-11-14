@@ -18,6 +18,8 @@
 --   noTrials = true                        no placement trial / mastery exam (v0.5)
 --   hidden = true                          no hub tile (reached through linkModule / slash command)
 --   linkModule, linkKey                    a button on the skill list that opens another module
+--   area = "lore"                          v1.1 area this module belongs to (default: its own id).
+--                                          Settings can hide a whole area (Progress.IsAreaShown).
 -- Node ids must be unique across ALL modules (prefix them, e.g. "scribe_spelling").
 local _, ns = ...
 local Util = ns.Util
@@ -57,6 +59,7 @@ function Mods.Register(def)
       Mods.nodeIndex[nodeId] = def
     end
   end
+  def.area = def.area or def.id
   def.nameKey = def.nameKey or def.id
   def.descKey = def.descKey or (def.nameKey .. "_DESC")
   def.choiceOnlyBands = def.choiceOnlyBands or {}
@@ -88,10 +91,38 @@ function Mods.BandIds(module)
   return Mods.BAND_ORDER
 end
 
--- Modules that get a hub tile.
-function Mods.Visible()
+-- v1.1: is this module's area switched on in Settings? (always true before Progress is bound)
+function Mods.IsShown(module)
+  if type(module) == "string" then module = Mods.byId[module] end
+  if not module then return false end
+  local P = ns.Progress
+  if not (P and P.account and P.IsAreaShown) then return true end
+  return P.IsAreaShown(module.area or module.id)
+end
+
+-- Modules that get a hub tile (and whose area is shown).
+function Mods.Visible(includeHidden)
   local out = {}
-  for _, m in ipairs(Mods.list) do if not m.hidden then out[#out + 1] = m end end
+  for _, m in ipairs(Mods.list) do
+    if not m.hidden and (includeHidden or Mods.IsShown(m)) then out[#out + 1] = m end
+  end
+  return out
+end
+
+-- v1.1: one entry per area, in hub order: { id, nameKey, icon, modules = { ids } }
+function Mods.Areas()
+  local out, byId = {}, {}
+  for _, m in ipairs(Mods.list) do
+    local a = byId[m.area]
+    if not a then
+      a = { id = m.area, modules = {} }
+      byId[m.area] = a
+      out[#out + 1] = a
+    end
+    a.modules[#a.modules + 1] = m.id
+    if not m.hidden or not a.nameKey then a.nameKey, a.icon = m.nameKey, m.icon end
+    if m.areaKey then a.nameKey = m.areaKey end
+  end
   return out
 end
 

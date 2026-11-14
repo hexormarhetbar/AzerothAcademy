@@ -44,7 +44,12 @@ function RF.RewardIcon(summary)
   return (module and module.icon) or RF.CurrentModule().icon
 end
 
-function RF.CurrentModule() return ns.Modules.Get(RF.moduleId) or ns.Modules.list[1] end
+-- v1.1: a module whose area was switched off in Settings falls back to the first shown one
+function RF.CurrentModule()
+  local m = ns.Modules.Get(RF.moduleId)
+  if m and ns.Modules.IsShown(m) then return m end
+  return ns.Modules.Visible()[1] or ns.Modules.list[1]
+end
 
 function RF.OpenModule(moduleId)
   RF.moduleId = moduleId
@@ -146,6 +151,17 @@ H.RegisterView("forge", function(parent)
   link:Hide()
   v.link = link
 
+  -- v1.1: modules with more than five skills (World Tongues courses) get pages
+  v.page = 1
+  local pageText = W.Text(v, 11, "", W.GRAY, "CENTER")
+  local prevPage = W.Button(v, "<", 30, 22, function() v.page = v.page - 1; v:OnShowView() end, 12)
+  prevPage:SetPoint("BOTTOMLEFT", 0, 0)
+  pageText:SetPoint("LEFT", prevPage, "RIGHT", 4, 0)
+  pageText:SetWidth(90)
+  local nextPage = W.Button(v, ">", 30, 22, function() v.page = v.page + 1; v:OnShowView() end, 12)
+  nextPage:SetPoint("LEFT", pageText, "RIGHT", 4, 0)
+  v.prevPage, v.nextPage, v.pageText = prevPage, nextPage, pageText
+
   local rows = {}
   for i = 1, 5 do
     local row = C.CreateFrame("Frame", nil, v, nil, true)
@@ -229,9 +245,21 @@ H.RegisterView("forge", function(parent)
       exam:SetText(string.format(L.EXAM_LOCKED, done, need))
     end
     local nodes = ns.Modules.Nodes(module.id, bandId)
+    if self.pageModule ~= module.id then self.pageModule, self.page = module.id, 1 end
+    local pages = math.max(1, math.ceil(#nodes / #rows))
+    self.page = ns.Util.Clamp(self.page or 1, 1, pages)
+    local offset = (self.page - 1) * #rows
+    if pages > 1 then
+      pageText:SetText(string.format(L.PAGE_OF, self.page, pages))
+      pageText:Show(); prevPage:Show(); nextPage:Show()
+      if self.page > 1 then prevPage:Enable() else prevPage:Disable() end
+      if self.page < pages then nextPage:Enable() else nextPage:Disable() end
+    else
+      pageText:Hide(); prevPage:Hide(); nextPage:Hide()
+    end
     local nowT = ns.Util.Now()
     for i, row in ipairs(rows) do
-      local nodeId = nodes[i]
+      local nodeId = nodes[offset + i]
       if nodeId then
         row:Show()
         local _, node = ns.Modules.FindNode(nodeId)
@@ -452,6 +480,14 @@ H.RegisterView("problem", function(parent)
       W.SetFontSize(qtext, size)
     end
     qtext:SetText(p.text)
+    -- v1.1 World Tongues: kana, kanji and accents need the bundled course font
+    local pm = ns.Modules.Get(p.moduleId or "")
+    local courseFont = pm and pm.courseFont and C.CourseFont() or nil
+    v.courseFont = courseFont
+    if courseFont then W.SetFontFace(qtext, courseFont, select(2, qtext:GetFont()) or 19) end
+    for _, fs in ipairs({ feedback, banner }) do
+      W.SetFontFace(fs, courseFont or C.FONT, fs == banner and 14 or 13)
+    end
 
     -- answers
     for _, b in ipairs(choiceButtons) do b:Hide() end
@@ -471,7 +507,7 @@ H.RegisterView("problem", function(parent)
           b.value = val
           b:SetText(tostring(val))
           -- v0.5: sentence answers (Lore Chronicles) wrap onto two lines
-          W.SetButtonFontSize(b, longest > 44 and 10 or (longest > 30 and 11 or 13))
+          W.SetButtonFontFace(b, courseFont, longest > 44 and 10 or (longest > 30 and 11 or 13))
           W.ButtonWrap(b, longest > 30 and 250 or nil)
           b:Enable()
           b:Show()
@@ -487,7 +523,7 @@ H.RegisterView("problem", function(parent)
           b:SetPoint("LEFT", answerArea, "CENTER", -total / 2 + (i - 1) * (w + gap), 0)
           b.value = val
           b:SetText(type(val) == "number" and ns.Util.Commas(val) or tostring(val))
-          W.SetButtonFontSize(b, 22)
+          W.SetButtonFontFace(b, courseFont, 22)
           W.ButtonWrap(b, nil)
           b:Enable()
           b:Show()

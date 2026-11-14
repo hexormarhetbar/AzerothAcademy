@@ -337,6 +337,7 @@ LC.QUIZ_GEN = quizGen
 
 LC.QUIZ_MODULE = ns.Modules.Register({
   id = "lorequiz",
+  area = "lore", -- v1.1: hidden or shown together with Lore Chronicles
   nameKey = "MOD_LOREQUIZ", descKey = "MOD_LOREQUIZ_DESC",
   icon = "Interface\\Icons\\INV_Misc_Book_11",
   startSound = "scroll",

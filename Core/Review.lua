@@ -36,7 +36,8 @@ local function eachTier(fn)
   if not P.char or type(P.char.modules) ~= "table" then return end
   for _, module in ipairs(ns.Modules.list) do
     local st = P.char.modules[module.id]
-    if st and type(st.nodes) == "table" then
+    -- v1.1: areas switched off in Settings have no reviews due (records are kept)
+    if st and type(st.nodes) == "table" and ns.Modules.IsShown(module) then
       for _, bandId in ipairs(ns.Modules.BandIds(module)) do
         for _, nodeId in ipairs(ns.Modules.Nodes(module.id, bandId)) do
           local nr = st.nodes[nodeId]

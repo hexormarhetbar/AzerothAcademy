@@ -63,7 +63,52 @@ C.LOCALE_FONTS = {
   zhTW = "Fonts\\bLEI00D.ttf",        -- Traditional Chinese
   ruRU = "Fonts\\FRIZQT___CYR.TTF",   -- Cyrillic
 }
-C.FONT = STANDARD_TEXT_FONT or C.LOCALE_FONTS[(GetLocale and GetLocale()) or ""] or "Fonts\\FRIZQT__.TTF"
+C.CLIENT_LOCALE = (GetLocale and GetLocale()) or "enUS"
+C.CLIENT_FONT = STANDARD_TEXT_FONT or C.LOCALE_FONTS[C.CLIENT_LOCALE] or "Fonts\\FRIZQT__.TTF"
+C.FONT = C.CLIENT_FONT
+
+-- v1.1 language picker + World Tongues: fonts for text the client's own font may not cover.
+-- An enUS / EU client ships Latin (and usually Cyrillic) fonts only; the Korean and Chinese
+-- fonts (2002.TTF, ARKai_T.ttf, bLEI00D.ttf ...) come with those clients. So when the picked
+-- language uses a different script than the client, the Academy uses its OWN bundled fonts:
+-- subsets of Noto Sans JP / KR / SC / TC (SIL Open Font License 1.1, see Media/Fonts/README.md),
+-- cut by tools/build_fonts.py to exactly the characters the addon shows. Every bundled font
+-- also carries the kana, kanji and accented letters of the World Tongues courses.
+C.FONT_DIR = "Interface\\AddOns\\" .. (ns.ADDON or "AzerothAcademy") .. "\\Media\\Fonts\\"
+C.BUNDLED_FONTS = {
+  latin = C.FONT_DIR .. "AzAcadSans-JP.ttf",    -- Latin + Cyrillic + Japanese
+  cyrillic = C.FONT_DIR .. "AzAcadSans-JP.ttf",
+  ko = C.FONT_DIR .. "AzAcadSans-KR.ttf",       -- Hangul + kana/kanji
+  sc = C.FONT_DIR .. "AzAcadSans-SC.ttf",       -- Simplified Chinese + kana/kanji
+  tc = C.FONT_DIR .. "AzAcadSans-TC.ttf",       -- Traditional Chinese + kana/kanji
+}
+C.SCRIPT_OF = {
+  enUS = "latin", enGB = "latin", deDE = "latin", frFR = "latin", esES = "latin", esMX = "latin",
+  ptBR = "latin", itIT = "latin", ruRU = "cyrillic", koKR = "ko", zhCN = "sc", zhTW = "tc",
+}
+
+-- Font for UI text in `code`: the client's own font when it is the same script, otherwise ours.
+function C.FontFor(code)
+  local want = C.SCRIPT_OF[code or ""] or "latin"
+  if want == (C.SCRIPT_OF[C.CLIENT_LOCALE] or "latin") then return C.CLIENT_FONT end
+  return C.BUNDLED_FONTS[want]
+end
+
+-- True when text in `code` is drawn with a bundled font (shown in the picker).
+function C.UsesBundledFont(code) return C.FontFor(code) ~= C.CLIENT_FONT end
+
+-- World Tongues lesson text mixes the UI language with kana / kanji / accents, so it always
+-- uses the bundled font that ALSO covers the current UI language.
+function C.CourseFont()
+  local s = C.SCRIPT_OF[ns.locale or C.CLIENT_LOCALE] or "latin"
+  return C.BUNDLED_FONTS[s] or C.BUNDLED_FONTS.latin
+end
+
+-- Switch the default font for frames built from now on (W.Text / W.Button use C.FONT).
+function C.SetUIFont(code)
+  C.FONT = C.FontFor(code)
+  return C.FONT
+end
 
 -- CreateFrame that optionally adds BackdropTemplate and never hard-fails on a template.
 function C.CreateFrame(frameType, name, parent, template, wantBackdrop)

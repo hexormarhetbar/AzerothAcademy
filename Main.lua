@@ -14,6 +14,8 @@ local function init()
   if type(AzerothAcademyDB) ~= "table" then AzerothAcademyDB = {} end
   if type(AzerothAcademyCharDB) ~= "table" then AzerothAcademyCharDB = {} end
   ns.Progress.Bind(AzerothAcademyDB, AzerothAcademyCharDB)
+  -- v1.1: Bind switched ns.L to the saved language; frames built from now on use its font
+  C.SetUIFont(ns.locale)
   ns.ready = true
 end
 
@@ -56,6 +58,9 @@ local SUBJECT_SLASH = {
   gnomish = "gnomish", engineering = "gnomish", code = "gnomish", coding = "gnomish",
   library = "librarian", librarian = "librarian", research = "librarian",
   mechanics = "mechanics", tactics = "mechanics", training = "mechanics",
+  -- v1.1 World Tongues
+  tongues = "tongues_ja", languages = "tongues_ja", japanese = "tongues_ja", nihongo = "tongues_ja",
+  spanish = "tongues_es", espanol = "tongues_es",
 }
 local BOOK_SLASH = {
   journal = "naturalist", bestiary = "naturalist",
@@ -84,8 +89,14 @@ SlashCmdList.AZEROTHACADEMY = function(msg)
     if ns.Hub.IsShown() and ns.Progress.GetBand() then ns.Lessons.StartReview() end
   elseif msg == "trial" or msg == "exam" then
     ns.Hub.Open("trial", msg == "exam" and "exam" or "placement")
-  elseif msg == "parent" then
+  elseif msg == "parent" or msg == "settings" or msg == "options" then
     ns.Hub.Open("parent")
+  elseif msg == "lang" or msg == "language" or msg:match("^lang%s") or msg:match("^language%s") then
+    -- v1.1 language picker: /aa lang (status) | /aa lang <code|auto>
+    local arg = msg:match("^%S+%s+(.+)$")
+    if arg then ns.LanguageUI.Slash(arg) else ns.LanguageUI.Slash(""); ns.Hub.Open("language", "home") end
+  elseif SUBJECT_SLASH[msg] and not ns.Modules.IsShown(SUBJECT_SLASH[msg]) then
+    C.Print(L.AREA_HIDDEN) -- v1.1: switched off in Settings > Areas to Show
   elseif SUBJECT_SLASH[msg] then
     ns.Lessons.moduleId = SUBJECT_SLASH[msg]
     ns.Hub.Open("forge")

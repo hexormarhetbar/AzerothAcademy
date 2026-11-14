@@ -238,3 +238,11 @@ watcher:SetScript("OnEvent", function()
   -- UnitOnTaxi can lag the control event by a moment: look again shortly
   C.After(0.5, FU.Check)
 end)
+
+-- v1.1: language switch -> the flight toast is rebuilt in the new language on its next use
+if ns.Hub and ns.Hub.OnRebuild then
+  ns.Hub.OnRebuild(function()
+    if FU.toast then FU.toast:Hide() end
+    FU.toast = nil
+  end)
+end

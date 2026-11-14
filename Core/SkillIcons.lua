@@ -57,6 +57,13 @@ local I = {
   mech_cooldowns = "Spell_Nature_TimeStop", mech_classes = "INV_Helmet_08",
   mech_dps = "Ability_DualWield", mech_mana = "INV_Potion_76", mech_rotation = "Ability_Rogue_SliceDice",
   mech_bossmech = "INV_Misc_Head_Dragon_Black", mech_races = "Spell_Nature_Polymorph",
+  -- World Tongues (v1.1)
+  wt_ja_hira = "INV_Misc_Book_01", wt_ja_hira_marks = "INV_Scroll_03", wt_ja_kata = "INV_Letter_01",
+  wt_ja_greetings = "INV_Misc_Gift_01", wt_ja_numbers = "INV_Misc_Bag_07", wt_ja_kata_marks = "INV_Letter_02",
+  wt_ja_colors = "INV_Potion_51", wt_ja_family = "Spell_Holy_PrayerOfHealing", wt_ja_food = "INV_Misc_Food_15",
+  wt_ja_sentences = "INV_Letter_03", wt_ja_kanji_numbers = "INV_Misc_Rune_04", wt_ja_kanji_time = "Spell_Nature_Sleep",
+  wt_ja_kanji_nature = "INV_Misc_Flower_02", wt_ja_kanji_people = "INV_Misc_Head_Gnome_01", wt_ja_phrases = "INV_Misc_Coin_06",
+  wt_es_greetings = "INV_Letter_04", wt_es_colors = "INV_Potion_52", wt_es_phrases = "INV_Letter_05",
 }
 ns.SkillIcons = {}
 for id, name in pairs(I) do ns.SkillIcons[id] = P .. name end

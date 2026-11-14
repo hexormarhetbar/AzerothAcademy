@@ -9,7 +9,7 @@ H.RegisterView("parent", function(parent)
   v.unlocked = false
   v.hideGuide = true -- full height: the Parent Panel needs the room
 
-  local title = W.Text(v, 17, L.PARENT_PANEL, W.GOLD, "LEFT")
+  local title = W.Text(v, 17, L.SETTINGS_BTN, W.GOLD, "LEFT")
   title:SetPoint("TOPLEFT", 4, -2)
   local back = W.Button(v, L.BACK, 90, 22, function()
     v.unlocked = false
@@ -66,9 +66,17 @@ H.RegisterView("parent", function(parent)
     local nextIdx = 1
     for i, m in ipairs(list) do if m.id == cur then nextIdx = i % #list + 1 end end
     v.moduleId = list[nextIdx].id
+    v.statPage = 1
     v:Refresh()
   end, 10)
   subjectBtn:SetPoint("TOPRIGHT", -8, -5)
+  -- v1.1: subjects with more than five skills page through them
+  local statPageBtn = W.Button(statsBox, "", 70, 18, function()
+    v.statPage = (v.statPage or 1) + 1
+    v:Refresh()
+  end, 10)
+  statPageBtn:SetPoint("RIGHT", subjectBtn, "LEFT", -6, 0)
+  statPageBtn:Hide()
   local statsHead = W.Text(statsBox, 10, "", W.GRAY, "LEFT")
   statsHead:SetPoint("TOPLEFT", statsTitle, "BOTTOMLEFT", 0, -4)
   statsHead:SetText(L.PARENT_STATS_HEADER)
@@ -247,6 +255,16 @@ H.RegisterView("parent", function(parent)
   end)
   rerunBtn:SetPoint("TOP", resetBtn, "BOTTOM", 0, -6)
   lockBtn:SetPoint("TOP", rerunBtn, "BOTTOM", 0, -6)
+  local languageBtn = W.Button(dash, L.LANG_TITLE, 150, 24, function() H.ShowView("language", "parent") end, 11)
+  languageBtn:SetPoint("TOP", lockBtn, "BOTTOM", 0, -6)
+  local areasBtn = W.Button(dash, L.AREAS_TITLE, 150, 24, function() H.ShowView("areas") end, 11)
+  areasBtn:SetPoint("TOP", languageBtn, "BOTTOM", 0, -6)
+  local removePin = W.Button(dash, L.PIN_REMOVE, 150, 24, function()
+    if not v.unlocked then return end
+    ns.Progress.ClearPin()
+    v:Refresh()
+  end, 11)
+  removePin:SetPoint("TOP", areasBtn, "BOTTOM", 0, -6)
 
   ----------------------------------------------------------------------
   -- v0.10 Duel of Wits settings overlay (behind the PIN like everything here)
@@ -394,6 +412,7 @@ H.RegisterView("parent", function(parent)
   function v:Refresh()
     local P = ns.Progress
     export:Hide()
+    if not P.HasPin() and not self.changingPin then self.unlocked = true end
     if not self.unlocked or self.changingPin then
       dash:Hide()
       gate:Show()
@@ -408,6 +427,8 @@ H.RegisterView("parent", function(parent)
     end
     gate:Hide()
     dash:Show()
+    changePin:SetText(P.HasPin() and L.PARENT_CHANGE_PIN or L.PIN_ENABLE)
+    if P.HasPin() then removePin:Show(); lockBtn:Enable() else removePin:Hide(); lockBtn:Disable() end
     local bandId = P.GetBand() or "initiate"
     local band = P.BAND_BY_ID[bandId]
     local module = ns.Modules.Get(self:SubjectId())
@@ -416,8 +437,17 @@ H.RegisterView("parent", function(parent)
     statsTitle:SetText(string.format(L.PARENT_STATS, L[module.nameKey], bandText))
     subjectBtn:SetText(string.format(L.PARENT_SUBJECT, L[module.nameKey]))
     local nodes = ns.Modules.Nodes(module.id, bandId)
+    local pages = math.max(1, math.ceil(#nodes / #statRows))
+    if (self.statPage or 1) > pages then self.statPage = 1 end
+    local offset = ((self.statPage or 1) - 1) * #statRows
+    if pages > 1 then
+      statPageBtn:SetText(string.format(L.PAGE_OF, self.statPage or 1, pages))
+      statPageBtn:Show()
+    else
+      statPageBtn:Hide()
+    end
     for i, row in ipairs(statRows) do
-      local nodeId = nodes[i]
+      local nodeId = nodes[offset + i]
       if nodeId then
         local _, node = ns.Modules.FindNode(nodeId)
         local nr = P.GetNodeRec(nodeId)

@@ -25,4 +25,6 @@ read_globals = {
   "C_FriendList", "GetNumFriends", "GetFriendInfo", "GetChannelName", "JoinTemporaryChannel",
   "LeaveChannelByName", "ChatFrame_RemoveChannel", "ChatFrameUtil", "NUM_CHAT_WINDOWS", "_G",
   "IsShiftKeyDown",
+  -- v1.1 language picker
+  "ReloadUI",
 }

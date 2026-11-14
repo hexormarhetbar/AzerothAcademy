@@ -1507,7 +1507,9 @@ do
   ok(#Mods.BandIds(quiz) == 1 and #Mods.BandIds(lore) == 3, "band ids")
   local visibleQuiz = false
   for _, m in ipairs(Mods.Visible()) do if m.id == "lorequiz" then visibleQuiz = true end end
-  ok(not visibleQuiz and #Mods.Visible() == #Mods.list - 1, "quiz has no hub tile")
+  local hiddenCount = 0
+  for _, m in ipairs(Mods.list) do if m.hidden then hiddenCount = hiddenCount + 1 end end
+  ok(not visibleQuiz and #Mods.Visible() == #Mods.list - hiddenCount, "quiz has no hub tile")
   ok(lore.linkModule == "lorequiz" and quiz.linkModule == "lore", "lore and quiz link to each other")
   ok(tns.Mastery.Recommend("adept", "lorequiz") ~= nil, "quick drill works for the quiz")
   for _, nodeId in ipairs(Mods.Nodes("lorequiz", "everyone")) do
@@ -2824,7 +2826,7 @@ do
   local oldA = { version = 6, settings = { dailyCap = 50 }, journal = { entries = {} } }
   local oldC = { version = 6, profile = { band = "adept" }, shards = 7 }
   MP7.Progress.Bind(oldA, oldC)
-  ok(oldA.version == 7 and oldC.version == 7 and MP7.Progress.upgradedFrom == 6, "v0.9 -> v0.10 schema bump")
+  ok(oldA.version == MP7.Progress.SCHEMA and oldC.version == MP7.Progress.SCHEMA and MP7.Progress.upgradedFrom == 6, "v0.9 -> current schema bump")
   ok(oldA.settings.duel.enabled == true and oldA.settings.duel.random == false and oldA.settings.duel.friendsOnly == false, "duel defaults: on, random off, friends-only off")
   ok(oldA.settings.duel.aliasPicked and oldA.settings.duel.alias[1] >= 1 and oldA.settings.duel.alias[1] <= 12, "a random duel alias is picked once")
   ok(type(oldA.duel.blocked) == "table" and oldC.duel.played == 0 and oldA.settings.dailyCap == 50 and oldC.shards == 7, "migration keeps everything else")
@@ -3362,7 +3364,9 @@ do
   local function fmts(s) local t = {} for m in s:gmatch("%%[-+ #0]*%d*%.?%d*[dsfixX%%]") do t[#t + 1] = m end return table.concat(t, " ") end
   local function count(s, pat) local n = 0 for _ in s:gmatch(pat) do n = n + 1 end return n end
   local gated = newNS("deDE")
-  ok(gated.LocaleData.deDE and gated.LocaleData.frFR == nil and gated.LocaleData.zhCN == nil, "only the client's locale is loaded")
+  -- v1.1: every translation is loaded so the in-game picker can switch live
+  ok(gated.LocaleData.deDE and gated.LocaleData.frFR and gated.LocaleData.zhCN, "every locale is loaded for the live language picker")
+  ok(gated.L.BACK == gated.LocaleData.deDE.BACK, "auto follows the client's locale")
   local translatable = 0
   for k, v in pairs(EN) do
     if v:gsub("%%[-+ #0]*%d*%.?%d*[dsfixX%%]", ""):gsub("|c%x%x%x%x%x%x%x%x", ""):find("%a%a") then translatable = translatable + 1 end
@@ -3404,7 +3408,7 @@ do
   end
   local compat = slurp("Adapters/Compat.lua")
   for _, loc in ipairs({ "koKR", "zhCN", "zhTW", "ruRU" }) do
-    ok(compat:find(loc .. " = \"Fonts\\\\", 1, true) and compat:find("C.FONT = STANDARD_TEXT_FONT", 1, true), loc .. " uses the client's default font")
+    ok(compat:find(loc .. " = \"Fonts\\\\", 1, true) and compat:find("C.CLIENT_FONT = STANDARD_TEXT_FONT", 1, true), loc .. " uses the client's default font on its own client")
   end
   local readme = slurp("README.md")
   ok(readme:find("native-speaker review", 1, true) and readme:find("voice stays English", 1, true), "README: machine translations need review, voice stays English")

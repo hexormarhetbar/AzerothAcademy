@@ -2,7 +2,7 @@
 ## Title: Azeroth Academy
 ## Notes: Free, kid-friendly learning quests inside Azeroth. Rune Forger (math), Scribe's Scrolls (spelling, words, typing), Lore Chronicles (reading & writing) and Azeroth Naturalist (science), plus Duel of Wits learning races with friends. /aa to open.
 ## Author: Hex
-## Version: 1.0.0-rc
+## Version: 1.1.0
 ## IconTexture: Interface\Icons\INV_Misc_Book_09
 ## SavedVariables: AzerothAcademyDB
 ## SavedVariablesPerCharacter: AzerothAcademyCharDB
@@ -45,6 +45,8 @@ Core\LibrarianData.lua
 Core\LibrarianGen.lua
 Core\MechanicsData.lua
 Core\MechanicsGen.lua
+Core\TonguesData.lua
+Core\TonguesGen.lua
 Core\Guide.lua
 Core\SoundEvents.lua
 Core\Art.lua
@@ -72,6 +74,8 @@ UI\Journal.lua
 UI\Duel.lua
 UI\Trial.lua
 UI\ParentPanel.lua
+UI\Language.lua
+UI\Areas.lua
 UI\Minimap.lua
 UI\Flight.lua
 

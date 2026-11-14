@@ -25,7 +25,7 @@ for _, b in ipairs(P.BANDS) do P.BAND_BY_ID[b.id] = b end
 
 P.LIMITS = { minutesPerMasteryMax = 60, dailyCapMax = 240 }
 
-P.SCHEMA = 7
+P.SCHEMA = 8
 
 local ACCOUNT_DEFAULTS = {
   version = P.SCHEMA,
@@ -46,6 +46,13 @@ local ACCOUNT_DEFAULTS = {
     -- default; random challengers are OFF until a parent turns them on.
     -- alias = { adjective index, creature index } into ns.Duel.ALIAS_A / ALIAS_B.
     duel = { enabled = true, friendsOnly = false, random = false, alias = { 1, 1 } },
+    -- v1.1 (schema 8): in-game language picker. "auto" = follow the game client (GetLocale()).
+    language = "auto",
+    -- v1.1 (schema 8): area selection. areas[areaId] = false hides that area from the hub,
+    -- Quick Drill, reviews, flights and duels. Missing / true = shown (default: everything on).
+    areas = {},
+    -- v1.1: World Tongues. course = last course picked in the course list (ns.Tongues.COURSES).
+    tongues = { course = "ja" },
   },
   minutes = { day = "", earned = 0 },
   ui = {},
@@ -136,6 +143,19 @@ local function migrate(account, char)
     -- filled in by ApplyDefaults; nothing existing moves.
     char.version = 7
   end
+  if (char.version or 1) < 8 then
+    -- v1.1 (schema 8): language picker, area selection and World Tongues settings are filled
+    -- in by ApplyDefaults. The Parent Panel became Settings and its PIN is now optional: an
+    -- existing PIN is KEPT untouched (account.pin), so a family that set one stays locked.
+    char.version = 8
+  end
+  local acs = type(account.settings) == "table" and account.settings
+  if acs then
+    if type(acs.language) ~= "string" or (acs.language ~= "auto" and not (ns.LANGUAGE_BY_CODE and ns.LANGUAGE_BY_CODE[acs.language])) then
+      acs.language = "auto"
+    end
+    if type(acs.areas) ~= "table" then acs.areas = {} end
+  end
   local dset = type(account.settings) == "table" and account.settings.duel
   if type(dset) == "table" and not dset.aliasPicked and type(dset.alias) == "table" then
     -- every account (new or upgraded) starts with its own random duel alias
@@ -150,6 +170,8 @@ function P.Bind(account, char)
   P.account = Util.ApplyDefaults(account or {}, ACCOUNT_DEFAULTS)
   P.char = Util.ApplyDefaults(char or {}, CHAR_DEFAULTS)
   migrate(P.account, P.char)
+  -- v1.1: the saved language choice takes effect as soon as the saved variables are bound
+  if ns.SetLocale then ns.SetLocale(P.account.settings.language) end
   -- v0.9: make sure every Naturalist tier this character mastered has its journal page
   -- (covers a new account file, a reset journal, or a tier mastered on an old version).
   if ns.Journal then ns.Journal.Sync() end
@@ -274,6 +296,12 @@ function P.SetPin(pin)
   return true
 end
 
+-- v1.1: the PIN is optional (off by default). Removing it needs the panel to be unlocked.
+function P.ClearPin()
+  P.account.pin = nil
+  return true
+end
+
 function P.CheckPin(pin)
   if not P.HasPin() then return true end
   if type(pin) ~= "string" then return false end
@@ -315,4 +343,47 @@ end
 
 function P.GetTierRec(nodeId, tier)
   return P.GetNodeRec(nodeId).tiers[tier]
+end
+
+-- v1.1 Language picker ----------------------------------------------------------
+-- choice: "auto" or a code from ns.LANGUAGE_CHOICES. Returns the code now in use, or nil.
+function P.GetLanguage()
+  local st = P.account and P.account.settings
+  return (st and st.language) or "auto"
+end
+
+function P.SetLanguage(choice)
+  if type(choice) ~= "string" then return nil end
+  if choice ~= "auto" then
+    local c = ns.LANGUAGE_BY_CODE and ns.LANGUAGE_BY_CODE[choice]
+    if not c then return nil end
+    choice = c.code -- esMX -> esES
+  end
+  P.account.settings.language = choice
+  return ns.SetLocale(choice)
+end
+
+-- v1.1 Area selection -------------------------------------------------------------
+-- An area is a hub subject plus its companion modules (Lore Quiz belongs to Lore Chronicles,
+-- every World Tongues course part belongs to "tongues"). See Modules.AREAS.
+function P.IsAreaShown(areaId)
+  local st = P.account and P.account.settings
+  local areas = st and st.areas
+  return not (type(areas) == "table" and areas[areaId] == false)
+end
+
+-- Hiding the last visible area is refused (the Academy would be empty).
+function P.SetAreaShown(areaId, shown)
+  local areas = P.account.settings.areas
+  if not shown then
+    local left = 0
+    for _, a in ipairs(ns.Modules.Areas()) do
+      if a.id ~= areaId and P.IsAreaShown(a.id) then left = left + 1 end
+    end
+    if left == 0 then return false end
+    areas[areaId] = false
+  else
+    areas[areaId] = nil
+  end
+  return true
 end

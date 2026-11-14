@@ -5,11 +5,12 @@
 local ADDON, ns = ...
 
 ns.ADDON = ADDON or "AzerothAcademy"
-ns.VERSION = "1.0.0-rc"
+ns.VERSION = "1.1.0"
 ns.Env = ns.Env or {}
 
--- v1.0 locales: each Locales/<code>.lua only fills its table when that locale is in use
--- (keeps memory low). Tests set ns.Env.allLocales to load every translation.
+-- v1.0 locales: each Locales/<code>.lua fills its table through ns.WantLocale.
+-- v1.1: every translation is loaded (about 1 MB of strings) so the in-game language picker
+-- can switch live; ns.Env.onlyClientLocale restores the old one-table behaviour (tests).
 ns.LOCALES = { "deDE", "frFR", "esES", "esMX", "ptBR", "itIT", "ruRU", "koKR", "zhCN", "zhTW" }
 function ns.ClientLocale()
   local l = ns.Env.locale or (GetLocale and GetLocale()) or "enUS"
@@ -17,7 +18,8 @@ function ns.ClientLocale()
   return l
 end
 function ns.WantLocale(code)
-  return ns.Env.allLocales and true or ns.ClientLocale() == code
+  if ns.Env.onlyClientLocale and not ns.Env.allLocales then return ns.ClientLocale() == code end
+  return true
 end
 
 local Util = {}

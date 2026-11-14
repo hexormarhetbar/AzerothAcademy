@@ -82,6 +82,10 @@ function H.Create()
     H.openedAt = C.Now()
   end)
   f:SetScript("OnHide", function()
+    if H.rebuilding then -- v1.1: language switch, the window is rebuilt right away
+      for _, v in pairs(views) do if v.OnHubHidden then pcall(v.OnHubHidden, v) end end
+      return
+    end
     C.Sound("close")
     -- v0.8: Fizzwick says goodbye when the kid closes the window after a real visit (not for combat)
     if ns.GuideUI and not H.hiddenByCombat and C.Now() - (H.openedAt or 0) >= H.BYE_AFTER then ns.GuideUI.Goodbye() end
@@ -144,6 +148,34 @@ function H.RefreshCurrent()
 end
 
 function H.IsShown() return H.frame and H.frame:IsShown() end
+
+-- v1.1 language picker: every screen is built once with the labels of the language in use.
+-- After a switch the window, its views, Fizzwick's strip and the small toasts are thrown away
+-- (hidden; WoW cannot delete frames) and rebuilt with the new strings and font. Lesson and
+-- duel state live in the core, so nothing in progress is lost.
+H.rebuildHooks = {}
+function H.OnRebuild(fn) H.rebuildHooks[#H.rebuildHooks + 1] = fn end
+
+function H.RebuildForLocale(reopenView, ...)
+  local settingsUnlocked = views.parent and views.parent.unlocked
+  C.SetUIFont(ns.locale)
+  local wasShown = H.IsShown()
+  if H.frame then
+    H.rebuilding = true
+    H.frame:Hide()
+    H.rebuilding = false
+    H.frame = nil
+  end
+  for k in pairs(views) do views[k] = nil end
+  H.current = nil
+  if H.resumeToast then H.resumeToast:Hide(); H.resumeToast = nil end
+  for _, fn in ipairs(H.rebuildHooks) do pcall(fn) end
+  H.Create()
+  if settingsUnlocked then H.GetView("parent").unlocked = true end
+  if wasShown or reopenView then H.Open(reopenView, ...) end
+  return true
+end
+H.Rebuild = H.RebuildForLocale -- v1.1 area selection rebuilds the hub tiles the same way
 
 function H.Open(viewName, ...)
   if C.InCombat() then
@@ -281,7 +313,8 @@ H.RegisterView("home", function(parent)
   review:SetPoint("BOTTOM", 0, 82)
   local drill = W.Button(stats, L.QUICK_DRILL, 170, 26, function() ns.Lessons.QuickDrill() end)
   drill:SetPoint("BOTTOM", 0, 48)
-  local parentBtn = W.Button(stats, L.PARENT_PANEL, 170, 26, function() H.ShowView("parent") end)
+  -- v1.1: the Parent Panel is now Settings (the PIN is optional)
+  local parentBtn = W.Button(stats, L.SETTINGS_BTN, 170, 26, function() H.ShowView("parent") end)
   parentBtn:SetPoint("BOTTOM", 0, 14)
   -- v0.10: Duel of Wits (multiplayer learning races)
   local duelBtn = W.Button(stats, "|cffffd100" .. L.DUEL_BTN .. "|r", 170, 26, function()
@@ -289,6 +322,23 @@ H.RegisterView("home", function(parent)
   end)
   duelBtn:SetPoint("BOTTOM", 0, 116)
   v.duelBtn = duelBtn
+
+  -- v1.1: language picker (small globe in the stats corner)
+  local langBtn = C.CreateFrame("Button", nil, stats)
+  langBtn:SetSize(24, 24)
+  langBtn:SetPoint("TOPRIGHT", -6, -6)
+  langBtn:SetNormalTexture("Interface\\Icons\\INV_Misc_Map_01")
+  if langBtn.SetHighlightTexture then pcall(langBtn.SetHighlightTexture, langBtn, "Interface\\Buttons\\ButtonHilight-Square", "ADD") end
+  langBtn:SetScript("OnClick", function() C.Sound("click"); H.ShowView("language") end)
+  langBtn:SetScript("OnEnter", function(self)
+    if not GameTooltip then return end
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText(L.LANG_TITLE)
+    GameTooltip:AddLine(L.LANG_TIP, 1, 1, 1, true)
+    GameTooltip:Show()
+  end)
+  langBtn:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+  v.langBtn = langBtn
 
   -- Right side: module grid
   local header = W.Header(v, L.CHOOSE_LESSON, 15, 330)

@@ -57,7 +57,8 @@ local function L() return ns.L or {} end
 function D.Subjects()
   local out = {}
   for _, s in ipairs(D.SUBJECTS) do
-    if ns.Modules and ns.Modules.Get(s.module) then out[#out + 1] = s end
+    -- v1.1: subjects whose area is switched off in Settings are not offered
+    if ns.Modules and ns.Modules.Get(s.module) and ns.Modules.IsShown(s.module) then out[#out + 1] = s end
   end
   return out
 end

@@ -424,3 +424,14 @@ function GU.HideOverlays()
   if GU.celebration then GU.celebration.after = nil; GU.celebration:Hide() end
   if GU.cameo then GU.cameo:Hide() end
 end
+
+-- v1.1: language switch / area change -> Fizzwick's strip, the cameo card and the celebration
+-- banner are rebuilt with the new strings and font (ns.Hub.RebuildForLocale).
+if ns.Hub and ns.Hub.OnRebuild then
+  ns.Hub.OnRebuild(function()
+    if GU.strip then GU.strip:Hide() end
+    if GU.cameo then GU.cameo:Hide() end
+    if GU.celebration then GU.celebration:Hide() end
+    GU.strip, GU.cameo, GU.celebration = nil, nil, nil
+  end)
+end
