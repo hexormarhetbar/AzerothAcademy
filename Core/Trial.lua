@@ -21,15 +21,21 @@ T.EXAM_UNLOCK_RATIO = 0.8  -- 4 of 5 skills with Rune (or Glyph) mastered
 T.HISTORY_MAX = 10
 
 local function modState(moduleId) return ns.Progress.GetModuleState(moduleId) end
+-- v1.1: World Tongues courses are open to every age, but still have placement and exams.
+local function bandFor(moduleId, band)
+  local m = ns.Modules.Get(moduleId)
+  return (m and m.unbanded) and "everyone" or band
+end
 
 ------------------------------------------------------------------------
 -- Placement state helpers
 ------------------------------------------------------------------------
 function T.GetPlacement(moduleId, band)
-  return modState(moduleId).placement[band]
+  return modState(moduleId).placement[bandFor(moduleId, band)]
 end
 
 local function ensurePlacement(moduleId, band)
+  band = bandFor(moduleId, band)
   local st = modState(moduleId)
   st.placement[band] = st.placement[band] or {}
   return st.placement[band]
@@ -102,7 +108,7 @@ function T.ExamStatus(moduleId, band)
   return (#nodes > 0 and done >= needed) or forced and true or false, done, needed
 end
 
-function T.GetExam(moduleId, band) return modState(moduleId).exams[band] end
+function T.GetExam(moduleId, band) return modState(moduleId).exams[bandFor(moduleId, band)] end
 
 -- Placement (first ever, the true "before") vs latest and best exam ("after").
 function T.Comparison(moduleId, band)
@@ -117,6 +123,7 @@ end
 -- Trial object
 ------------------------------------------------------------------------
 function T.New(moduleId, band, kind, now)
+  band = bandFor(moduleId, band)
   local module = ns.Modules.Get(moduleId)
   if not module or module.noTrials or not module.bands[band] then return nil end
   local skills = {}

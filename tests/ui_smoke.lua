@@ -414,7 +414,7 @@ if ns.Progress.GetBand() == nil then fail("band not saved") end
 -- Coming-soon module + active module
 -- v0.13: every subject is built, so no tile says "Coming soon" any more
 for _, t in ipairs(ns.Hub.Tiles()) do if not t.active then fail("no coming-soon tiles left: " .. tostring(t.key)) end end
-if #ns.Hub.Tiles() ~= 7 then fail("hub shows 7 subject tiles, got " .. #ns.Hub.Tiles()) end
+if #ns.Hub.Tiles() ~= 8 then fail("hub shows 8 subject tiles, got " .. #ns.Hub.Tiles()) end
 click("^Rune Forger$")
 -- v0.2: first visit offers The Forgemaster's Trial
 if ns.Hub.current ~= "trial" then fail("first forge visit should offer the placement trial, got " .. tostring(ns.Hub.current)) end
@@ -799,6 +799,11 @@ if not (hub:IsShown() and ns.RuneForger.session) then fail("/aa drill did not st
 slash("parent")
 if ns.Hub.current ~= "parent" then fail("parent view not shown") end
 local pv = ns.Hub.GetView("parent")
+-- v1.1: the PIN is optional. With none set, Settings opens straight away; a parent can add one.
+if not pv.unlocked then fail("Settings should open without a PIN by default") end
+if ns.Progress.HasPin() then fail("no PIN by default") end
+if not visibleText("^Settings$") then fail("Settings title shown") end
+click("^Set a parent PIN$")
 local pins = {}
 for _, w in ipairs(allFrames) do
   if w.__kind == "EditBox" and w:IsVisible() and w.__parent and w.__parent.__parent == pv then pins[#pins + 1] = w end

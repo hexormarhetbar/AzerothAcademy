@@ -249,6 +249,47 @@ function Q.sentence(lesson, level)
 end
 
 ------------------------------------------------------------------------
+-- Duel of Wits co-op phrasebook (v1.1). One shared run of dialogue lines from the seed;
+-- racer `role` 0 answers lines 1, 3, 5 ... and role 1 answers lines 2, 4, 6 ... Each question
+-- shows the line before it (the partner's) and asks for the trader's next line, with preset
+-- choices only. Returns `length` problems, or nil.
+function WT.PhrasebookSet(rng, length, role)
+  local lines = {}
+  local start = rng(1, #D.dialogues)
+  local di = start
+  while #lines < length * 2 + 1 do
+    for _, ln in ipairs(D.dialogues[di]) do lines[#lines + 1] = ln end
+    di = di % #D.dialogues + 1
+  end
+  local out = {}
+  role = (tonumber(role) or 0) % 2
+  local i = role + 1
+  while #out < length do
+    local ln, prev = lines[i], lines[i - 1]
+    local wrong, seen = {}, { [ln[1]] = true }
+    local pool = {}
+    for _, o in ipairs(lines) do pool[#pool + 1] = o end
+    for k = #pool, 2, -1 do local j = rng(1, k); pool[k], pool[j] = pool[j], pool[k] end
+    for _, o in ipairs(pool) do
+      if #wrong < 3 and not seen[o[1]] then seen[o[1]] = true; wrong[#wrong + 1] = o[1] end
+    end
+    local choicesList = { ln[1], wrong[1], wrong[2], wrong[3] }
+    for k = #choicesList, 2, -1 do local j = rng(1, k); choicesList[k], choicesList[j] = choicesList[j], choicesList[k] end
+    local speaker = (i % 2 == 1) and "A" or "B"
+    local text
+    if prev then
+      text = fmt("WT_PB_REPLY", L()["WT_PB_" .. (speaker == "A" and "B" or "A")], prev[1], prev[3], L()["WT_PB_" .. speaker], ln[3])
+    else
+      text = fmt("WT_PB_OPEN", L()["WT_PB_" .. speaker], ln[3])
+    end
+    out[#out + 1] = { text = text, answer = ln[1], choices = choicesList, mode = "choice", choiceOnly = true,
+      nodeId = "wt_ja_phrases", moduleId = "tongues_ja", level = 1, tier = 1, explain = explain(ln), coop = true, line = i }
+    i = i + 2
+  end
+  return out
+end
+
+------------------------------------------------------------------------
 -- One generator per lesson
 ------------------------------------------------------------------------
 function WT.Generate(lesson, level)
@@ -295,7 +336,6 @@ for ci, cid in ipairs(D.order) do
     WT.LESSON_BY_NODE[nodeId] = lesson
     list[#list + 1] = nodeId
   end
-  local nextId = D.order[ci % #D.order + 1]
   local id = "tongues_" .. cid
   WT.MODULES[#WT.MODULES + 1] = ns.Modules.Register({
     id = id, area = "tongues", areaKey = "MOD_TONGUES",
@@ -305,11 +345,13 @@ for ci, cid in ipairs(D.order) do
     startSound = "page",
     loreKey = "WT_LORE_" .. cid:upper(), titleKey = "WT_TITLE_" .. cid:upper(),
     bands = { everyone = { id = "everyone", nodes = list } }, nodes = nodes,
-    unbanded = true, noTrials = true, hidden = ci > 1,
+    unbanded = true, hidden = ci > 1,
+    placementKey = "WT_TRIAL", placementLoreKey = "WT_TRIAL_LORE",
+    examKey = "WT_EXAM", examLoreKey = "WT_EXAM_LORE",
     courseFont = true, -- UI: draw question, buttons and feedback with ns.Compat.CourseFont()
     check = WT.Check, inputMode = WT.InputMode,
     textAnswers = true, pageSize = 5,
-    linkModule = "tongues_" .. nextId, linkKey = "WT_SWITCH_" .. nextId:upper(),
+    game = { key = "WT_STUDY", tileKey = "WT_STUDY_SHORT", tipKey = "WT_STUDY_TIP", view = "tonguesstudy" },
     course = cid,
   })
 end

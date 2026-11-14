@@ -49,6 +49,7 @@ function DU.Init()
     me = DU.MyName(), realm = C.Realm(), now = C.Now, addonVersion = ns.VERSION,
     send = function(msg, channel, target) C.SendAddonMessage(DP.PREFIX, msg, channel, target) end,
     band = function() return P().GetBand() end,
+    course = function() return P().account.settings.tongues.course end,
     display = function() return C.ShortName() end,
     settings = dset,
     context = function() return { combat = C.InCombat(), instance = C.InInstance() } end,
@@ -580,6 +581,9 @@ H.RegisterView("duel", function(parent)
       self.typeBox:SetFocus()
     else
       self.qtext:SetText(p.text)
+      local pm = ns.Modules.Get(p.moduleId or "")
+      local font = pm and pm.courseFont and C.CourseFont() or C.FONT
+      W.SetFontFace(self.qtext, font, 16)
       local longest = 0
       for _, val in ipairs(p.choices) do longest = math.max(longest, #tostring(val)) end
       for i, val in ipairs(p.choices) do
@@ -587,7 +591,7 @@ H.RegisterView("duel", function(parent)
         if b then
           b.value = val
           b:SetText(type(val) == "number" and ns.Util.Commas(val) or tostring(val))
-          W.SetButtonFontSize(b, longest > 44 and 10 or (longest > 30 and 11 or 13))
+          W.SetButtonFontFace(b, font, longest > 44 and 10 or (longest > 30 and 11 or 13))
           W.ButtonWrap(b, longest > 30 and 250 or nil)
           b:Show()
         end
@@ -701,6 +705,7 @@ H.RegisterView("duel", function(parent)
     local top = d.ranked[1]
     local tie = d.ranked[2] and d.ranked[2].rank == 1
     self.winner:SetText(tie and L.DUEL_TIE or string.format(L.DUEL_WINNER, top and top.display or "?"))
+    if d.team then self.winner:SetText(string.format(L.DUEL_PB_TEAM, d.team.correct, d.team.total)) end
     for i, fs in ipairs(self.rows) do
       local r = d.ranked[i]
       local bb = self.blockBtns[i]

@@ -178,6 +178,34 @@ D.courses.ja = {
     { id="phrases", band="magister", title="A trader's phrasebook", kind="words", entries=phrases },
   },
 }
+-- Duel of Wits co-op "phrasebook": two traders take turns. Lines alternate A, B, A, B ...
+D.dialogues = {
+  { -- meeting at the Gadgetzan gate
+    {"こんにちは","konnichiwa","hello"},
+    {"こんにちは。はじめまして","konnichiwa. hajimemashite","hello. Nice to meet you"},
+    {"わたしはフィズウィックです","watashi wa Fizuwikku desu","I am Fizzwick"},
+    {"どうぞよろしく","douzo yoroshiku","pleased to meet you"},
+    {"これはなんですか","kore wa nan desu ka","what is this?"},
+    {"それはりんごです","sore wa ringo desu","that is an apple"},
+  },
+  { -- at a market stall
+    {"いらっしゃいませ","irasshaimase","welcome (to the shop)"},
+    {"これはいくらですか","kore wa ikura desu ka","how much is this?"},
+    {"ひゃくえんです","hyaku en desu","it is 100 yen"},
+    {"これをください","kore o kudasai","this one, please"},
+    {"ありがとうございます","arigatou gozaimasu","thank you very much"},
+    {"さようなら","sayounara","goodbye"},
+  },
+  { -- dinner at the inn
+    {"いただきます","itadakimasu","(said before eating)"},
+    {"おいしいです","oishii desu","it is delicious"},
+    {"おちゃはどうですか","ocha wa dou desu ka","how about some tea?"},
+    {"はい、お願いします","hai, onegaishimasu","yes, please"},
+    {"ごちそうさまでした","gochisousama deshita","thank you for the meal"},
+    {"どういたしまして","dou itashimashite","you are welcome"},
+  },
+}
+
 D.courses.es = { id="es", name="Spanish / Español", title="WORLD_ES", lessons={
  { id="greetings", band="initiate", title="Spanish greetings", kind="words", entries={
   {"hola","hola","hello"},{"adiós","adios","goodbye"},{"gracias","gracias","thank you"},

@@ -9,7 +9,13 @@ local DP = {}
 ns.DuelProto = DP
 
 DP.PREFIX = "AzAcadDuel"   -- addon message prefix (max 16 characters)
-DP.VERSION = 1             -- bump on any incompatible change; peers compare it
+DP.VERSION = 2             -- bump on any incompatible change; peers compare it
+-- v1.1 (protocol 2): language duels. The message format did not change, so a duel on a v0.10
+-- subject is still sent as protocol 1 and v1.0 players can join it. A duel on a language
+-- subject (World Tongues) is sent as protocol 2: a v1.0 client answers VER ("different addon
+-- version") instead of joining a race it cannot build.
+DP.MIN_VERSION = 1         -- oldest protocol we still read
+DP.sendVersion = nil       -- set per message by the engine (nil = DP.VERSION)
 DP.MAX = 250               -- WoW allows 255 bytes per addon message; keep slack
 DP.CHUNK_DATA = 200        -- payload bytes per chunk (header fits in the rest)
 DP.CHUNK_TIMEOUT = 20      -- seconds before a half-received message is dropped
@@ -26,7 +32,7 @@ end
 DP.Escape, DP.Unescape = esc, unesc
 
 function DP.Encode(mtype, ...)
-  local parts = { "AA" .. DP.VERSION, mtype }
+  local parts = { "AA" .. (DP.sendVersion or DP.VERSION), mtype }
   for i = 1, select("#", ...) do parts[#parts + 1] = esc((select(i, ...))) end
   return table.concat(parts, SEP)
 end

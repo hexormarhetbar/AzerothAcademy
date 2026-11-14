@@ -47,6 +47,15 @@ D.SUBJECTS = {
   { id = "gnomish",    module = "gnomish" },
   { id = "librarian",  module = "librarian" },
   { id = "mechanics",  module = "mechanics" },
+  -- v1.1 language duels (protocol 2). Levels follow each racer's own age band.
+  -- kana: shared Japanese kana speed race. words: each racer races on their OWN course
+  -- (Settings > World Tongues course). phrasebook: co-op, the racers take turns filling the
+  -- lines of one shared dialogue (preset choices only, never free text).
+  { id = "kana", module = "tongues_ja", proto = 2, lang = true, nameKey = "DUEL_SUBJ_KANA",
+    nodes = { "wt_ja_hira", "wt_ja_kata", "wt_ja_hira_marks", "wt_ja_kata_marks" } },
+  { id = "words", module = "tongues_ja", proto = 2, lang = true, ownCourse = true, nameKey = "DUEL_SUBJ_WORDS",
+    lessons = { "greetings", "colors", "family", "food", "numbers", "phrases" } },
+  { id = "phrasebook", module = "tongues_ja", proto = 2, lang = true, coop = true, nameKey = "DUEL_SUBJ_PHRASEBOOK" },
 }
 D.SUBJECT_BY_ID = {}
 for _, s in ipairs(D.SUBJECTS) do D.SUBJECT_BY_ID[s.id] = s end
@@ -97,8 +106,28 @@ function D.Short(name) return (tostring(name):match("^([^%-]+)")) or tostring(na
 ------------------------------------------------------------------------
 -- Question sets (deterministic)
 ------------------------------------------------------------------------
-function D.SubjectNodes(sub, band)
+-- v1.1: protocol a subject needs (language duels are protocol 2)
+function D.ProtoFor(subjectId)
+  local s = D.SUBJECT_BY_ID[subjectId or ""]
+  return (s and s.proto) or 1
+end
+
+function D.SubjectNodes(sub, band, course)
   local Mods = ns.Modules
+  if sub.nodes then
+    local out = {}
+    for _, id in ipairs(sub.nodes) do if Mods.FindNode(id) then out[#out + 1] = id end end
+    return out
+  end
+  if sub.lessons then
+    course = (course and Mods.Get("tongues_" .. course)) and course or "ja"
+    local out = {}
+    for _, l in ipairs(sub.lessons) do
+      local id = "wt_" .. course .. "_" .. l
+      if Mods.FindNode(id) then out[#out + 1] = id end
+    end
+    return out
+  end
   if sub.typing then
     local n = D.TYPE_NODE[band]
     return n and { n } or {}
@@ -122,17 +151,27 @@ local function bagTables()
   return out
 end
 
--- Same (subject, band, seed, length) => same questions on every client.
-function D.BuildSet(subjectId, band, seed, length)
+-- v1.1 language duels: generator level from the racer's own band
+D.LANG_LEVELS = { initiate = { 1, 2 }, adept = { 2, 3 }, magister = { 3, 5 } }
+
+-- Same (subject, band, seed, length[, course, role]) => same questions on every client.
+-- course: the racer's own World Tongues course ("words"); role: 0/1 line owner (phrasebook).
+function D.BuildSet(subjectId, band, seed, length, course, role)
   local sub = D.SUBJECT_BY_ID[subjectId]
   local Mods = ns.Modules
   local mod = sub and Mods.Get(sub.module)
   if not mod then return nil end
-  if mod.unbanded then band = "everyone" end
-  local nodes = D.SubjectNodes(sub, band)
   length = tonumber(length) or 5
+  if sub.coop then
+    if length < 1 or length > 20 or not ns.Tongues then return nil end
+    return ns.Tongues.PhrasebookSet(Util.NewRNG(Util.HashNum(tostring(seed) .. ":phrasebook")), length, role or 0)
+  end
+  local ownBand = band
+  if mod.unbanded then band = "everyone" end
+  local nodes = D.SubjectNodes(sub, band, course)
   if #nodes == 0 or length < 1 or length > 20 then return nil end
-  local rng = Util.NewRNG(Util.HashNum(table.concat({ tostring(seed), subjectId, tostring(band), tostring(length) }, ":")))
+  local lv = sub.lang and (D.LANG_LEVELS[ownBand or ""] or D.LANG_LEVELS.adept)
+  local rng = Util.NewRNG(Util.HashNum(table.concat({ tostring(seed), subjectId, tostring(lv and ownBand or band), tostring(length) }, ":")))
   -- the Lore/Naturalist "no repeats" bags are history; a duel must not depend on it
   local saved = {}
   for _, t in ipairs(bagTables()) do saved[t] = t.bags; t.bags = {} end
@@ -143,7 +182,7 @@ function D.BuildSet(subjectId, band, seed, length)
       for _ = 1, 12 do
         if #pool == 0 then pool = Util.Shuffle({ unpack(nodes) }) end
         local nodeId = table.remove(pool)
-        local level = sub.typing and rng(1, 2) or rng(1, 3)
+        local level = sub.typing and rng(1, 2) or (lv and rng(lv[1], lv[2])) or rng(1, 3)
         local cand = Mods.Generate(nodeId, level, 1, "practice")
         if D.Usable(cand, sub) then p = cand; break end
       end
@@ -251,7 +290,12 @@ function Engine:Context() return (self.o.context and self.o.context()) or {} end
 function Engine:Flush() self.q:Flush(self:Now(), self.o.send) end
 
 function Engine:Send(channel, target, key, mtype, ...)
-  self.q:Push(DP.Encode(mtype, ...), channel, target, key)
+  -- v1.1: protocol 1 unless the duel / queue is on a language subject
+  local subject = (self.duel and self.duel.subject) or (self.queue and self.queue.subject)
+  DP.sendVersion = D.ProtoFor(subject)
+  local msg = DP.Encode(mtype, ...)
+  DP.sendVersion = nil
+  self.q:Push(msg, channel, target, key)
   self:Flush()
 end
 
@@ -426,6 +470,9 @@ function Engine:Start()
   end
   d.order = keep
   if #keep < D.MIN_RACERS then return false, "few" end
+  -- v1.1 phrasebook is a two-trader dialogue (one role each)
+  local sub = D.SUBJECT_BY_ID[d.subject]
+  if sub and sub.coop and #keep ~= 2 then return false, "two" end
   local now = self:Now()
   d.seed = Util.Random(1, 2147483000)
   -- typing races: one passage for everyone, at the youngest racer's level
@@ -459,7 +506,11 @@ function Engine:BeginCountdown(now, secs)
   local band = (self.o.band and self.o.band()) or d.typeBand
   local sub = D.SUBJECT_BY_ID[d.subject]
   d.myBand = (sub and sub.typing) and d.typeBand or band
-  d.set = D.BuildSet(d.subject, d.myBand, d.seed, d.length)
+  -- v1.1: own World Tongues course ("words") and phrasebook role (turn order in the dialogue)
+  local role = 0
+  for i, k in ipairs(d.order or {}) do if k == self.meKey then role = (i - 1) % 2 end end
+  d.role = role
+  d.set = D.BuildSet(d.subject, d.myBand, d.seed, d.length, self.o.course and self.o.course() or nil, role)
   d.me = { index = 1, answered = 0, correct = 0, penalty = 0, wpmSum = 0, accSum = 0, log = {}, lastSent = -99 }
   if not d.set then
     self:Leave("noset")
@@ -639,6 +690,22 @@ function Engine:HostCheckEnd(force)
   end
 end
 
+-- v1.1 co-op phrasebook: one team result (sum of every valid racer), no winner.
+function D.TeamUp(d)
+  local sub = D.SUBJECT_BY_ID[d.subject or ""]
+  if not (sub and sub.coop and d.ranked) then return nil end
+  local c, a = 0, 0
+  for _, r in ipairs(d.ranked) do
+    if r.valid ~= false then c, a = c + (r.correct or 0), a + (r.answered or 0) end
+  end
+  d.team = { correct = c, answered = a, total = d.length * #d.ranked }
+  if d.reward then
+    if d.reward.win then d.reward.shards = math.max(0, d.reward.shards - D.REWARD.win) end
+    d.reward.win = false
+  end
+  return d.team
+end
+
 -- Local end of the duel (host, or racer on RES / host lost).
 function Engine:Finish(partial)
   local d = self.duel
@@ -648,6 +715,7 @@ function Engine:Finish(partial)
   self:UpdateMeRow()
   d.ranked = D.Rank(self:Rows())
   d.reward = D.ComputeReward(d.ranked, self.meKey, d.length)
+  D.TeamUp(d)
   if not d.rewarded then
     d.rewarded = true
     D.ApplyReward(d)
@@ -834,7 +902,9 @@ function Engine:Receive(raw, channel, sender)
   local ver, mtype, f = DP.Decode(raw)
   if not ver then self.stats.dropped = self.stats.dropped + 1; return end
   self.stats.received = self.stats.received + 1
-  if ver ~= DP.VERSION and mtype ~= "VER" then
+  -- v1.1: read protocol 1 and 2; a language subject arriving as protocol 1 is not ours
+  local tooOld = (mtype == "INV" or mtype == "QBC") and ver < D.ProtoFor(f[2])
+  if (ver < (DP.MIN_VERSION or DP.VERSION) or ver > DP.VERSION or tooOld) and mtype ~= "VER" then
     if mtype == "INV" then
       -- handshake failure: tell the host which version we speak, tell our kid why
       self:Send("WHISPER", sender, nil, "VER", f[1] or "", DP.VERSION)
@@ -868,6 +938,11 @@ end
 H.INV = function(self, f, sender, channel, now)
   local id, subject, length, scope = f[1], f[2], num(f[3], 5), f[4]
   if not id or not D.SUBJECT_BY_ID[subject] then return end
+  local sub = D.SUBJECT_BY_ID[subject]
+  if not ns.Modules.IsShown(sub.module) then
+    self:Send("WHISPER", sender, nil, "DEC", id, "parent")
+    return
+  end
   if (length ~= 5 and length ~= 10) then return end
   if self.duel and self.duel.id == id then return end
   if self.invite and self.invite.id == id then return end
@@ -1101,6 +1176,7 @@ H.RES = function(self, f, sender)
     -- we had finished locally (partial) and the real results arrived late: re-rank only
     d.ranked = D.Rank(self:Rows())
     d.partial = false
+    D.TeamUp(d)
     self:Notify("result", d)
     return
   end
@@ -1114,6 +1190,7 @@ function Engine:FinishFromHost()
   d.state = "done"
   d.ranked = D.Rank(self:Rows())
   d.reward = D.ComputeReward(d.ranked, self.meKey, d.length)
+  D.TeamUp(d)
   if not d.rewarded then d.rewarded = true; D.ApplyReward(d) end
   self:Notify("result", d)
 end

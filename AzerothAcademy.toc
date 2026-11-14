@@ -76,6 +76,7 @@ UI\Trial.lua
 UI\ParentPanel.lua
 UI\Language.lua
 UI\Areas.lua
+UI\Tongues.lua
 UI\Minimap.lua
 UI\Flight.lua
 
