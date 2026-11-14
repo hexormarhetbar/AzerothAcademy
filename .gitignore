@@ -1,0 +1,26 @@
+# Build output: release zips are made with tools/pack.py, outside the repo
+*.zip
+dist/
+build/
+
+# Raw generator renders and audio work files (only mastered .ogg files are committed)
+*.mp3
+*.wav
+*.flac
+*.aiff
+sfx_raw/
+vo_raw/
+renders/
+raw/
+
+# Editor / OS / Python junk
+*.bak
+*.tmp
+*.swp
+*~
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc
+.vscode/
+.idea/

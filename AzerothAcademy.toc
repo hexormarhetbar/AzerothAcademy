@@ -1,0 +1,58 @@
+## Interface: 16001, 120105, 120107, 11509
+## Title: Azeroth Academy
+## Notes: Free, kid-friendly learning quests inside Azeroth. Rune Forger (math), Scribe's Scrolls (spelling, words, typing) and Lore Chronicles (reading & writing). /aa to open.
+## Author: Hex
+## Version: 0.8.0
+## IconTexture: Interface\Icons\INV_Misc_Book_09
+## SavedVariables: AzerothAcademyDB
+## SavedVariablesPerCharacter: AzerothAcademyCharDB
+## X-Primary-Target: WoW Forever (1.60.1 / interface 16001)
+
+# --- Shared core: pure Lua 5.1, no UI calls ---
+Core\Namespace.lua
+Locales\enUS.lua
+Locales\Others.lua
+Locales\Init.lua
+Core\Progress.lua
+Core\SkillIcons.lua
+Core\Modules.lua
+Core\Review.lua
+Core\Mastery.lua
+Core\Session.lua
+Core\Trial.lua
+Core\Report.lua
+
+# --- Subject modules (each registers itself with Core\Modules.lua) ---
+Core\MathGen.lua
+Core\ScribeData.lua
+Core\ScribeGen.lua
+Core\LoreData.lua
+Core\LoreGen.lua
+Core\Guide.lua
+Core\SoundEvents.lua
+Core\Art.lua
+Core\BoardingData.lua
+Core\Boarding.lua
+Core\MinimapMath.lua
+Core\Flight.lua
+Core\Voice.lua
+
+# --- Optional custom art (written by tools/convert_art.sh; empty by default) ---
+Media\Art\Manifest.lua
+
+# --- Client adapter: the only place that touches flavor-specific API ---
+Adapters\Compat.lua
+
+# --- UI (uses Compat for anything version-sensitive) ---
+UI\Widgets.lua
+UI\Hub.lua
+UI\Guide.lua
+UI\Lessons.lua
+UI\Boarding.lua
+UI\Trial.lua
+UI\ParentPanel.lua
+UI\Minimap.lua
+UI\Flight.lua
+
+# --- Bootstrap: events, slash commands, saved variables, taxi nudge ---
+Main.lua
