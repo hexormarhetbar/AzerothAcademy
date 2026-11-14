@@ -30,6 +30,26 @@ Each pose comes in two sizes:
 | `sprocket_squawk` | Sprocket delivering a hint |
 | `fizzwick_strip` | Optional talk animation (2, 4 or 8 frames of 256x256). Not shipped |
 
+### Host portraits (slots since v1.0, art pending Hex)
+
+Three more characters have portrait slots. The files use the same two sizes as Fizzwick's poses.
+**No host art ships yet.** Until it does, each slot shows a placeholder loaded from the game at
+runtime: the host's subject icon in a small gold frame. The Tidehunter keeps its in-game murloc
+model.
+
+| File | Size | Who | Where it shows |
+|------|------|-----|----------------|
+| `zixi_portrait.tga` | 512x512 | Chronicler Zixi Inkspark (Lore Chronicles, Lore Quiz) | Full-figure slot (reserved) |
+| `zixi_portrait_head.tga` | 256x256 | Zixi | Top right of the Lore Chronicles and Lore Quiz skill lists (shown at 34x34) |
+| `quill_portrait.tga` | 512x512 | Archivist Quill (Scribe's Scrolls) | Full-figure slot (reserved) |
+| `quill_portrait_head.tga` | 256x256 | Quill | Top right of the Scribe's Scrolls skill list (34x34) |
+| `tidehunter_portrait.tga` | 512x512 | The Murloc Tidehunter | Full-figure slot (reserved) |
+| `tidehunter_portrait_head.tga` | 256x256 | The Tidehunter | The boss slot in Murloc Boarding Party (76x76) |
+
+Source PNGs go in `Media/Art/src/` as `zixi_portrait.png`, `quill_portrait.png` and
+`tidehunter_portrait.png`. `tools/convert_art.sh` turns them into both sizes and adds them to the
+manifest, exactly like the poses. Fallback: head crop, then full figure, then the placeholder.
+
 Format: 32-bit uncompressed TGA with alpha, bottom-left origin, power-of-two sizes.
 
 **Fallbacks.** If a pose is missing, Fizzwick shows `greet`. A small slot tries the head
@@ -55,4 +75,6 @@ large portraits and the optional talk strip.
    uses a `<name>_head.png` you supply, or else a simple top-center crop.
 4. Restart the game. New files are only picked up after a full restart, not `/reload`.
 
-The PNGs in `src/` aren't needed in game.
+The PNGs in `src/` aren't needed in game. Since v1.0 the script only converts the PNGs you
+supply and keeps every TGA already in `Media/Art`, so you can add just the three host portraits
+without the Fizzwick sources. To remove a file, delete its TGA and run the script again.

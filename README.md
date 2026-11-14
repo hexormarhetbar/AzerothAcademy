@@ -1,4 +1,4 @@
-# Azeroth Academy v0.14.0 (test build)
+# Azeroth Academy v0.15.0 (test build)
 
 A free learning addon for kids ages 5 to 13. Lessons are framed as Academy quests in Azeroth.
 This build has the **Main Hub** and two subjects: **Rune Forger** (math) and, new in v0.3,
@@ -46,6 +46,10 @@ card to the **Tactics Deck**. Every hub tile is now a real subject.
 New in v0.14: **Lore Chronicles grows**: 34 new passages, stories and prompts across all three bands, including
 **cameo stories** about Thrall and King Magni Bronzebeard (the same number for each, in every band), which Fizzwick
 introduces when they come up.
+New in v0.15: **portrait slots for the hosts**: Chronicler Zixi, Archivist Quill and the Murloc Tidehunter each get a
+portrait slot (512x512 full figure + 256x256 head crop) that `tools/convert_art.sh` fills. **The real art is pending
+Hex**; until then each slot shows a tasteful placeholder loaded from the game (the host's subject icon in a gold frame;
+the Tidehunter keeps its in-game murloc model).
 Progress stays on your computer. The only thing the addon ever sends is Duel of Wits race data, inside the game, to
 the players you race (see "Duel of Wits").
 
@@ -443,6 +447,10 @@ Flight paths are perfect lesson time, so Fizzwick speaks up a couple of seconds 
   - A file the client refuses is skipped automatically.
   - The large portraits stay hidden if there's no art, so the screens look like v0.5.
 - **Reduced motion.** The poses are static. Reduced motion skips the fade-in on large portraits (and an optional talk strip, which isn't shipped).
+- **Host portraits (v0.15, art pending Hex).** `zixi_portrait`, `quill_portrait` and `tidehunter_portrait`
+  (each a 512x512 TGA plus a 256x256 `_head` crop) are optional slots. Zixi shows at the top right of the Lore
+  Chronicles and Lore Quiz skill lists, Quill on the Scribe's Scrolls skill list (hover for the name), and the
+  Tidehunter in the Boarding Party boss slot. Until the files exist, a placeholder from the game is shown.
 - **Replacing art.** `tools/convert_art.sh` (ImageMagick) and `tools/make_heads.py` (Python, Pillow and numpy) rebuild the TGAs, the head crops, and `Media/Art/Manifest.lua` from PNGs. See `Media/Art/README.md`.
 - **Per-skill icons.** All 50 skills (Rune Forger, Scribe's Scrolls, Lore Chronicles, Lore Quiz) now show their own in-game icon on the skill list.
   - Each icon is loaded from the client by path (`Core/SkillIcons.lua`).
@@ -800,6 +808,18 @@ Azeroth Academy v0.10.0** (two accounts, or a friend), both with an age band pic
 173. [ ] Adept **Main Idea / Feelings / Cause / Words in Context** and Magister **Reading Between the Lines / Purpose & Summary / Chronicler's Answer**: the new passages (Thrall learning to be a shaman, Magni teaching a young smith, Thrall listening in Orgrimmar, Magni's brothers' letters, Gadgetzan water prices, the Explorers' League and the Reliquary, the Crossroads) read well and fit the age.
 174. [ ] Tell me if any story feels like it favors one faction.
 
+**Host portrait slots (v0.15)**
+
+175. [ ] Open **Lore Chronicles**: a small gold-framed book icon sits at the top right under Back; hovering shows "Chronicler Zixi Inkspark". The lore text wraps before it.
+176. [ ] Open **Scribe's Scrolls**: the same slot shows a scroll and "Archivist Quill". The Rune Forger and the other subjects show no slot.
+177. [ ] Murloc Boarding Party: the Tidehunter still appears as the in-game murloc model.
+178. [ ] (When you have the art) Put `zixi_portrait.png`, `quill_portrait.png`, `tidehunter_portrait.png` in `Media/Art/src/`, run `sh tools/convert_art.sh`, restart the game: the placeholders become your portraits, and Fizzwick's poses are untouched.
+
+## Known limits (v0.15)
+
+- **Host portrait art is pending Hex.** The slots, sizes, script and fallbacks are ready; only placeholders ship.
+- The 512x512 full-figure host slots are reserved for later screens; today only the head crops are shown.
+
 ## Known limits (v0.14)
 
 - **Cameo stories have no new voice clips**; Fizzwick's introduction is text (the recorded lines stay as they were).
@@ -969,6 +989,7 @@ AzerothAcademy/
   Media/Sounds/             24 original sound effects (.ogg) + README.md (events, fallbacks, prompts, voice notes)
   Media/Sounds/VO/          23 original Fizzwick voice clips (.ogg)
   Media/Art/                Hex's posed art: 13 x 512 full figures + 13 x 256 head crops (TGA), Manifest.lua, README.md
+                            (v0.15: slots for zixi/quill/tidehunter _portrait + _portrait_head, art pending Hex)
   tools/convert_art.sh      PNG -> 512 TGA + 256 head crops (ImageMagick) + manifest writer
   tools/make_heads.py       face-centered 256 head-and-chest crops (Python, Pillow + numpy)
   tools/master_audio.py     master a generated clip: mono 44.1 kHz, trim, ~-16 LUFS, Ogg Vorbis q4 (ffmpeg + numpy)
@@ -1071,6 +1092,16 @@ originals and face-centered head crops, and wrote a 26-entry manifest.
 For v0.5, `tools/convert_art.sh` was run with ImageMagick 7.1.2 on test PNGs. It produced 512x512 RGBA TGAs, a 1024x256 (4-frame) and a 2048x256 (8-frame) strip, and a correct manifest. Removed files dropped out of the manifest, and a bad `STRIP_FRAMES` was rejected.
 
 ## Changelog
+
+**v0.15.0**
+- **Host portrait slots** for Chronicler Zixi, Archivist Quill and the Murloc Tidehunter: `Art.HOSTS`, `Art.HostFor`,
+  `Art.Host` (head crop -> full figure -> placeholder) and `GuideUI.ShowHost`. A 34x34 framed slot with a name tooltip
+  on the Lore Chronicles, Lore Quiz and Scribe's Scrolls skill lists; the Boarding Party boss slot uses it too.
+- **Placeholders:** in-game icons/models loaded at runtime (no art files ship). **Real art is pending Hex.**
+- **`tools/convert_art.sh`:** converts `<host>_portrait.png` too, and now keeps existing TGAs that have no source PNG
+  (so adding the host art never deletes Fizzwick's poses). `tools/make_heads.py` crops host portraits as well.
+- **Tests:** harness checks the slots, fallbacks, README sizes/paths and the script; the UI smoke checks the placeholder,
+  the tooltip name, subjects without a host, and the art replacing the placeholder once it is in the manifest.
 
 **v0.14.0**
 - **Lore Chronicles expansion:** 34 new entries: 6 sentences, 4 stories, 4 sequences, 4 Adept passages, 4 word-tile

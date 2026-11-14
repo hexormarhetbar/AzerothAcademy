@@ -115,6 +115,26 @@ H.RegisterView("forge", function(parent)
 
   local back = W.Button(v, L.BACK, 90, 22, function() H.ShowView("home") end)
   back:SetPoint("TOPRIGHT", 0, 0)
+  -- v1.0: the subject's host (Zixi, Quill) in a small framed slot under the buttons
+  local host = C.CreateFrame("Frame", nil, v, nil, true)
+  host:SetSize(36, 36)
+  host:SetPoint("TOPRIGHT", 0, -25)
+  C.ApplyBackdrop(host, 0.08, 0.05, 0.12, 0.9, 0.85, 0.65, 0.25)
+  if ns.GuideUI then
+    host.portrait = ns.GuideUI.Portrait(host, 34, 34, nil, true)
+    host.portrait:SetPoint("CENTER")
+    host.portrait.icon:SetSize(30, 30) -- the placeholder icon fills the little frame
+  end
+  host:EnableMouse(true)
+  host:SetScript("OnEnter", function(self)
+    if not (self.nameKey and GameTooltip) then return end
+    GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+    GameTooltip:SetText(L[self.nameKey])
+    GameTooltip:Show()
+  end)
+  host:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+  host:Hide()
+  v.host = host
   local exam = W.Button(v, L.EXAM_BUTTON, 150, 22, function() H.ShowView("trial", "exam") end)
   exam:SetPoint("RIGHT", back, "LEFT", -6, 0)
   -- v0.5: a module can link to a companion module (Lore Chronicles <-> Lore Quiz for Everyone)
@@ -171,6 +191,16 @@ H.RegisterView("forge", function(parent)
     local ages = module.unbanded and L.BAND_AGES_ALL or string.format(L.BAND_AGES, band.ages)
     title:SetText(string.format(L[module.titleKey or "FORGE_TITLE"], L[band.key] .. " (" .. ages .. ")"))
     lore:SetText(L[module.loreKey or "FORGE_LORE"])
+    local hostId = ns.Art.HostFor(module.id)
+    if hostId and host.portrait then
+      host.nameKey = ns.Art.HOSTS[hostId].nameKey
+      ns.GuideUI.ShowHost(host.portrait, hostId, true)
+      host:Show()
+      lore:SetWidth(500); help:SetWidth(500)
+    else
+      host:Hide()
+      lore:SetWidth(540); help:SetWidth(540)
+    end
     link.gameView = nil
     if module.linkModule and ns.Modules.Get(module.linkModule) then
       link.moduleId = module.linkModule

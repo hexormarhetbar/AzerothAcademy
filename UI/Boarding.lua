@@ -415,7 +415,7 @@ H.RegisterView("boarding", function(parent)
         if math.random() < 0.5 then C.Sound("gurgle") end
       elseif t == "boss" then
         C.Sound("gurgle")
-        if boss.portrait then boss.portrait:ShowCast(BU.TIDEHUNTER) end
+        if boss.portrait then ns.GuideUI.ShowHost(boss.portrait, "tidehunter", true) end
         say("BOARDBOSS")
         self:Captain("surprised")
       elseif t == "wave" then

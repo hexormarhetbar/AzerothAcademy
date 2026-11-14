@@ -1922,6 +1922,39 @@ step("v0.14 lore cameo stories", function()
   hub:Hide()
 end)
 
+step("v1.0 host portrait slots", function()
+  local RF, Art = ns.RuneForger, ns.Art
+  local fv = ns.Hub.GetView("forge")
+  local saved = ns.ArtManifest
+  for _, case in ipairs({ { "lore", "zixi" }, { "scribe", "quill" }, { "runeforger" } }) do
+    RF.OpenModule(case[1])
+    fv = ns.Hub.GetView("forge")
+    if ns.Hub.current ~= "forge" then fail(case[1] .. ": skill list should open, got " .. tostring(ns.Hub.current)) end
+    do
+      if case[2] then
+        local p = fv.host.portrait
+        if not fv.host:IsShown() then fail(case[1] .. ": host slot shows") end
+        if not (p.mode == "icon" and p.icon:GetTexture() == Art.HOSTS[case[2]].cast.icon) then
+          fail(case[1] .. ": placeholder icon until Hex's art arrives, got " .. tostring(p.mode))
+        end
+        if fv.host.nameKey ~= Art.HOSTS[case[2]].nameKey then fail(case[1] .. ": host tooltip name") end
+      elseif fv.host:IsShown() then
+        fail("subjects without a host hide the slot")
+      end
+    end
+  end
+  -- once art ships, the same slot shows it (head crop in the small slot)
+  ns.ArtManifest = setmetatable({ zixi_portrait = true, zixi_portrait_head = true }, { __index = saved })
+  RF.OpenModule("lore")
+  fv = ns.Hub.GetView("forge")
+  do
+    local p = fv.host.portrait
+    if not (p.mode == "art" and p.art:GetTexture() == Art.DIR .. "zixi_portrait_head") then fail("Zixi's art replaces the placeholder") end
+  end
+  ns.ArtManifest = saved
+  ns.Hub.ShowView("home")
+end)
+
 -- v0.10 Duel of Wits: host a party race, join one by invite, auto-declines,
 -- version mismatch, combat forfeit, parent settings, random queue, minimap entry
 step("v0.10 duel of wits", function()

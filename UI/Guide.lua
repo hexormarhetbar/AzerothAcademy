@@ -169,6 +169,21 @@ function GU.ShowPose(holder, pose, small, allowModel)
   return holder.mode
 end
 
+-- v1.0: a host portrait (Zixi, Quill, the Tidehunter). Art when shipped, else the placeholder.
+function GU.ShowHost(holder, id, small)
+  local host = holder and ns.Art.HOSTS[id or ""]
+  if not host then return nil end
+  for _ = 1, 3 do
+    local path, name = ns.Art.Host(id, manifest(), GU.missingArt, small)
+    if not path then break end
+    if holder.mode == "art" and holder.artName == name then return "art" end
+    if holder:ShowArt(path, name) then holder.host = id; return "art" end
+  end
+  holder.host = id
+  if (holder.mode ~= "model" and holder.mode ~= "icon") or holder.cast ~= host.cast then holder:ShowCast(host.cast) end
+  return holder.mode
+end
+
 -- A large full-figure Fizzwick (512 art) for reward / result / rank-up screens.
 -- Art only: without art files it stays hidden so the v0.5 layouts are unchanged.
 function GU.Hero(parent, size)
