@@ -131,13 +131,18 @@ function GU.Attach(hubFrame)
   s.text = W.Text(s, 13, "", W.WHITE, "LEFT")
   s.text:SetPoint("TOPLEFT", s.name, "BOTTOMLEFT", 0, -3)
   s.text:SetWidth(400)
-  -- Sprocket, the mechanical parrot that delivers hints
+  -- Sprocket, the mechanical parrot that delivers hints. v1.2.1: a soft warm backplate
+  -- (sprocket_glow.tga) sits behind him so the dark bronze reads on the dark strip.
+  s.parrotGlow = s:CreateTexture(nil, "BORDER")
+  s.parrotGlow:SetSize(GU.PARROT_GLOW_SIZE, GU.PARROT_GLOW_SIZE)
+  if s.parrotGlow:SetTexture(GU.PARROT_GLOW) == false then s.parrotGlow:Hide() end
   s.parrot = s:CreateTexture(nil, "ARTWORK")
   s.parrot:SetSize(30, 30)
   s.parrot:SetPoint("RIGHT", -12, 0)
+  s.parrotGlow:SetPoint("CENTER", s.parrot, "CENTER", 0, 0)
   s.parrot:SetTexture(ns.Guide.CAST.parrot.icon)
-  s.parrot:SetAlpha(0.45)
   GU.strip = s
+  GU.SetParrotAlpha(GU.PARROT_REST)
   GU.ApplyParrotArt("curious")
 
   GU.ApplyFace("GREET")
@@ -219,6 +224,18 @@ function GU.Pose(pose)
   return GU.ApplyFace(nil, pose)
 end
 
+-- Sprocket's brightness (v1.2.1: he was hard to see at 0.3-0.45 on the dark strip).
+GU.PARROT_GLOW = "Interface\\AddOns\\AzerothAcademy\\Media\\Art\\sprocket_glow"
+GU.PARROT_GLOW_SIZE = 66
+GU.PARROT_GLOW_ALPHA = 0.7 -- matches GLOW_ALPHA in tools/sprocket_pop.py (preview)
+GU.PARROT_REST, GU.PARROT_HINT, GU.PARROT_NOHINT, GU.PARROT_TALK = 0.85, 1, 0.6, 1
+function GU.SetParrotAlpha(a)
+  local s = GU.strip
+  if not s then return end
+  s.parrot:SetAlpha(a)
+  s.parrotGlow:SetAlpha(GU.PARROT_GLOW_ALPHA * a)
+end
+
 -- Sprocket: "curious" while a hint is available, "squawk" while delivering one.
 -- Without art he stays the gear icon.
 function GU.ApplyParrotArt(state)
@@ -247,7 +264,7 @@ function GU.ProblemShown(moduleId, hintAvailable)
   local s = GU.strip
   if not s then return end
   GU.ApplyParrotArt("curious")
-  s.parrot:SetAlpha(hintAvailable and 0.9 or 0.3)
+  GU.SetParrotAlpha(hintAvailable and GU.PARROT_HINT or GU.PARROT_NOHINT)
   local token = {}
   GU.idleToken = token
   local pose = ns.Art.IdlePose(moduleId)
@@ -292,7 +309,7 @@ function GU.Say(event, ...)
   s.name:SetTextColor(W.GOLD[1], W.GOLD[2], W.GOLD[3])
   s.text:SetText(text)
   if s.parrotState == "squawk" then GU.ApplyParrotArt("curious") end
-  s.parrot:SetAlpha(0.45)
+  GU.SetParrotAlpha(GU.PARROT_REST)
   GU.talkToken = nil
   GU.idleToken = nil
   if not GU.Talk(event) then GU.ApplyFace(event) end
@@ -309,7 +326,7 @@ function GU.Parrot(hint)
   s.name:SetTextColor(W.ARCANE[1], W.ARCANE[2], W.ARCANE[3])
   s.text:SetText(text)
   GU.ApplyParrotArt("squawk")
-  s.parrot:SetAlpha(1)
+  GU.SetParrotAlpha(GU.PARROT_TALK)
   GU.Pose("teaching")
   if not W.ReducedMotion() then W.Sparks(s.parrot:GetParent(), 5, W.ARCANE) end
   C.Sound("hint")

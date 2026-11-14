@@ -73,6 +73,8 @@ for name in $NAMES; do
 done
 if [ "$HEADS_PY" = 1 ]; then
   python3 tools/make_heads.py "$SRC" "$OUT"
+  # v1.2.1: brighten Sprocket's head crops and add a rim light so he reads on the dark strip
+  python3 tools/sprocket_pop.py "$OUT" --force
 fi
 if [ -f "$SRC/fizzwick_strip.png" ]; then
   W=$((FRAMES * 256))

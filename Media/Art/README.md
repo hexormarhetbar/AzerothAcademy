@@ -85,3 +85,13 @@ large portraits and the optional talk strip.
 The PNGs in `src/` aren't needed in game. Since v1.0 the script only converts the PNGs you
 supply and keeps every TGA already in `Media/Art`, so you can add just the host portraits
 without the Fizzwick sources. To remove a file, delete its TGA and run the script again.
+
+## Sprocket on the dark strip (v1.2.1)
+
+Sprocket is dark bronze and the Guide strip is dark brown, so `tools/sprocket_pop.py` lifts the shadows of
+`sprocket_curious_head.tga` and `sprocket_squawk_head.tga`, adds a little contrast and saturation and a thin warm rim
+light along his outline (his design is unchanged), and writes `sprocket_glow.tga` (128x128, soft warm disc) that the
+strip draws behind him. Processed files carry the TGA id `AA-pop1`, so the tool skips them unless `--force`;
+`tools/convert_art.sh` runs it with `--force` after making fresh head crops. `--preview out.png` writes a before/after
+picture on the strip's background color. `sprocket_glow.tga` is not posed art, so it is not in `Manifest.lua`.
+
