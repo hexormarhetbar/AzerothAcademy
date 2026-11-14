@@ -269,6 +269,46 @@ H.COMING_SOON = {
   { id = "gnomish",    key = "MOD_GNOMISH",    icon = "Interface\\Icons\\INV_Misc_Gear_01" },
 }
 
+-- Hub tile text box (v1.2.1): from 6 px below the top to just above the 18 px buttons
+-- (which sit 6 px from the bottom of the 78 px tile).
+H.TILE_TEXT_X, H.TILE_TEXT_TOP, H.TILE_TEXT_W, H.TILE_TEXT_GAP = 42, 6, 112, 2
+H.TILE_TEXT_H = 78 - H.TILE_TEXT_TOP - 24 - 2
+H.TILE_FONTS = { { 12, 10 }, { 11, 9 } } -- name / subtitle sizes, tried in order
+local LINE_H = { [12] = 14, [11] = 13, [10] = 12, [9] = 11 }
+H.TILE_LINE_H = LINE_H
+
+-- Height of a name + subtitle pair at the given sizes (estimated; pure, also used by tests).
+function H.TileTextHeight(nameText, descText, nameSize, descSize)
+  local U = ns.Util
+  local nl = U.TextLines(nameText, nameSize, H.TILE_TEXT_W)
+  local dl = U.TextLines(descText, descSize, H.TILE_TEXT_W)
+  return nl * LINE_H[nameSize] + H.TILE_TEXT_GAP + dl * LINE_H[descSize], nl, dl
+end
+
+-- Pick the largest sizes that fit; if nothing fits, the subtitle is cut to the lines left.
+-- Uses the client's own measurement when it has one, else the estimate.
+function H.FitTileText(name, desc)
+  local function height(fs, size)
+    if fs.GetStringHeight then
+      local ok, h = pcall(fs.GetStringHeight, fs)
+      if ok and type(h) == "number" and h > 0 then return h end
+    end
+    return ns.Util.TextLines(fs:GetText(), size, H.TILE_TEXT_W) * LINE_H[size]
+  end
+  for i, f in ipairs(H.TILE_FONTS) do
+    W.SetFontSize(name, f[1]); W.SetFontSize(desc, f[2])
+    local h = height(name, f[1]) + H.TILE_TEXT_GAP + height(desc, f[2])
+    if h <= H.TILE_TEXT_H + 0.5 then return f, true end
+    if i == #H.TILE_FONTS then
+      local left = H.TILE_TEXT_H - height(name, f[1]) - H.TILE_TEXT_GAP
+      local lines = math.max(1, math.floor(left / LINE_H[f[2]]))
+      if desc.SetMaxLines then pcall(desc.SetMaxLines, desc, lines) end
+      desc:SetHeight(lines * LINE_H[f[2]])
+      return f, false
+    end
+  end
+end
+
 function H.Tiles()
   local tiles, seen = {}, {}
   for _, m in ipairs(ns.Modules.Visible()) do
@@ -354,15 +394,21 @@ H.RegisterView("home", function(parent)
     else
       C.ApplyBackdrop(b, 0.08, 0.08, 0.1, 0.85, 0.3, 0.3, 0.3)
     end
-    local icon = W.FramedIcon(b, 34, m.icon)
-    icon:SetPoint("LEFT", 12, 8)
+    -- v1.2.1: smaller icon in the top-left corner so the name and subtitle get 112 px, and
+    -- H.FitTileText keeps both above the Drill / game buttons in every language
+    local icon = W.FramedIcon(b, 28, m.icon)
+    icon:SetPoint("TOPLEFT", 8, -8)
     if not m.active and icon.SetDesaturated then icon:SetDesaturated(true) end
     local name = W.Text(b, 12, L[m.key], m.active and W.GOLD or W.GRAY, "LEFT")
-    name:SetPoint("TOPLEFT", icon, "TOPRIGHT", 8, 2)
-    name:SetWidth(100)
+    name:SetPoint("TOPLEFT", b, "TOPLEFT", H.TILE_TEXT_X, -H.TILE_TEXT_TOP)
+    name:SetWidth(H.TILE_TEXT_W)
     local desc = W.Text(b, 10, m.active and L[m.descKey or (m.key .. "_DESC")] or L.COMING_SOON, m.active and W.WHITE or W.GRAY, "LEFT")
-    desc:SetPoint("TOPLEFT", name, "BOTTOMLEFT", 0, -3)
-    desc:SetWidth(100)
+    desc:SetPoint("TOPLEFT", name, "BOTTOMLEFT", 0, -H.TILE_TEXT_GAP)
+    desc:SetWidth(H.TILE_TEXT_W)
+    b.name, b.desc = name, desc
+    v.tiles = v.tiles or {}
+    v.tiles[#v.tiles + 1] = b
+    H.FitTileText(name, desc)
     local hl = b:CreateTexture(nil, "HIGHLIGHT")
     hl:SetPoint("TOPLEFT", 4, -4)
     hl:SetPoint("BOTTOMRIGHT", -4, 4)

@@ -695,3 +695,11 @@ UI position, shards, and stats are untouched. The report notes "carried over fro
   exists and audio is available (a failed press re-renders, hiding it). `Duel` race: co-op replies carry the partner
   line's clip (picked without the seeded RNG, so both players' sets stay identical) and get a Replay button.
 
+## v1.2.1: Sprocket visibility, hub tile text
+
+- Sprocket's alpha goes through `GU.SetParrotAlpha` (rest 0.85, hint 1, no hint 0.6, talking 1); the backplate texture
+  `parrotGlow` (BORDER layer, 66 px, centered on him) follows at `GU.PARROT_GLOW_ALPHA` (0.7) times his alpha.
+- Hub tiles: text box `H.TILE_TEXT_*` (112 x 46 px above the buttons). `H.FitTileText` measures with
+  `GetStringHeight` when the client has it, else `Util.TextLines`; tries `H.TILE_FONTS` in order, then caps the
+  subtitle's height. `H.TileTextHeight` (estimate) is what the smoke test checks for every locale.
+

@@ -1652,6 +1652,19 @@ do
     end
   end
   ok(manifest.fizzwick_strip == nil and slurp("Media/Art/fizzwick_strip.tga", "rb") == "", "no talk strip shipped")
+  -- v1.2.1: Sprocket's head crops are brightened (tools/sprocket_pop.py) and his glow backplate ships
+  for _, st in ipairs({ "curious", "squawk" }) do
+    local h = slurp("Media/Art/sprocket_" .. st .. "_head.tga", "rb")
+    ok(h:sub(19, 18 + h:byte(1)) == "AA-pop1", "sprocket_" .. st .. "_head is brightened for the dark strip")
+    -- mean brightness of his opaque pixels is clearly above the strip's dark brown
+    local sum, n = 0, 0
+    for i = 19 + h:byte(1), #h - 3, 4 * 7 do
+      if h:byte(i + 3) > 200 then sum = sum + 0.114 * h:byte(i) + 0.587 * h:byte(i + 1) + 0.299 * h:byte(i + 2); n = n + 1 end
+    end
+    ok(n > 0 and sum / n > 85, "Sprocket " .. st .. " is bright enough on the strip (mean luma " .. math.floor(n > 0 and sum / n or 0) .. ")")
+  end
+  local glow = slurp("Media/Art/sprocket_glow.tga", "rb")
+  ok(#glow == 18 + glow:byte(1) + 128 * 128 * 4 and glow:byte(3) == 2 and glow:byte(17) == 32 and glow:byte(18) == 8, "sprocket_glow.tga is 128x128 32-bit, bottom-left origin")
   local script, readme = slurp("tools/convert_art.sh"), slurp("Media/Art/README.md")
   ok(#script > 0 and #readme > 0 and #slurp("tools/make_heads.py") > 0, "convert script, head-crop tool and art README exist")
   for _, p in ipairs(A.POSES) do

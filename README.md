@@ -1,4 +1,4 @@
-# Azeroth Academy v1.2.0
+# Azeroth Academy v1.2.1
 
 A free learning addon for kids ages 5 to 13. Lessons are framed as Academy quests in Azeroth.
 This build has the **Main Hub** and two subjects: **Rune Forger** (math) and, new in v0.3,
@@ -1075,6 +1075,19 @@ Azeroth Academy v0.10.0** (two accounts, or a friend), both with an age band pic
 218. [ ] **Phrasebook (co-op)** with a friend: the partner's line plays when your turn comes, and Replay works. A friend on v1.1 can still play with you.
 219. [ ] Rename or remove `Media/Sounds/Tongues` and reload: World Tongues still works, with written questions only and no errors.
 
+**v1.2.1: Sprocket and hub tiles**
+
+220. [ ] Sprocket (bottom right of Fizzwick's strip) is easy to see: brighter bronze with a soft warm glow behind him. He is a little dimmer, but still clear, when no hint is available (trials).
+221. [ ] Hub tiles: every name and subtitle sits above the Drill / Deck / Study buttons, including World Tongues ("Languages: Japanese & more") and Mechanics Academy ("Tank, heal & DPS").
+222. [ ] Switch to German, French and Russian with `/aa lang`: no tile text runs into its buttons.
+
+## Known limits (v1.2.1)
+
+- The tile-text check uses a font-width **estimate** (`Util.TextLines`, deliberately generous), not the real font. If a
+  client still cuts a subtitle, the tile shrinks the text one size and then trims the last line rather than overlapping.
+- Several machine-translated tile subtitles were replaced with short hand-written ones (French, Spanish, Portuguese,
+  Italian, Russian, Korean, Chinese); they still need native review.
+
 ## Known limits (v1.2.0)
 
 - **Not run in a real game client yet** (headless harness + mock-UI smoke tests only). Loudness, timing of the autoplay
@@ -1298,6 +1311,7 @@ AzerothAcademy/
                             + Zixi and Quill: 2 x 6 poses x (512 + 256 head crop) since v1.0.0-rc
   tools/convert_art.sh      PNG -> 512 TGA + 256 head crops (ImageMagick) + manifest writer
   tools/make_heads.py       face-centered 256 head-and-chest crops (Python, Pillow + numpy)
+  tools/sprocket_pop.py     v1.2.1: brighten Sprocket's head crops + write his glow backplate (Pillow + numpy)
   tools/master_audio.py     master a generated clip: mono 44.1 kHz, trim, ~-16 LUFS, Ogg Vorbis q4 (ffmpeg + numpy)
   tools/build_fonts.py      rebuild the bundled font subsets from the Noto Sans sources (fontTools)
   tools/tongues_clips.tsv   v1.2: World Tongues clip list (file, course, native text, seconds)
@@ -1401,6 +1415,17 @@ originals and face-centered head crops, and wrote a 26-entry manifest.
 For v0.5, `tools/convert_art.sh` was run with ImageMagick 7.1.2 on test PNGs. It produced 512x512 RGBA TGAs, a 1024x256 (4-frame) and a 2048x256 (8-frame) strip, and a correct manifest. Removed files dropped out of the manifest, and a bad `STRIP_FRAMES` was rejected.
 
 ## Changelog
+
+**v1.2.1**
+- **Sprocket is easy to see on the strip.** `tools/sprocket_pop.py` brightens his two head crops (shadow lift, a little
+  contrast and saturation, a thin warm rim light along his outline; same design) and writes `Media/Art/sprocket_glow.tga`,
+  a soft warm backplate drawn behind him. His resting brightness went from 45% to 85% (100% with a hint, 60% when no hint
+  is available, was 30%). `tools/convert_art.sh` runs the tool after making fresh head crops.
+- **Hub tiles fit.** Smaller corner icon (text is 112 px wide instead of 100), and `H.FitTileText` picks 12/10 pt or
+  11/9 pt so the name and subtitle stay above the tile buttons (trimming the last line only as a last resort). Shorter
+  subtitles: World Tongues "Languages: Japanese & more", Mechanics Academy "Tank, heal & DPS", Lore Quiz "Lore quiz for
+  all ages", plus short hand-written subtitles in 9 languages (kept in `tools/locale_overrides.tsv`).
+- `Util.TextWidth` / `Util.TextLines`: a pure font-width estimate. The smoke test checks every tile in all 11 locales.
 
 **v1.2.0**
 - **World Tongues audio:** 121 clips in `Media/Sounds/Tongues/` (hiragana 46 + 25, Japanese greetings, trader's

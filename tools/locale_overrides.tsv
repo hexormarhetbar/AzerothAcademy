@@ -54,3 +54,10 @@ BOARD_RESUME	Fortsetzen	Reprendre	Continuar	Continuar	Riprendi	Продолжи�
 BOARD_PAUSED	Pause	En pause	En pausa	Pausado	In pausa	Пауза	일시 정지	已暫停	已暂停
 BOARD_TYPE_HERE	Hier tippen	Tape ici	Escribe aquí	Digite aqui	Scrivi qui	Печатай здесь	여기에 입력	在此輸入	在此输入
 CAMEO_THANKS	Danke!	Merci !	¡Gracias!	Obrigado!	Grazie!	Спасибо!	고마워요!	謝謝！	谢谢！
+# v1.2.1: hub tile subtitles short enough to fit above the tile buttons
+MOD_MECHANICS_DESC	Tank, Heilen & DPS	Tank, soin et DPS	Tanque, cura y DPS	Tanque, cura e DPS	Tank, cure e DPS	Танк, лечение, DPS	탱크, 치유, DPS	坦克、治療、DPS	坦克、治疗、DPS
+MOD_TONGUES_DESC	Sprachen: Japanisch & mehr	Langues : japonais et plus	Idiomas: japonés y más	Idiomas: japonês e mais	Imparare lingue reali: il giapponese prima!	Языки: японский и др.	언어: 일본어 외	語言：日語等	语言：日语等
+MOD_SCRIBE_DESC	;;;	Orthographe et frappe	Ortografía y teclado	Ortografia e digitação	Ortografia e battitura	Заголовок, слова и набор текста	글쓰기, 단어 & 타이핑	拼寫，字母和打字	拼写，字母和打字
+MOD_LOREQUIZ	Lore Quiz für alle	Quiz du savoir	Lore Quiz para todos	Quiz para todos	Lore Quiz per tutti	Lore Quiz для всех	모두의 지식 퀴즈	對於所有人來說	对于所有人来说
+MOD_LOREQUIZ_DESC	World Lore Quiz für alle Altersgruppen	Pour tous les âges	Para todas las edades	Para todas as idades	Quiz mondiale per tutte le età	Для всех возрастов	모든 연령 세계 퀴즈	世界傳奇測試，適合所有年齡段的人	世界传奇测试，适合所有年龄段的人
+MOD_LIBRARIAN_DESC	Forschungsvermögen	Aptitudes à la recherche	Investigar y buscar	Pesquisa e leitura	Capacità di ricerca	Исследования	연구 능력	研究技能	研究技能

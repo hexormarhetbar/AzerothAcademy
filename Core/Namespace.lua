@@ -5,7 +5,7 @@
 local ADDON, ns = ...
 
 ns.ADDON = ADDON or "AzerothAcademy"
-ns.VERSION = "1.2.0"
+ns.VERSION = "1.2.1"
 ns.Env = ns.Env or {}
 
 -- v1.0 locales: each Locales/<code>.lua fills its table through ns.WantLocale.
@@ -197,4 +197,51 @@ end
 function Util.Wipe(t)
   for k in pairs(t) do t[k] = nil end
   return t
+end
+
+-- v1.2.1: rough text-width estimate (pixels) for the game's default fonts, used to check that
+-- tile subtitles fit in every language (tests) and as a fallback when a client cannot measure.
+-- Deliberately generous (Friz Quadrata is wide): about 8% over the real width.
+local NARROW = { [" "] = 0.28, ["i"] = 0.26, ["l"] = 0.26, ["j"] = 0.28, ["I"] = 0.3, ["."] = 0.26, [","] = 0.26,
+  [":"] = 0.28, [";"] = 0.28, ["!"] = 0.3, ["'"] = 0.22, ["|"] = 0.26, ["f"] = 0.34, ["t"] = 0.36, ["r"] = 0.4,
+  ["m"] = 0.86, ["w"] = 0.8, ["M"] = 0.9, ["W"] = 0.98, ["&"] = 0.74, ["-"] = 0.36, ["("] = 0.34, [")"] = 0.34 }
+function Util.CharWidth(ch, size)
+  local b = ch:byte(1) or 32
+  local em
+  if b < 128 then
+    em = NARROW[ch] or ((b >= 65 and b <= 90) and 0.68 or ((b >= 48 and b <= 57) and 0.56 or ((b >= 97 and b <= 122) and 0.54 or 0.42)))
+  elseif b < 0xD0 then em = 0.58  -- accented Latin
+  elseif b < 0xE0 then em = 0.64  -- Cyrillic, Greek
+  else em = 1.0 end               -- kana, kanji, Hangul, full-width punctuation
+  return em * (size or 12) * 1.08
+end
+function Util.TextWidth(text, size)
+  local w = 0
+  for ch in tostring(text or ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gmatch("[%z\1-\127\194-\244][\128-\191]*") do
+    w = w + Util.CharWidth(ch, size)
+  end
+  return w
+end
+-- Lines after word wrap at `width` (Latin breaks at spaces; CJK may break between any characters).
+function Util.TextLines(text, size, width)
+  text = tostring(text or "")
+  if text == "" then return 0 end
+  local lines, cur = 1, 0
+  local space = Util.CharWidth(" ", size)
+  for word in text:gmatch("%S+") do
+    local ww = Util.TextWidth(word, size)
+    local need = (cur > 0 and space or 0) + ww
+    if cur + need <= width then
+      cur = cur + need
+    elseif ww <= width then
+      lines, cur = lines + 1, ww
+    else -- a long word or CJK run: fill character by character
+      if cur > 0 then cur = cur + space end
+      for ch in word:gmatch("[%z\1-\127\194-\244][\128-\191]*") do
+        local cw = Util.CharWidth(ch, size)
+        if cur + cw > width then lines, cur = lines + 1, cw else cur = cur + cw end
+      end
+    end
+  end
+  return lines
 end

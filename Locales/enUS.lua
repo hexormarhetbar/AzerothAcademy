@@ -62,7 +62,7 @@ ns.LocaleData.enUS = {
   MOD_LIBRARIAN = "Librarian Quests",
   MOD_LIBRARIAN_DESC = "Research skills",
   MOD_MECHANICS = "Mechanics Academy",
-  MOD_MECHANICS_DESC = "Tank, heal & DPS skills",
+  MOD_MECHANICS_DESC = "Tank, heal & DPS",
   PARENT_PANEL = "Parent Panel",
 
   -- Tiers
@@ -647,7 +647,7 @@ ns.LocaleData.enUS = {
 
   -- v0.5: Lore Quiz for Everyone (optional, unbanded)
   MOD_LOREQUIZ = "Lore Quiz for Everyone",
-  MOD_LOREQUIZ_DESC = "World lore quiz for all ages",
+  MOD_LOREQUIZ_DESC = "Lore quiz for all ages",
   LQ_TITLE = "Lore Quiz - %s",
   LQ_LORE = "A relaxed lore quiz for the whole family, from the Chronicler's own question box. No trials, no age path: just pick a topic.",
   LQ_BACK = "Story lessons",
@@ -1577,7 +1577,7 @@ ns.LocaleData.enUS = {
   AREAS_LAST = "At least one area has to stay on.",
   -- v1.1 World Tongues
   MOD_TONGUES = "World Tongues",
-  MOD_TONGUES_DESC = "Learn real languages: Japanese first!",
+  MOD_TONGUES_DESC = "Languages: Japanese & more",
   WT_COURSE_ES = "World Tongues: Spanish",
   WT_COURSE_ES_DESC = "A small Spanish starter course.",
   WT_TITLE_JA = "World Tongues: Japanese - %s",

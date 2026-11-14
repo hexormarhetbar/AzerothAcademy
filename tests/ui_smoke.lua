@@ -83,8 +83,8 @@ function methods:Disable() self.__enabled = false end
 function methods:IsEnabled() return self.__enabled end
 function methods:GetFontString() return self.__fs end
 function methods:SetFontString(fs) self.__fs = fs end
-function methods:GetFont() return "Fonts\\FRIZQT__.TTF", 12, "" end
-function methods:SetFont() return true end
+function methods:GetFont() return self.__font or "Fonts\\FRIZQT__.TTF", self.__fontSize or 12, self.__fontFlags or "" end
+function methods:SetFont(f, size, flags) self.__font, self.__fontSize, self.__fontFlags = f, size, flags; return true end
 function methods:GetFontObject() return {} end
 function methods:GetFrameLevel() return 1 end
 function methods:GetVerticalScroll() return 0 end
@@ -1204,7 +1204,10 @@ for mod, pose in pairs({ lore = "researching", lorequiz = "researching", runefor
   runTimers()
   if not faceIs("fizzwick_" .. pose .. "_head") then fail("idle in " .. mod .. " should be " .. pose .. ", got " .. tostring(face.art:GetTexture())) end
   local a = GU.strip.parrot:GetAlpha()
-  if (mod ~= "scribe" and a < 0.8) or (mod == "scribe" and a > 0.5) then fail("Sprocket brightness should show whether a hint is available (" .. mod .. ")") end
+  if (mod ~= "scribe" and a < 0.95) or (mod == "scribe" and (a > 0.65 or a < 0.5)) then fail("Sprocket brightness should show whether a hint is available, and stay visible (" .. mod .. ")") end
+  -- v1.2.1: the warm backplate behind him follows his brightness
+  local g = GU.strip.parrotGlow
+  if not (g and g:GetTexture() == GU.PARROT_GLOW and math.abs(g:GetAlpha() - GU.PARROT_GLOW_ALPHA * a) < 1e-6) then fail("Sprocket's glow backplate is drawn behind him") end
 end
 GU.ProblemShown("lore", true)
 GU.Say("CORRECT")
@@ -2490,6 +2493,43 @@ runTimers()
 update(1)
 
 scanTexts("end")
+-- v1.2.1: every hub tile's name + subtitle fits above its Drill / game buttons in every
+-- language (font-width estimate, Util.TextLines); English fits at full size
+step("v1.2.1 hub tile text fits", function()
+  local H = ns.Hub
+  local prevChoice = ns.Progress.account.settings.language or "auto"
+  local bad = {}
+  for _, code in ipairs({ "enUS", "deDE", "frFR", "esES", "esMX", "ptBR", "itIT", "ruRU", "koKR", "zhCN", "zhTW" }) do
+    ns.SetLocale(code)
+    local tiles = {}
+    for _, m in ipairs(ns.Modules.list) do if not m.hidden then tiles[#tiles + 1] = { m.nameKey, m.descKey or (m.nameKey .. "_DESC") } end end
+    for _, m in ipairs(H.COMING_SOON) do tiles[#tiles + 1] = { m.key, "COMING_SOON" } end
+    for _, t in ipairs(tiles) do
+      local name, desc = ns.L[t[1]], ns.L[t[2]]
+      local full = H.TileTextHeight(name, desc, H.TILE_FONTS[1][1], H.TILE_FONTS[1][2])
+      local small = H.TileTextHeight(name, desc, H.TILE_FONTS[2][1], H.TILE_FONTS[2][2])
+      if small > H.TILE_TEXT_H or (code == "enUS" and full > H.TILE_TEXT_H) then
+        bad[#bad + 1] = code .. " " .. t[1] .. " (" .. name .. " / " .. desc .. ")"
+      end
+    end
+  end
+  ns.SetLocale(prevChoice)
+  if #bad > 0 then luaFail("hub tile text overflows: " .. table.concat(bad, "; ")) end
+  -- the real tiles use the fitted sizes and keep the subtitle above the buttons
+  H.ShowView("home")
+  local home = H.GetView("home")
+  local n = 0
+  for _, b in ipairs(home.tiles or {}) do
+    if b.desc then
+      n = n + 1
+      local _, size = b.desc:GetFont()
+      if size ~= 10 and size ~= 9 then luaFail("tile subtitle font size " .. tostring(size)) end
+    end
+  end
+  if n == 0 then luaFail("hub tiles expose name/desc for the fit check") end
+  if LOCALE == "enUS" and ns.L.MOD_TONGUES_DESC ~= "Languages: Japanese & more" then luaFail("World Tongues subtitle is the short one") end
+end)
+
 io.write(string.format("UI smoke (interface %d" .. (LEGACY and ", legacy fallbacks" or "") .. (LOCALE ~= "enUS" and (", locale " .. LOCALE) or "") .. ", flavor %s): %d frames created, %d sounds, %d voice clips, %d language clips, %d chat lines, %d errors" ..
   (LOCALE ~= "enUS" and (", " .. textSkipped .. " English-only text checks skipped, " .. scannedTexts .. " on-screen texts scanned") or "") .. "\n",
   INTERFACE, tostring(ns.Compat.flavor), #allFrames, soundsPlayed, #voicePlays, #tonguePlays, #chat, errors))
