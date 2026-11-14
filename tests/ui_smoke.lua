@@ -292,7 +292,7 @@ if ns.Hub.current ~= "home" then fail("expected home view after band pick") end
 if ns.Progress.GetBand() == nil then fail("band not saved") end
 
 -- Coming-soon module + active module
-click("^Azeroth Naturalist$") -- coming soon tile: prints, stays home
+click("^Gnomish Engineering$") -- coming soon tile: prints, stays home
 if ns.Hub.current ~= "home" then fail("coming-soon tile should not navigate") end
 click("^Rune Forger$")
 -- v0.2: first visit offers The Forgemaster's Trial
@@ -1518,6 +1518,150 @@ do
   GU.Say("GREET")
   if (fileTries[V.DIR .. "greet.ogg"] or 0) ~= tries0 + 1 then fail("a missing clip is not tried again") end
   voiceFail.greet = nil
+  hub:Hide()
+end
+
+-- v0.9 Azeroth Naturalist: hub tile -> survey -> skill list -> every skill -> specimen ->
+-- Field Journal (tabs, pages, faded ink -> review) -> in-flight nature round -> slash commands
+do
+  local en = ns.LocaleData.enUS
+  local GU = ns.GuideUI
+  local function isLine(prefix, text)
+    for i = 1, 20 do if en[prefix .. "_" .. i] and en[prefix .. "_" .. i] == text then return true end end
+    return false
+  end
+  ns.Progress.SetBand("adept")
+  ns.Progress.account.settings.unlockAllTiers = false
+  ns.Hub.Open("home")
+  if not findButton("^Azeroth Naturalist$") then fail("Azeroth Naturalist should be a real hub tile") end
+  if findButton("^Gnomish Engineering$") == nil and #ns.Hub.Tiles() < 6 then fail("coming-soon tiles still listed") end
+  click("^Azeroth Naturalist$")
+  if ns.Hub.current ~= "trial" or not visibleText("^The Field Warden's Survey$") then fail("Naturalist tile should open The Field Warden's Survey") end
+  click("^Begin the Trial$")
+  local nts = ns.RuneForger.session
+  if not (nts and nts.isTrial and nts.moduleId == "naturalist") then fail("Naturalist trial did not start") end
+  playSession(0.7, "trialResult")
+  if not (ns.Progress.char.modules.naturalist and ns.Progress.char.modules.naturalist.placement.adept.status == "done") then fail("Naturalist placement not saved") end
+  click("^Continue$")
+  if ns.Hub.current ~= "forge" or ns.Lessons.CurrentModule().id ~= "naturalist" then fail("Continue should show the Naturalist skill list") end
+  if not visibleText("^Azeroth Naturalist %- Adept") then fail("naturalist skill list title") end
+  if not findButton("ccffField Journal|r$") then fail("skill list links to the Field Journal") end
+  -- every skill in every band plays through the UI (buttons and typed answers)
+  ns.Progress.account.settings.unlockAllTiers = true
+  for _, bandId in ipairs({ "initiate", "adept", "magister" }) do
+    for _, nodeId in ipairs(ns.Naturalist.BANDS[bandId].nodes) do
+      for _, tier in ipairs({ 1, math.random(2, 3) }) do playUIRound(nodeId, tier, 0.75) end
+    end
+  end
+  -- round start uses the Naturalist line (every time) and the page sound
+  GU.voice = ns.Voice.NewState()
+  clock = clock + 100
+  ns.RuneForger.StartRound("nat_matter", 2)
+  if GU.lastEvent ~= "NATSTART" or not isLine("FZ_NATSTART", GU.lastText) then fail("Naturalist round opens with a field-journal line, got " .. tostring(GU.lastEvent)) end
+  if voicePlays[#voicePlays] == nil or not voicePlays[#voicePlays].path:find("nat_start", 1, true) then fail("first Naturalist round start speaks nat_start") end
+  local tp = ns.RuneForger.session.problem
+  if tp.mode == "text" then
+    local e = visibleEdit()
+    if not e then fail("typed Naturalist problem shows an edit box") else
+      e:SetText("  " .. tp.answer:lower() .. "  "); e.__scripts.OnEnterPressed(e)
+      if not (ns.RuneForger.session.problemDone and ns.RuneForger.session.firstCorrect == 1) then fail("typed Naturalist answer accepted (case/space forgiven)") end
+    end
+  end
+  runTimers()
+  ns.RuneForger.session = nil
+  -- master a fresh tier -> specimen banner, sound, Fizzwick, reward line, journal button
+  local nodeId, tier = "nat_ecosystems", 3
+  local spec = ns.Journal.Specimen(nodeId, tier)
+  if ns.Journal.Has(nodeId, tier) then fail("specimen should not be collected yet") end
+  local gotBanner, guard = false, 0
+  local specSounds0 = soundsPlayed
+  while not ns.Progress.GetTierRec(nodeId, tier).mastered and guard < 6 do
+    guard = guard + 1
+    ns.RuneForger.StartRound(nodeId, tier)
+    view = ns.Hub.GetView("problem")
+    while ns.RuneForger.session and ns.Hub.current == "problem" do
+      local s = ns.RuneForger.session
+      clock = clock + 2
+      step("nat answer", function() view:Answer(s.problem.answer) end)
+      if visibleText("New specimen for your Field Journal") then gotBanner = true end
+      runTimers(); update(0.5)
+    end
+  end
+  if not ns.Progress.GetTierRec(nodeId, tier).mastered then fail("tier mastered through the UI") end
+  if not ns.Journal.Has(nodeId, tier) then fail("mastery collected the specimen") end
+  if not gotBanner then fail("problem view shows the new-specimen banner") end
+  if soundsPlayed <= specSounds0 then fail("sounds played while collecting") end
+  local rv = ns.Hub.GetView("reward")
+  if ns.Hub.current ~= "reward" or not (rv.summary and rv.summary.specimens and rv.summary.specimens[1] == spec) then fail("reward summary carries the specimen") end
+  if not visibleText(spec.name) then fail("reward screen names the specimen") end
+  if GU.lastEvent ~= "NATSPECIMEN" then fail("Fizzwick celebrates the specimen, got " .. tostring(GU.lastEvent)) end
+  if not (rv.journalBtn and rv.journalBtn:IsVisible()) then fail("reward screen offers the Field Journal") end
+  click("^Open Field Journal$")
+  local jv = ns.Hub.GetView("journal")
+  if ns.Hub.current ~= "journal" then fail("Open Field Journal opens the journal") end
+  if not (jv.selNode == nodeId and jv.selTier == tier and jv.band == "magister") then fail("journal opens on the new page") end
+  if not visibleText("^" .. spec.name .. "$") or not visibleText("^Found in: ") then fail("journal page shows name + zone") end
+  if GU.lastEvent ~= "NATJOURNAL" then fail("Fizzwick welcomes you to the journal") end
+  if not visibleText("^Specimens: %d+ / 45") then fail("journal counter") end
+  -- tabs + grid + a missing page offers practice
+  click("^Initiate$")
+  if jv.band ~= "initiate" or jv.selNode then fail("Initiate tab switches band and clears the page") end
+  local first = ns.Naturalist.BANDS.initiate.nodes[1]
+  local cell = jv.cells[1][3]
+  if cell.nodeId ~= first then fail("grid row 1 is the first skill") end
+  if not ns.Journal.Has(first, 3) then
+    cell:Click()
+    if not visibleText("^Undiscovered specimen$") then fail("missing page is a mystery") end
+    if not findButton("^Go collect it!$") then fail("missing page offers practice") end
+  end
+  -- a collected page whose tier is fading shows faded ink and a review button
+  local cnode, ctier
+  for _, it in ipairs(ns.Journal.All()) do
+    if it.band == "initiate" and ns.Journal.Has(it.nodeId, it.tier) then cnode, ctier = it.nodeId, it.tier break end
+  end
+  if not cnode then
+    ns.Journal.Collect(first, 1); cnode, ctier = first, 1
+    ns.Progress.GetTierRec(first, 1).mastered = true
+  end
+  local tr = ns.Progress.GetTierRec(cnode, ctier)
+  tr.fading = true
+  jv:OnShowView({ nodeId = cnode, tier = ctier })
+  if not visibleText("The ink is fading") then fail("fading tier shows faded ink") end
+  if not visibleText("page%(s%) fading") then fail("journal counts faded pages") end
+  click("^Review now$")
+  if ns.Hub.current ~= "problem" or ns.RuneForger.session.nodeId ~= cnode then fail("Review now starts that skill") end
+  playSession(1)
+  if tr.fading then fail("a good round clears the fading ink") end
+  -- slash commands
+  slash("journal")
+  if ns.Hub.current ~= "journal" then fail("/aa journal opens the Field Journal") end
+  slash("nature")
+  if ns.Hub.current ~= "forge" or ns.Lessons.CurrentModule().id ~= "naturalist" then fail("/aa nature opens Azeroth Naturalist") end
+  click("ccffField Journal|r$")
+  if ns.Hub.current ~= "journal" then fail("skill-list link opens the journal") end
+  click("^Back$")
+  if ns.Hub.current ~= "forge" or ns.Lessons.CurrentModule().id ~= "naturalist" then fail("journal Back returns to the skill list") end
+  -- In-flight: the quick round prefers sky skills and Fizzwick's habitat line
+  local st = ns.Progress.account.settings
+  local savedReviews = st.reviews
+  st.reviews = false
+  ns.Progress.SetBand("initiate")
+  ns.Progress.GetModuleState("naturalist").placement.initiate = { status = "skipped", date = 0 }
+  ns.Lessons.moduleId = "naturalist"
+  ns.RuneForger.session = nil
+  local started = ns.FlightUI.StartQuickRound()
+  local fsn = ns.RuneForger.session
+  if not (started and fsn and fsn.flight and fsn.moduleId == "naturalist") then fail("in-flight round on Naturalist") end
+  local sky = false
+  for _, id in ipairs(ns.Naturalist.MODULE.flightNodes.initiate) do if fsn and fsn.nodeId == id then sky = true end end
+  if not sky then fail("in-flight Naturalist round uses a sky skill, got " .. tostring(fsn and fsn.nodeId)) end
+  if GU.lastEvent ~= "NATFLIGHT" or not isLine("FZ_NATFLIGHT", GU.lastText) then fail("in-flight Naturalist line, got " .. tostring(GU.lastEvent)) end
+  playSession(1)
+  st.reviews = savedReviews
+  ns.Progress.SetBand("adept")
+  ns.Progress.account.settings.unlockAllTiers = false
+  -- report line
+  if not ns.Report.Build({}):find("Field Journal: %d+ / 45") then fail("progress report shows the Field Journal") end
   hub:Hide()
 end
 

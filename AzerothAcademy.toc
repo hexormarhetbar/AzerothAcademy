@@ -1,8 +1,8 @@
 ## Interface: 16001, 120105, 120107, 11509
 ## Title: Azeroth Academy
-## Notes: Free, kid-friendly learning quests inside Azeroth. Rune Forger (math), Scribe's Scrolls (spelling, words, typing) and Lore Chronicles (reading & writing). /aa to open.
+## Notes: Free, kid-friendly learning quests inside Azeroth. Rune Forger (math), Scribe's Scrolls (spelling, words, typing), Lore Chronicles (reading & writing) and Azeroth Naturalist (science). /aa to open.
 ## Author: Hex
-## Version: 0.8.0
+## Version: 0.9.0
 ## IconTexture: Interface\Icons\INV_Misc_Book_09
 ## SavedVariables: AzerothAcademyDB
 ## SavedVariablesPerCharacter: AzerothAcademyCharDB
@@ -28,6 +28,8 @@ Core\ScribeData.lua
 Core\ScribeGen.lua
 Core\LoreData.lua
 Core\LoreGen.lua
+Core\NaturalistData.lua
+Core\NaturalistGen.lua
 Core\Guide.lua
 Core\SoundEvents.lua
 Core\Art.lua
@@ -49,6 +51,7 @@ UI\Hub.lua
 UI\Guide.lua
 UI\Lessons.lua
 UI\Boarding.lua
+UI\Journal.lua
 UI\Trial.lua
 UI\ParentPanel.lua
 UI\Minimap.lua

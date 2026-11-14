@@ -46,6 +46,8 @@ that file again until the next `/reload`. You can replace any file with your own
 | `cannon.ogg` | Murloc Boarding Party: the broadside fires | 0.8-1.4 s | kit 1400 (cannon blast), then 3641 |
 | `gurgle.ogg` | Murloc Boarding Party: murlocs climb aboard, the Tidehunter appears | 0.4-0.8 s | kit 416 (murloc "mrglglgl"), then 1109 |
 | `flight.ogg` | The In-Flight Lesson pop-up appears on a flight path | 0.5-0.9 s | TELL_MESSAGE (3081) |
+| `page.ogg` | The Field Journal opens or turns to another band (v0.9) | 0.4-0.8 s | IG_ABILITY_PAGE_TURN (836) |
+| `specimen.ogg` | A new specimen is collected for the Field Journal (v0.9) | 0.7-1.2 s | IG_QUEST_LIST_COMPLETE (878) |
 
 ## Sound-effect briefs
 
@@ -73,6 +75,8 @@ original sound and none imitated any game's audio.
 - **cannon.ogg:** "Friendly cartoon ship cannon volley, three soft booms in quick succession with a puff of smoke and a cheerful whistle, no explosion debris."
 - **gurgle.ogg:** "Original silly fish-creature gurgle, wet bubbly warble rising in pitch, comic and cute, not a copy of any game creature."
 - **flight.ogg:** "Friendly little airship bell and propeller whirr, a bright two-note 'ding-ding' inviting you to a lesson, cartoon goblin gadget."
+- **page.ogg:** "A single soft paper page turning in an old leather field notebook, short and crisp, gentle, no music."
+- **specimen.ogg:** "Cheerful nature discovery chime: a bright magical sparkle with a tiny leafy rustle and a happy two-note marimba ding, cartoon, short."
 
 ## Professor Fizzwick's voice (v0.8.0)
 
@@ -108,6 +112,11 @@ Some of Fizzwick's lines are spoken aloud by an **original designed voice**.
 | `VO/landing.ogg` | "We landed! Finish whenever you like. Nothing is lost." (`FZ_FLIGHTLAND_1`) | Landing mid-lesson |
 | `VO/murloc.ogg` | "All aboard! Murlocs love free rides, so let's show them the water." (`FZ_BOARDSTART_1`) | Murloc Boarding Party starts |
 | `VO/bye.ogg` | "Class dismissed! Great work today, partner. See you soon!" (`FZ_BYE_1`) | Closing the Academy |
+| `VO/nat_start.ogg` | "Grab your field journal! Science time in the wild!" (`FZ_NATSTART_1`) | A Naturalist round starts (v0.9) |
+| `VO/nat_correct.ogg` | "Sharp eyes! That's real science, partner!" (`FZ_NATCORRECT_1`) | Naturalist right answer (v0.9) |
+| `VO/nat_specimen.ogg` | "A new specimen for your journal! Ooh, look at that!" (`FZ_NATSPECIMEN_1`) | New Field Journal specimen (v0.9) |
+| `VO/nat_journal.ogg` | "Welcome to your field journal. You earned every page!" (`FZ_NATJOURNAL_1`) | Opening the Field Journal (v0.9) |
+| `VO/nat_flight.ogg` | "Look down! Every zone below is a habitat. Let's study!" (`FZ_NATFLIGHT_1`) | In-flight Naturalist round (v0.9) |
 
 ## Voice design brief (original)
 

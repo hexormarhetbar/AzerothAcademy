@@ -1862,7 +1862,7 @@ do
       and rep:find("Routes: Booty Bay Harbor, Booty Bay to Ratchet, Ratchet to the Maelstrom (locked)", 1, true), "report shows the voyage log")
     local rr = tns.Report.Build({ moduleId = "runeforger" })
     ok(not rr:find("Murloc", 1, true), "other subjects' reports don't mention the game")
-    ok(P.SCHEMA == 5, "no schema change for the voyage (data created on first play); v0.7 flight setting is schema 5")
+    ok(P.SCHEMA >= 5, "no schema change for the voyage (data created on first play); v0.7 flight setting is schema 5")
   end
   ok(tns.Modules.Get("scribe").game.view == "boarding", "Scribe's Scrolls registers the mini-game")
   for _, e in ipairs({ "splash", "cannon", "gurgle" }) do
@@ -1913,7 +1913,7 @@ end
 do
   local tns = newNS()
   local F, P = tns.Flight, tns.Progress
-  ok(P.SCHEMA == 5, "schema 5")
+  ok(P.SCHEMA >= 5, "schema 5+")
   -- fresh install
   local acct = P.Bind({}, {})
   ok(acct.settings.flight.mode == "toast" and F.Mode(acct.settings) == "toast", "default mode: toast")
@@ -1922,7 +1922,7 @@ do
   local a1 = { version = 4, settings = { taxiNudge = false, dailyCap = 30, minimap = { hide = true, angle = 10 } } }
   local c1 = { version = 4, profile = { band = "adept" }, shards = 55 }
   P.Bind(a1, c1)
-  ok(a1.version == 5 and c1.version == 5 and P.upgradedFrom == 4, "v0.6.1 -> v0.7 bump")
+  ok(a1.version == P.SCHEMA and c1.version == P.SCHEMA and P.upgradedFrom == 4, "v0.6.1 -> v0.7 bump")
   ok(a1.settings.flight.mode == "off", "nudge turned off -> flight lessons off")
   ok(a1.settings.dailyCap == 30 and a1.settings.minimap.hide == true and c1.shards == 55, "everything else kept")
   a1.settings.flight.mode = "auto"
@@ -1994,8 +1994,330 @@ do
 end
 
 -------------------------------------------------------------------------
+-- 22. v0.9: Azeroth Naturalist data, generators, typed checks, engine, Field Journal
+-------------------------------------------------------------------------
+local natGenCount, natItems = 0, {}
+do
+  local tns = newNS()
+  local D, NA, Mods, J = tns.NaturalistData, tns.Naturalist, tns.Modules, tns.Journal
+  local NL = tns.L
+  local lower = string.lower
+  local sided = { "Stormwind", "Orgrimmar", "Ironforge", "Darnassus", "Undercity", "Thunder Bluff", "Kirin Tor", "Dalaran", "Khadgar", "Alliance", "Horde" }
+  local function neutral(s, tag)
+    for _, w in ipairs(sided) do ok(not tostring(s):find(w, 1, true), tag .. " stays faction-neutral (" .. w .. ")") end
+  end
+  local nat = Mods.Get("naturalist")
+  ok(nat and nat.nameKey == "MOD_NATURALIST" and nat.choiceOnlyBands.initiate and nat.textAnswers and nat.check == NA.Check, "naturalist module registered")
+  ok(nat.game and nat.game.view == "journal" and NL[nat.game.key] and NL[nat.game.tileKey] and NL[nat.game.tipKey], "journal link on the skill list")
+  ok(nat.startSound == "page" and tns.SoundEvents.EVENTS.page and tns.SoundEvents.EVENTS.specimen, "naturalist sounds exist")
+  ok(tns.Art.SUBJECT_POSE.naturalist == "researching", "Fizzwick researches in the greenhouse")
+  for _, k in ipairs({ "NAT_LORE", "NAT_TITLE", "NAT_TRIAL", "NAT_EXAM", "NAT_TRIAL_LORE", "NAT_EXAM_LORE", "NAT_TRIAL_RESULT", "NAT_EXAM_PASS", "NAT_TRIAL_RIGHT", "NAT_TRIAL_WRONG" }) do
+    ok(type(NL[k]) == "string" and NL[k] ~= "", "locale " .. k)
+    neutral(NL[k], k)
+  end
+  for _, ev in ipairs({ "NATSTART", "NATCORRECT", "NATWRONG", "NATSPECIMEN", "NATJOURNAL", "NATFLIGHT" }) do
+    local found = false
+    for _, e in ipairs(tns.Guide.EVENTS) do if e == ev then found = true end end
+    ok(found and tns.Art.EVENT_POSE[ev], "guide event + pose: " .. ev)
+  end
+  for _, map in pairs(nat.guideEvents) do ok(tns.Art.EVENT_POSE[map[1]] and (map.every or 1) >= 1, "module guide event mapping: " .. map[1]) end
+
+  -- bands: 5 skills each, every node has a name, description, icon and 3 specimens
+  local nodeSeen, specIds = {}, {}
+  for _, band in ipairs(Mods.BAND_ORDER) do
+    local nodes = Mods.Nodes("naturalist", band)
+    ok(#nodes == 5, "naturalist " .. band .. " has 5 skills")
+    for _, nodeId in ipairs(nodes) do
+      local _, node = Mods.FindNode(nodeId)
+      ok(not nodeSeen[nodeId], "unique node " .. nodeId); nodeSeen[nodeId] = true
+      ok(NL[node.key] and NL[node.key .. "_DESC"] and #NL[node.key .. "_DESC"] <= 44, "node name + short description: " .. nodeId)
+      ok(tns.SkillIcons[nodeId] ~= nil, "skill icon: " .. nodeId)
+      local list = D.SPECIMENS[nodeId]
+      ok(type(list) == "table" and #list == 3, "3 specimens: " .. nodeId)
+      for t = 1, 3 do
+        local sp = list and list[t]
+        if ok(sp, nodeId .. " specimen T" .. t) then
+          ok(not specIds[sp.id], "unique specimen id " .. tostring(sp.id)); specIds[sp.id] = true
+          ok(type(sp.name) == "string" and #sp.name <= 32, "specimen name fits: " .. tostring(sp.name))
+          ok(type(sp.zone) == "string" and sp.zone ~= "", "specimen zone: " .. sp.name)
+          ok(type(sp.icon) == "string" and sp.icon:find("^Interface\\Icons\\") ~= nil, "specimen uses an in-game icon: " .. sp.name)
+          ok(type(sp.note) == "string" and #sp.note >= 30 and #sp.note <= 200, "specimen note length: " .. sp.name)
+          ok(sp.nodeId == nodeId and sp.tier == t, "specimen knows its page: " .. sp.name)
+          neutral(sp.name .. sp.zone .. sp.note, "specimen " .. sp.name)
+        end
+      end
+      local flight = nat.flightNodes[band]
+      ok(type(flight) == "table" and #flight >= 1, "flight skills for " .. band)
+    end
+    for _, id in ipairs(nat.flightNodes[band]) do ok(select(2, Mods.FindNode(id)).band == band, "flight skill in its band: " .. id) end
+  end
+
+  -- curated data: levels, endings, distinct distractors, lengths, no duplicates
+  local function checkEntries(name, list, band)
+    local seen, c = {}, { 0, 0, 0 }
+    for i, e in ipairs(list) do
+      local tag = name .. " " .. i
+      ok(e.lv == 1 or e.lv == 2 or e.lv == 3, tag .. " lv 1-3")
+      if c[e.lv] then c[e.lv] = c[e.lv] + 1 end
+      ok(type(e.q) == "string" and (e.q:sub(-1) == "?" or e.q:sub(-1) == "."), tag .. " question ends with ?, ... or a full stop: " .. tostring(e.q))
+      ok(#e.q <= NA.MAX_TEXT, tag .. " question length")
+      ok(not seen[e.q], tag .. " duplicate question"); seen[e.q] = true
+      ok(type(e.a) == "string" and e.a ~= "" and #e.a <= NA.MAX_CHOICE, tag .. " answer")
+      ok(type(e.why) == "string" and #e.why >= 15, tag .. " explanation")
+      local need = band == "initiate" and 2 or 3
+      ok(type(e.d) == "table" and #e.d >= need, tag .. " has " .. need .. "+ distractors")
+      local ds = { [NA.Normalize(e.a)] = true }
+      for _, d in ipairs(e.d or {}) do
+        ok(type(d) == "string" and #d <= NA.MAX_CHOICE, tag .. " distractor length")
+        ok(not ds[NA.Normalize(d)], tag .. " distractor repeats or equals the answer: " .. tostring(d))
+        ds[NA.Normalize(d)] = true
+      end
+      if e.t then
+        ok(band ~= "initiate", tag .. " initiate never types")
+        for _, alt in ipairs(e.t) do
+          ok(type(alt) == "string" and not ds[NA.Normalize(alt)] or NA.Normalize(alt) == NA.Normalize(e.a), tag .. " typed alt is not a wrong answer: " .. tostring(alt))
+        end
+      end
+      neutral(e.q .. e.a .. e.why .. table.concat(e.d or {}, " "), tag)
+    end
+    -- (living-thing clues only add to the generated living / not-living items, which are level 1)
+    ok(name == "nat_living" or (c[1] > 0 and c[2] > 0 and c[3] > 0), name .. " covers levels 1-3 (" .. c[1] .. "/" .. c[2] .. "/" .. c[3] .. ")")
+    return #list
+  end
+  for nodeId, lists in pairs(NA.LISTS) do
+    local _, node = Mods.FindNode(nodeId)
+    local n = 0
+    for _, list in ipairs(lists) do n = n + checkEntries(nodeId, list, node.band) end
+    natItems[node.band] = (natItems[node.band] or 0) + n
+  end
+  -- generated-item data
+  ok(#D.HABITATS == 8, "8 habitats")
+  local hab = 0
+  for _, h in ipairs(D.HABITATS) do
+    ok(#h.zones >= 2 and #h.life >= 2 and #h.desc <= 30, "habitat " .. h.id)
+    for _, lf in ipairs(h.life) do ok(lf[2] == "plant" or lf[2] == "animal", "habitat life kind " .. lf[1]); hab = hab + 1 end
+  end
+  natItems.initiate = natItems.initiate + hab + #D.LIVING + #D.NONLIVING
+  ok(#D.LIVING >= 8 and #D.NONLIVING >= 8, "living / non-living lists")
+  for _, ch in ipairs(D.CHAINS) do
+    ok(#ch.chain >= 3 and ch.zone, "food chain " .. tostring(ch.zone))
+  end
+  natItems.adept = natItems.adept + #D.CHAINS + #D.SUBSTANCES + #D.CYCLES
+  for _, sb in ipairs(D.SUBSTANCES) do ok(sb[2] == "solid" or sb[2] == "liquid" or sb[2] == "gas", "substance state " .. sb[1]) end
+  for _, cy in ipairs(D.CYCLES) do ok(#cy.steps >= 3, "life cycle " .. cy.name) end
+
+  -- helpers
+  ok(NA.Normalize("  The Sun! ") == "sun" and NA.Normalize("A solid") == "solid" and NA.Normalize("an Egg.") == "egg", "normalize drops articles + punctuation")
+  ok(NA.Normalize("It's water vapor") == "its water vapor", "normalize apostrophes")
+  ok(NA.LevelFor(1) == 1 and NA.LevelFor(3) == 2 and NA.LevelFor(5) == 3, "level mapping")
+  local tp = { mode = "text", typed = true, answer = "Condensation", alts = { "condensing" } }
+  ok(NA.Check(tp, "condensation") and NA.Check(tp, " Condensing. ") and NA.Check(tp, "the condensation"), "typed answer: case, article and alt forgiven")
+  ok(not NA.Check(tp, "evaporation") and not NA.Check(tp, "") and not NA.Check(tp, "   "), "typed answer: wrong / blank rejected")
+  ok(NA.Check({ mode = "choice", answer = "Gas" }, "Gas") and not NA.Check({ mode = "choice", answer = "Gas" }, "gas"), "buttons compare exactly")
+  NA.bags = {}
+  local pool, seen, dup = NA.Pool(D.NEEDS, 1), {}, false
+  for _ = 1, #pool do
+    local e = NA.Draw("needs", D.NEEDS, 1)
+    if seen[e] then dup = true end
+    seen[e] = true
+  end
+  ok(not dup, "shuffle bag: no repeats inside one pass")
+
+  -- generators: every node x level x tier x purpose
+  local NOW0 = 1800000000
+  tns.Env.time = function() return NOW0 end
+  tns.Progress.Bind({}, {})
+  for _, band in ipairs(Mods.BAND_ORDER) do
+    for _, nodeId in ipairs(Mods.Nodes("naturalist", band)) do
+      local typedSeen = false
+      for level = 1, 5 do
+        for tier = 1, 3 do
+          for _, purpose in ipairs({ "practice", "trial" }) do
+            for _ = 1, math.max(6, math.floor(ITER / 25)) do
+              local okk, p = pcall(Mods.Generate, nodeId, level, tier, purpose)
+              natGenCount = natGenCount + 1
+              local tag = string.format("[%s L%d T%d %s]", nodeId, level, tier, purpose)
+              if ok(okk and type(p) == "table", tag .. " generator error: " .. tostring(p)) then
+                tag = tag .. " '" .. tostring(p.text):sub(1, 60) .. "'"
+                ok(type(p.text) == "string" and #p.text > 10 and #p.text <= NA.MAX_TEXT, tag .. " text length")
+                ok(not hasFormatLeftovers(p.text) and not hasFormatLeftovers(p.hint) and not hasFormatLeftovers(p.explain), tag .. " format leftovers")
+                ok(type(p.answer) == "string" and p.answer ~= "", tag .. " answer is text")
+                if p.mode == "choice" then
+                  local n, seenC = 0, {}
+                  for _, c in ipairs(p.choices) do
+                    if c == p.answer then n = n + 1 end
+                    ok(not seenC[NA.Normalize(c)], tag .. " duplicate choice " .. c)
+                    seenC[NA.Normalize(c)] = true
+                    ok(#c <= NA.MAX_CHOICE, tag .. " choice too long: " .. c)
+                    ok(Mods.Check(p, c) == (c == p.answer), tag .. " check of choice " .. c)
+                  end
+                  ok(n == 1, tag .. " answer appears exactly once")
+                  ok(#p.choices == (band == "initiate" and 3 or 4), tag .. " number of buttons " .. #p.choices)
+                else
+                  typedSeen = true
+                  ok(p.mode == "text" and p.typed, tag .. " typed problems are text")
+                  ok(band ~= "initiate", tag .. " initiate never types")
+                  ok(tier >= 2 or purpose == "trial", tag .. " Spark practice is always buttons")
+                  ok(Mods.Check(p, p.answer) and Mods.Check(p, lower(p.answer)) and Mods.Check(p, "  " .. p.answer .. ". "), tag .. " typed answer accepted")
+                  ok(not Mods.Check(p, "zzqx") and not Mods.Check(p, ""), tag .. " junk rejected")
+                  for _, d in ipairs(p.distractors or {}) do ok(not Mods.Check(p, d), tag .. " typed wrong answer rejected: " .. d) end
+                end
+              end
+            end
+          end
+        end
+      end
+      if band ~= "initiate" and nodeId ~= "nat_adapt" and nodeId ~= "nat_fairtest" and nodeId ~= "nat_explain" then
+        ok(typedSeen, "some typed answers on Rune/Glyph for " .. nodeId)
+      end
+    end
+  end
+
+  -- habitat sanity: wrong answers never come from a look-alike habitat
+  for _ = 1, 300 do
+    local p = Mods.Generate("nat_habitats", 1, 1, "practice")
+    for _, h in ipairs(D.HABITATS) do
+      if p.answer:find("(" .. h.desc .. ")", 1, true) then
+        for _, c in ipairs(p.choices) do
+          for _, o in ipairs(D.HABITATS) do
+            if c ~= p.answer and c:find("(" .. o.desc .. ")", 1, true) then ok(not (NA.CLASH[h.id] and NA.CLASH[h.id][o.id]), "habitat distractor too alike: " .. c) end
+          end
+        end
+      end
+    end
+  end
+  -- food-chain sanity: a distractor in "which one eats X" never sits above X in its chain
+  for _ = 1, 400 do
+    local p = Mods.Generate("nat_foodchains", 4, 1, "practice")
+    if p.text:find("eats the", 1, true) and p.choices then
+      for _, ch in ipairs(D.CHAINS) do
+        local head = string.format(NL.NAT_CHAIN_HEAD, ch.zone, table.concat(ch.chain, " -> "))
+        if p.text:find(head, 1, true) then
+          local pos = {}
+          for i, x in ipairs(ch.chain) do pos[x] = i end
+          local food = p.text:match("eats the (.-)%?")
+          for _, c in ipairs(p.choices) do
+            if c ~= p.answer and pos[c] and pos[food] then ok(pos[c] <= pos[food], "food chain distractor could be a predator: " .. c) end
+          end
+        end
+      end
+    end
+  end
+
+  -- engine: trial, mastery -> specimens, exam, review -> faded ink, sync, migration
+  local NOW = 1800000000
+  tns.Env.time = function() return NOW end
+  local LP, LT, LR = tns.Progress, tns.Trial, tns.Review
+  local acct, char = LP.Bind({}, {})
+  ok(acct.version == 6 and char.version == 6 and type(acct.journal.entries) == "table", "schema 6 with a journal")
+  ok(select(1, J.Count()) == 0 and select(2, J.Count()) == 45, "empty journal: 0 / 45")
+  local collected = 0
+  for _, band in ipairs({ "initiate", "adept", "magister" }) do
+    LP.SetBand(band)
+    ok(LT.NeedsPlacement("naturalist", band), "naturalist offers its own trial: " .. band)
+    local res = runTrial(tns, band, "placement", function() return true end, "naturalist")
+    ok(res.completed and res.correct == 10, "naturalist placement perfect: " .. band)
+    runTrial(tns, band, "placement", function() return false end, "naturalist")
+    ok(LT.StartTier(Mods.Nodes("naturalist", band)[1]) == 1, "naturalist all-wrong trial: Spark")
+    for i, nodeId in ipairs(Mods.Nodes("naturalist", band)) do
+      for t = 1, 2 do
+        if i <= 4 then
+          local got
+          for _ = 1, 2 do
+            local s = tns.Session.New(nodeId, t, 0)
+            local c = 0
+            while true do
+              local p = s:Next(c)
+              if not p then break end
+              c = c + 3
+              local r = s:Submit(p.answer, c)
+              if r and r.specimen then
+                ok(r.mastered, "specimen only with a new mastery")
+                got = r.specimen
+              end
+            end
+            local sum = s:Finish()
+            if got and sum.specimens and #sum.specimens > 0 then ok(sum.specimens[1] == got, "round summary lists the specimen") end
+          end
+          ok(LP.GetTierRec(nodeId, t).mastered, "naturalist mastery through rounds: " .. nodeId .. " T" .. t)
+          ok(got == J.Specimen(nodeId, t) and J.Has(nodeId, t) and J.Status(nodeId, t) == "collected", "mastery collects the specimen: " .. nodeId .. " T" .. t)
+          collected = collected + 1
+        end
+      end
+    end
+    ok(select(1, J.Count(band)) == 8, "8 pages per band after 4 skills x 2 tiers: " .. band)
+    ok(LT.ExamStatus("naturalist", band), "naturalist exam unlocks: " .. band)
+    local ex = runTrial(tns, band, "exam", function() return true end, "naturalist")
+    ok(ex.passed and ex.firstPass, "naturalist exam passes: " .. band)
+  end
+  ok(select(1, J.Count()) == collected and collected == 24, "journal total " .. collected)
+  ok(J.Collect("nat_needs", 1) == nil, "a page is only collected once")
+  ok(J.Collect("lc_grammar", 1) == nil and J.Specimen("rf_add", 1) == nil, "other subjects have no specimens")
+  -- re-mastery after a fade gives no duplicate
+  local s2 = tns.Session.New("lc_grammar", 1, 0)
+  ok(s2 and #s2:Finish().specimens == 0, "other subjects' rounds have no specimens")
+  -- review time: due tiers show faded ink, passing restores it
+  NOW = NOW + LR.DAY + 5
+  ok(J.FadedCount() > 0, "due reviews fade journal pages (" .. J.FadedCount() .. ")")
+  local due = LR.Due()
+  local anyNat = false
+  for _, d in ipairs(due) do if d.moduleId == "naturalist" then anyNat = true end end
+  ok(anyNat, "naturalist tiers come up in Review Time")
+  local before = J.FadedCount()
+  for _ = 1, 30 do
+    local d = LR.Due()
+    if #d == 0 then break end
+    local s = tns.Session.NewReview(d, 0)
+    local c = 0
+    while true do
+      local p = s:Next(c)
+      if not p then break end
+      c = c + 3
+      s:Submit(p.answer, c)
+    end
+    s:Finish()
+  end
+  ok(J.FadedCount() < before and J.FadedCount() == 0, "passing reviews restores the ink")
+  ok(select(1, J.Count()) == 24, "reviews never remove pages")
+  -- fading (failed review) keeps the page but marks it faded
+  local tr = LP.GetTierRec("nat_needs", 1)
+  tr.fading = true
+  ok(J.Status("nat_needs", 1) == "faded" and J.Has("nat_needs", 1), "fading tier = faded page, still collected")
+  tr.fading = nil
+  -- Flight prefers the module's sky skills while any is open
+  LP.SetBand("initiate")
+  local pref = nat.flightNodes.initiate
+  local rid = tns.Mastery.Recommend("initiate", "naturalist", pref)
+  local inPref = false
+  for _, id in ipairs(pref) do if id == rid then inPref = true end end
+  ok(inPref, "flight round picks a sky skill: " .. tostring(rid))
+  ok(tns.Mastery.Recommend("initiate", "naturalist") ~= nil, "normal recommend unchanged")
+  -- account-wide: a reset character keeps the journal; sync is a no-op then re-fills
+  LP.ResetProfile()
+  ok(select(1, J.Count()) == 24, "profile reset keeps the family journal")
+  ok(#J.Sync() == 0, "sync with no mastery adds nothing")
+  local acct2 = { version = 6, journal = { entries = {} } }
+  LP.Bind(acct2, char)
+  ok(select(1, J.Count()) == 0, "new account file starts empty")
+  -- schema 5 -> 6: mastered Naturalist tiers from older progress land in the journal
+  local oldChar = { version = 5, profile = { band = "adept" }, shards = 12, modules = { naturalist = { nodes = {
+    nat_matter = { tiers = { { mastered = true, masteredAt = NOW - 100, attempts = 10, recent = {} }, {}, {} } } }, placement = {}, exams = {} } } }
+  local oldAcct = { version = 5, settings = { dailyCap = 45 } }
+  LP.Bind(oldAcct, oldChar)
+  ok(oldAcct.version == 6 and oldChar.version == 6 and LP.upgradedFrom == 5, "v0.8 -> v0.9 bump")
+  ok(type(oldAcct.journal) == "table" and J.Has("nat_matter", 1) and not J.Has("nat_matter", 2), "migration syncs mastered tiers into the journal")
+  ok(oldAcct.settings.dailyCap == 45 and oldChar.shards == 12, "migration keeps everything else")
+  ok(J.Entry("nat_matter", 1).at == NOW - 100, "synced page keeps its mastery date")
+  -- report mentions nothing broken for naturalist
+  local okRep, rep = pcall(tns.Report.Build, { moduleId = "naturalist" })
+  ok(okRep and rep:find("Field Journal: 1 / 45", 1, true), "progress report shows the journal: " .. tostring(rep):sub(-200))
+end
+
+-------------------------------------------------------------------------
 print(string.format("Generated %d problems: %d Rune Forger nodes x 5 levels x 3 tiers (%d per node) + 15 Scribe nodes x 5 levels x 3 tiers x 2 purposes.", genCount,
   (function() local n = 0 for _ in pairs(perNode) do n = n + 1 end return n end)(), ITER * 15))
 print(string.format("Lore Chronicles + Lore Quiz: %d generated problems checked.", loreGenCount))
+print(string.format("Azeroth Naturalist: %d generated problems checked; question bank: Initiate %d, Adept %d, Magister %d items (curated + generator data).",
+  natGenCount, natItems.initiate or 0, natItems.adept or 0, natItems.magister or 0))
 print(string.format("%d checks, %d failures", checks, failures))
 os.exit(failures == 0 and 0 or 1)

@@ -59,14 +59,19 @@ SlashCmdList.AZEROTHACADEMY = function(msg)
     ns.Hub.Open("trial", msg == "exam" and "exam" or "placement")
   elseif msg == "parent" then
     ns.Hub.Open("parent")
-  elseif msg == "forge" or msg == "scribe" or msg == "lore" or msg == "quiz" then
-    local ids = { forge = "runeforger", scribe = "scribe", lore = "lore", quiz = "lorequiz" }
+  elseif msg == "forge" or msg == "scribe" or msg == "lore" or msg == "quiz" or msg == "nature" or msg == "naturalist" or msg == "science" then
+    local ids = { forge = "runeforger", scribe = "scribe", lore = "lore", quiz = "lorequiz",
+      nature = "naturalist", naturalist = "naturalist", science = "naturalist" }
     ns.Lessons.moduleId = ids[msg]
     ns.Hub.Open("forge")
   elseif msg == "murloc" or msg == "murlocs" or msg == "ship" or msg == "boarding" then
     if C.InCombat() then C.Print(L.NO_COMBAT) return end
     ns.Lessons.moduleId = "scribe"
     ns.Hub.Open("boarding", "setup")
+  elseif msg == "journal" or msg == "bestiary" then
+    if C.InCombat() then C.Print(L.NO_COMBAT) return end
+    ns.Lessons.moduleId = "naturalist"
+    ns.Hub.Open("journal", "open")
   elseif msg == "minimap" then
     if ns.MinimapButton then
       ns.MinimapButton.Create()

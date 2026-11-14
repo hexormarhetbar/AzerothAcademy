@@ -29,6 +29,13 @@ local I = {
   -- Lore Quiz for Everyone
   lq_horde = "INV_BannerPVP_01", lq_alliance = "INV_BannerPVP_02", lq_neutral = "INV_Misc_Coin_03",
   lq_places = "INV_Misc_Spyglass_03", lq_legends = "INV_Misc_Head_Dragon_01",
+  -- Azeroth Naturalist (v0.9)
+  nat_habitats = "Ability_Hunter_Pet_Tallstrider", nat_needs = "INV_Drink_07", nat_living = "INV_Misc_Herb_10",
+  nat_daynight = "Spell_Nature_StarFall", nat_seasons = "Spell_Nature_ResistNature",
+  nat_foodchains = "Ability_Hunter_Pet_Wolf", nat_watercycle = "Spell_Frost_IceStorm", nat_matter = "INV_Potion_15",
+  nat_adapt = "Ability_Hunter_Pet_Turtle", nat_lifecycle = "INV_Misc_Herb_02",
+  nat_fairtest = "Trade_Alchemy", nat_explain = "INV_Misc_Book_03", nat_ecosystems = "Spell_Nature_Regeneration",
+  nat_forces = "Ability_Warrior_Charge", nat_energy = "Spell_Fire_Fire",
 }
 ns.SkillIcons = {}
 for id, name in pairs(I) do ns.SkillIcons[id] = P .. name end

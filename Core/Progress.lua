@@ -25,7 +25,7 @@ for _, b in ipairs(P.BANDS) do P.BAND_BY_ID[b.id] = b end
 
 P.LIMITS = { minutesPerMasteryMax = 60, dailyCapMax = 240 }
 
-P.SCHEMA = 5
+P.SCHEMA = 6
 
 local ACCOUNT_DEFAULTS = {
   version = P.SCHEMA,
@@ -45,6 +45,9 @@ local ACCOUNT_DEFAULTS = {
   },
   minutes = { day = "", earned = 0 },
   ui = {},
+  -- v0.9 (schema 6): Azeroth Naturalist Field Journal, account-wide so every
+  -- character's mastered specimens land in one book. entries["nodeId:tier"] = { at = time }
+  journal = { entries = {} },
 }
 
 local CHAR_DEFAULTS = {
@@ -115,6 +118,11 @@ local function migrate(account, char)
     -- v0.7 (schema 5): account-level flight setting only; nothing per character moves.
     char.version = 5
   end
+  if (char.version or 1) < 6 then
+    -- v0.9 (schema 6): the Field Journal (account.journal, filled by ApplyDefaults).
+    -- Nothing per character moves; Bind syncs mastered Naturalist tiers into it.
+    char.version = 6
+  end
   if startVersion < P.SCHEMA then P.upgradedFrom = startVersion end
   if (account.version or 1) < P.SCHEMA then account.version = P.SCHEMA end
 end
@@ -123,6 +131,9 @@ function P.Bind(account, char)
   P.account = Util.ApplyDefaults(account or {}, ACCOUNT_DEFAULTS)
   P.char = Util.ApplyDefaults(char or {}, CHAR_DEFAULTS)
   migrate(P.account, P.char)
+  -- v0.9: make sure every Naturalist tier this character mastered has its journal page
+  -- (covers a new account file, a reset journal, or a tier mastered on an old version).
+  if ns.Journal then ns.Journal.Sync() end
   return P.account, P.char
 end
 

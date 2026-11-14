@@ -35,7 +35,7 @@ local function create(mode, plan, now)
     rightRun = 0, wrongRun = 0,
     shards = 0, minutes = 0, masteredNow = false, rankUp = false,
     tries = 0, startedAt = now or 0, done = false, finished = false, log = {},
-    items = {}, itemOrder = {},
+    items = {}, itemOrder = {}, specimens = {},
   }, S)
 end
 
@@ -147,6 +147,14 @@ function S:Submit(given, now)
       self.minutes = self.minutes + grant
       r.minutes = grant
       award(self, S.MASTERY_BONUS, r)
+      -- v0.9: subjects with a Field Journal hand out a specimen page per mastered tier
+      if ns.Journal and ns.Journal.Specimen(self.nodeId, self.tier) then
+        local spec = ns.Journal.Collect(self.nodeId, self.tier)
+        if spec then
+          r.specimen = spec
+          self.specimens[#self.specimens + 1] = spec
+        end
+      end
     end
   else
     rec.time = rec.time + dt -- retries still count as time spent learning
@@ -260,6 +268,7 @@ function S:Finish()
     masteredNow = self.masteredNow, tierMastered = rec.mastered, rankUp = self.rankUp,
     recentCorrect = recentCorrect, recentTotal = recentTotal, fading = rec.fading,
     fadingCleared = self.fadingCleared, reviews = self.reviewResults,
+    specimens = self.specimens,
     rank = ns.Progress.GetRankInfo(),
   }
 end

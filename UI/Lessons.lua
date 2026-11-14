@@ -19,6 +19,22 @@ local function say(event, ...)
   if ns.GuideUI then return ns.GuideUI.Say(event, ...) end
 end
 
+-- v0.9: a subject can swap generic Fizzwick events for its own (module.guideEvents,
+-- e.g. Naturalist CORRECT -> NATCORRECT every 3rd time). Counters live per session.
+RF.guideCount = {}
+function RF.EventFor(module, event)
+  local map = module and module.guideEvents and module.guideEvents[event]
+  if not map then return event end
+  local key = (module.id or "?") .. ":" .. event
+  local n = (RF.guideCount[key] or 0) + 1
+  RF.guideCount[key] = n
+  if (n - 1) % (map.every or 1) == 0 then return map[1] end
+  return event
+end
+local function sayFor(module, event)
+  return say(RF.EventFor(module, event))
+end
+
 RF.REVIEW_ICON = "Interface\\Icons\\INV_Misc_PocketWatch_01"
 
 -- Icon for a finished round/review (the subject's own icon; reviews get a clock).
@@ -505,7 +521,7 @@ H.RegisterView("problem", function(parent)
       if r.correct then
         W.Flash(card, W.GREEN, 0.6)
         C.Sound("correct")
-        say("CORRECT")
+        sayFor(module, "CORRECT")
         setFeedback(L[module.trialRightKey or "TRIAL_RIGHT"] .. (typingText and ("\n" .. typingText) or ""), W.GREEN)
         self:Lock()
         local token = self.token
@@ -514,7 +530,7 @@ H.RegisterView("problem", function(parent)
         end)
       else
         C.Sound("wrong")
-        say("WRONG")
+        sayFor(module, "WRONG")
         setFeedback(string.format(L[module.trialWrongKey or "TRIAL_WRONG"], r.answerText or "?") .. (typingText and ("\n" .. typingText) or ""), W.WHITE)
         self:Lock()
         nextBtn:SetText(L.NEXT)
@@ -527,7 +543,7 @@ H.RegisterView("problem", function(parent)
       W.Flash(card, r.overcharge and W.GOLD or W.GREEN, 0.7)
       W.Sparks(card, r.overcharge and 14 or 8, r.overcharge and W.GOLD or W.ARCANE)
       C.Sound(r.overcharge and "overcharge" or (r.combo and "combo" or "correct"))
-      say(r.overcharge and "OVERCHARGE" or (r.combo and "COMBO" or "CORRECT"))
+      if r.overcharge or r.combo then say(r.overcharge and "OVERCHARGE" or "COMBO") else sayFor(module, "CORRECT") end
       if r.tries > 1 then
         setFeedback(L.RETRY_PRAISE, W.GREEN)
       else
@@ -545,7 +561,7 @@ H.RegisterView("problem", function(parent)
     elseif r.retry then
       W.Flash(card, W.AMBER, 0.5)
       C.Sound("wrong")
-      say("WRONG")
+      sayFor(module, "WRONG")
       setCombo(0, false)
       setFeedback(string.format(L.RETRY_PREFIX, r.hint or "") .. (typingText and ("\n" .. typingText) or ""), W.AMBER)
       if button then button:Disable() end
@@ -555,7 +571,7 @@ H.RegisterView("problem", function(parent)
       end
     else
       C.Sound("wrong")
-      say("WRONG")
+      sayFor(module, "WRONG")
       if ns.GuideUI then ns.GuideUI.Pose("teaching") end -- v0.5.1: worked example
       setCombo(0, false)
       setFeedback(string.format(L.EXPLAIN_PREFIX, r.answerText or "?", r.explain or ""), W.WHITE)
@@ -573,12 +589,21 @@ H.RegisterView("problem", function(parent)
 
     if r.mastered then
       C.Sound("reward")
-      say("MASTERED")
+      local text
       if (r.minutes or 0) > 0 then
-        banner:SetText(string.format(L.MASTERED_BANNER, tierName(s.tier), r.minutes))
+        text = string.format(L.MASTERED_BANNER, tierName(s.tier), r.minutes)
       else
-        banner:SetText(string.format(L.MASTERED_BANNER_NOMIN, tierName(s.tier)))
+        text = string.format(L.MASTERED_BANNER_NOMIN, tierName(s.tier))
       end
+      if r.specimen then
+        -- v0.9 Field Journal: a new specimen page for this mastered tier
+        C.Sound("specimen")
+        say("NATSPECIMEN")
+        text = text .. "\n|cff66ddaa" .. string.format(L.JOURNAL_NEW, r.specimen.name) .. "|r"
+      else
+        say("MASTERED")
+      end
+      banner:SetText(text)
     end
     if r.rankUp then
       local info = ns.Progress.GetRankInfo()
@@ -598,7 +623,7 @@ H.RegisterView("problem", function(parent)
       elseif s.mode == "review" then
         say("REVIEW")
       else
-        say("ROUNDSTART")
+        sayFor(s.module, "ROUNDSTART")
       end
       local module = ns.Modules.Get(s.moduleId or "") or RF.CurrentModule()
       C.Sound(module.startSound or "forge")
@@ -673,6 +698,14 @@ H.RegisterView("reward", function(parent)
   another:SetPoint("BOTTOM", backForge, "TOP", 0, 8)
   another:Hide()
   v.another = another
+  -- v0.9: jump to the Field Journal after collecting a specimen
+  local journalBtn = W.Button(v, L.JOURNAL_OPEN, 140, 26, function()
+    local sp = v.summary and v.summary.specimens
+    H.ShowView("journal", sp and sp[1] and { nodeId = sp[1].nodeId, tier = sp[1].tier } or nil)
+  end, 12)
+  journalBtn:SetPoint("BOTTOM", hub, "TOP", 0, 8)
+  journalBtn:Hide()
+  v.journalBtn = journalBtn
   function v:UpdateFlight()
     local sm = self.summary
     if sm and sm.flight and ns.FlightUI and ns.FlightUI.CanOfferAnother() then another:Show() else another:Hide() end
@@ -753,6 +786,16 @@ H.RegisterView("reward", function(parent)
       W.Sparks(v, 16, W.GOLD)
     end
     self:UpdateFlight()
+    local specimens = s.specimens or {}
+    if #specimens > 0 then
+      local names = {}
+      for _, sp in ipairs(specimens) do names[#names + 1] = sp.name end
+      local cur = lines[5]:GetText() or ""
+      lines[5]:SetText(cur .. (cur ~= "" and "\n" or "") .. "|cff66ddaa" .. string.format(L.JOURNAL_NEW, table.concat(names, ", ")) .. "|r")
+      journalBtn:Show()
+    else
+      journalBtn:Hide()
+    end
     -- Fizzwick + celebrations (only the first time this summary is shown)
     if summary and s.flight and not (s.rankUp or s.masteredNow) then
       say((ns.FlightUI and ns.FlightUI.CanOfferAnother()) and "FLIGHTDONE" or "FLIGHTLAND")
@@ -760,7 +803,7 @@ H.RegisterView("reward", function(parent)
       if s.rankUp and ns.GuideUI then
         ns.GuideUI.Celebrate(info.key)
       elseif s.masteredNow then
-        say("MASTERED")
+        say(#specimens > 0 and "NATSPECIMEN" or "MASTERED")
         if ns.GuideUI and ns.Guide.IsMilestone(ns.Progress.TotalMastered()) then ns.GuideUI.Cameo("MILESTONE") end
       elseif s.mode == "review" then
         local fading = false

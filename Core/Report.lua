@@ -136,6 +136,10 @@ function Report.Build(info)
   else
     add("Needs practice: nothing flagged yet.")
   end
+  if ns.Journal and (not info.moduleId or info.moduleId == "naturalist") then
+    local have, total = ns.Journal.Count()
+    add(string.format(L.JOURNAL_STATUS, have, total))
+  end
   add("")
   add("All data is stored locally in WoW SavedVariables. Nothing is sent anywhere.")
   return table.concat(lines, "\n")

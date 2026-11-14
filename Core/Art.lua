@@ -36,6 +36,9 @@ A.EVENT_POSE = {
   BOARDBROADSIDE = "excited", BOARDWHEEL = "encouraging", BOARDWIN = "celebrating", BOARDLOSE = "encouraging",
   -- v0.7 In-Flight Lessons
   FLIGHTSTART = "excited", FLIGHTDONE = "proud", FLIGHTLAND = "talking",
+  -- v0.9 Azeroth Naturalist
+  NATSTART = "talking", NATCORRECT = "talking", NATWRONG = "encouraging", NATSPECIMEN = "excited",
+  NATJOURNAL = "researching", NATFLIGHT = "excited",
 }
 
 -- While a problem waits for an answer, Fizzwick works on something that fits the subject.
@@ -43,6 +46,7 @@ A.SUBJECT_POSE = {
   lore = "researching", lorequiz = "researching", librarian = "researching",
   runeforger = "tinkering", gnomish = "tinkering",
   boarding = "talking", -- at the ship's wheel
+  naturalist = "researching",
 }
 
 local function has(manifest, name, missing)

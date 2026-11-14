@@ -340,11 +340,38 @@ The IDs were cross-checked on Wowhead's Classic and Retail NPC pages, and both l
   add the key to `V.LINES` with its duration and a row to the Sounds README. The harness checks the key exists,
   the file is a real Ogg, the README lists it and the duration is sane.
 
-## Data model (schema 5)
+## Azeroth Naturalist and the Field Journal (v0.9)
+
+- **Module #4** (`Core/NaturalistGen.lua`, data in `Core/NaturalistData.lua`), registered like the others:
+  15 generators, `choiceOnlyBands = { initiate = true }`, `textAnswers`, its own `check` (`NA.Check`).
+  Most skills draw curated entries `{ lv = 1..3, q, a, d = { distractors, best first }, why, t = { typed alts }? }`
+  through shuffle bags (`NA.Draw`, a full pool before any repeat). Habitats, living/not living, food chains,
+  matter states, the water-cycle order and life cycles are partly generated from small data tables.
+- **Typed answers** only when an entry has `t` (accepted spellings) and the band is not Initiate. Problems
+  set `typed`, `distractors` and `alts` and leave `choices` empty, so `Modules.InputMode` decides: buttons on
+  Spark practice, a text box on Rune/Glyph and trials. `NA.Normalize` lowercases, strips punctuation and a
+  leading article before comparing. Explanations and predictions always use buttons.
+- **Distractor safety:** food-chain "who eats X" distractors only come from below X in its chain (or other
+  chains' plants), because higher animals might really eat X. The harness checks this.
+- **Guide events per module:** `module.guideEvents = { ROUNDSTART = { "NATSTART", every = 1 }, CORRECT = { "NATCORRECT", every = 3 }, ... }`.
+  `Lessons.EventFor` swaps the generic event for the module's own on the 1st, (1+every)th... time, so the subject
+  has its own voice without losing combo/overcharge lines.
+- **Flight:** `module.flightNodes[band]` (preferred skills, passed to `Mastery.Recommend(band, module, prefer)`,
+  ignored once all are fully mastered) and `module.flightEvent` (Fizzwick's line instead of FLIGHTSTART).
+- **Field Journal (`ns.Journal`):** `SPECIMENS[nodeId][tier]` = `{ id, name, zone, icon (in-game), note }`.
+  `Session:Submit` calls `Journal.Collect(nodeId, tier)` when a tier is newly mastered and puts the specimen on
+  the result (`r.specimen`) and the round summary (`specimens`). `Journal.Status` is `missing | collected | faded`;
+  faded means this character's tier is fading or its review is due, so the journal doubles as a review prompt.
+  Pages are never removed. `Journal.Sync()` (run in `Progress.Bind` and when the journal opens) collects every tier
+  the current character has mastered, which covers upgrades and new account files.
+- **UI (`UI/Journal.lua`, view `journal`):** band tabs, 5 x 3 grid, page panel; actions reuse `Lessons.StartRound`
+  (missing page or fading) and `Lessons.StartReview` (due).
+
+## Data model (schema 6)
 
 ```lua
-AzerothAcademyDB = {            -- account-wide: parent settings + daily minutes
-  version  = 5,
+AzerothAcademyDB = {            -- account-wide: parent settings + daily minutes + Field Journal
+  version  = 6,
   settings = { minutesPerMastery = 10, dailyCap = 60, unlockAllTiers = false, reviews = true,
                sound = { enabled = true, channel = "SFX", level = "all"|"important", custom = true },   -- v0.4
                reducedMotion = false, cameos = true,                                                -- v0.4
@@ -354,9 +381,10 @@ AzerothAcademyDB = {            -- account-wide: parent settings + daily minutes
   minutes  = { day = "YYYY-MM-DD", earned = 0 },   -- shared so alts can't double the cap
   pin      = { salt = "123456", hash = "..." },    -- soft lock only
   ui       = { point, relPoint, x, y },
+  journal  = { entries = { ["nodeId:tier"] = { at = ts } } },                                       -- v0.9
 }
 AzerothAcademyCharDB = {        -- per character: the kid's learning progress
-  version = 5,
+  version = 6,
   profile = { band = "initiate"|"adept"|"magister", created = ts },
   shards  = 0,
   stats   = { rounds, problems, firstCorrect, time },
@@ -369,6 +397,10 @@ AzerothAcademyCharDB = {        -- per character: the kid's learning progress
   } },
 }
 ```
+
+**Migration v5 → v6** (v0.9): `journal` is filled in by `ApplyDefaults`, both versions go to 6, and
+`Progress.Bind` then runs `Journal.Sync()`, so Naturalist tiers already mastered get their pages (with
+their original `masteredAt` date). `ResetProfile` wipes only the character, so the family journal stays.
 
 **Migration v4 → v5** (v0.7): `settings.flight` is filled in by `ApplyDefaults`. If the account was
 below 5 and the old `taxiNudge` was `false`, `flight.mode` becomes `"off"`. It runs once (the account

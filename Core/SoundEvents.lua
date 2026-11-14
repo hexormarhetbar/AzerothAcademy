@@ -35,9 +35,13 @@ S.EVENTS = {
   gurgle     = { kits = { 416, 1109 } },                -- MurlocAggro ("mrglglgl"), then MurlocAlert
   -- v0.7/v0.8 In-Flight Lesson pop-up chime
   flight     = { kits = { "TELL_MESSAGE", 3081 } },
+  -- v0.9 Azeroth Naturalist / Field Journal
+  page       = { kits = { "IG_ABILITY_PAGE_TURN", 836 } },
+  specimen   = { kits = { "IG_QUEST_LIST_COMPLETE", 878 }, important = true },
 }
 S.ORDER = { "click", "open", "close", "correct", "wrong", "combo", "overcharge", "forge",
-  "scroll", "reward", "rankup", "exampass", "chirp", "hint", "cameo", "splash", "cannon", "gurgle", "flight" }
+  "scroll", "reward", "rankup", "exampass", "chirp", "hint", "cameo", "splash", "cannon", "gurgle", "flight",
+  "page", "specimen" }
 
 S.DEFAULTS = { enabled = true, channel = "SFX", level = "all", custom = true }
 

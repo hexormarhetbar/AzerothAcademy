@@ -1,4 +1,4 @@
-# Azeroth Academy v0.8.0 (test build)
+# Azeroth Academy v0.9.0 (test build)
 
 A free learning addon for kids ages 5 to 13. Lessons are framed as Academy quests in Azeroth.
 This build has the **Main Hub** and two subjects: **Rune Forger** (math) and, new in v0.3,
@@ -23,6 +23,10 @@ New in v0.7: **In-Flight Lessons**, a quick optional round while you ride a flig
 New in v0.8: **real sounds and Fizzwick's voice**. 19 original sound effects ship with the addon, and
 Professor Fizzwick speaks 12 of his lines in an original designed voice (switch it off in the
 Parent Panel or with `/aa voice off`).
+New in v0.9: **Azeroth Naturalist**, subject #4 (science). Field Warden Bramble Quickroot runs the
+greenhouse at the Knowledge Exchange in Gadgetzan. Kids sort creatures by zone, follow food chains and the
+water cycle through Thousand Needles, mix states of matter in a goblin alchemy lab, and design fair tests.
+Every mastered tier adds a specimen page to the new **Field Journal**, a bestiary shared by the whole account.
 Everything stays on your computer. Nothing is sent anywhere.
 
 ## Which game clients it targets
@@ -76,6 +80,8 @@ Or tick **Load out of date AddOns** on the AddOns screen.
 | `/aa scribe` | Open the Scribe's Scrolls skill list |
 | `/aa lore` | Open the Lore Chronicles story list (v0.5) |
 | `/aa quiz` | Open the Lore Quiz for Everyone (v0.5; no age band, no trial) |
+| `/aa nature` | Open the Azeroth Naturalist skill list (v0.9; `/aa science` works too) |
+| `/aa journal` | Open the Field Journal (v0.9; specimens you collected by mastering Naturalist skills) |
 | `/aa review` | Start a Review Time round (if any reviews are due) |
 | `/aa trial` | Open the placement trial for the current subject and band |
 | `/aa exam` | Open the mastery exam screen for the current subject (it says how many skills are still needed) |
@@ -127,8 +133,8 @@ Flight paths are perfect lesson time, so Fizzwick speaks up a couple of seconds 
 
 - **First run:** pick an age band. **Initiate** is ages 5–7, **Adept** is 8–10, **Magister** is 11–13.
 - **Hub:** shows your rank and progress bar, knowledge shards, bonus minutes earned today
-  against the daily cap, and the 7 module tiles. Rune Forger, Scribe's Scrolls and Lore Chronicles are
-  active; the other four say "Coming soon".
+  against the daily cap, and the module tiles. Rune Forger, Scribe's Scrolls, Lore Chronicles and
+  Azeroth Naturalist are active; the rest say "Coming soon".
 - **Rune Forger:** 5 skills per band, and each skill has 3 tiers: **Spark → Rune → Glyph**.
   - Initiate: Counting, Adding within 10, Adding within 20, Subtracting within 20, More or Less
   - Adept: Times Tables, Division, Place Value, Fractions of a Whole, Word Problems
@@ -220,6 +226,34 @@ Flight paths are perfect lesson time, so Fizzwick speaks up a couple of seconds 
   Azeroth, Great Legends) with 12 questions each, classic-era lore, and always 4 buttons. It has no
   age band, no trial, and no exam, and no hub tile, but mastery, shards, reviews, and the report
   work as usual (the report shows one "Everyone (all ages)" section). **Story lessons** goes back.
+- **Azeroth Naturalist (new in v0.9):** Field Warden Bramble Quickroot (original, neutral) tends the
+  greenhouse of the Knowledge Exchange in Gadgetzan. Same tiers, rewards, trial ("The Field Warden's Survey"),
+  reviews and exam ("Naturalist Mastery Exam") as the other subjects. All science text is original and was
+  checked for accuracy; Azeroth places and creatures are the flavour, real science is the content.
+  - Initiate (5–7): Zone Sorting (which creatures and plants live in which zone, plant or animal),
+    What Animals Need (food, water, air, shelter), Living or Not?, Day and Night, Seasons.
+    Always 3 big buttons.
+  - Adept (8–10): Food Chains (8 zone food chains: producer, who eats whom, top predator, where the energy
+    comes from), The Water Cycle (Thousand Needles and the Shimmering Flats), States of Matter (a Gadgetzan
+    alchemy lab), Adaptations, Life Cycles.
+  - Magister (11–13): Fair Tests (hypothesis, variables, controls), Predict and Explain (patterns in data,
+    evidence vs opinion), Ecosystems, Forces and Motion, Energy.
+  - **Typed answers** only where a short word is fair (e.g. *evaporation*, *herbivore*, *gas*,
+    *chrysalis*), on Rune, Glyph and trials for Adept and Magister. Capitals, extra spaces, punctuation
+    and a leading "a/the" are forgiven and common alternatives count (*pupa* for chrysalis).
+    Explanations and predictions always use buttons.
+  - Wrong-answer explanations say *why* (e.g. "Plants capture the sun's energy, and it passes along the chain").
+- **Field Journal (new in v0.9):** mastering a Naturalist tier collects that tier's specimen page:
+  45 pages (5 skills x 3 tiers x 3 bands), each with an in-game icon, a name, where in Azeroth it lives and a
+  short field note. A banner, a sound and Fizzwick announce each new page, and the reward screen has an
+  **Open Field Journal** button. Open the journal from the Naturalist skill list (**Field Journal** link),
+  the hub tile's **Journal** button, or `/aa journal`. Band tabs, a 5 x 3 grid (skills x Spark/Rune/Glyph),
+  and a page view. Undiscovered pages show a "?" and a **Go collect it!** button. When a skill's review is
+  due or it is fading, its page's ink fades and offers **Review now**; passing brings the ink back. Pages are
+  never taken away. The journal is account-wide, so siblings on different characters fill one book.
+- **In-flight science:** if Azeroth Naturalist was the last subject you opened, flight rounds pick a
+  "look down" skill first (Zone Sorting, Day and Night, Seasons; Water Cycle, Food Chains, Adaptations;
+  Ecosystems, Energy, Forces) and Fizzwick says something like "Look down! Every zone below is a habitat."
 - **Combat:** the window hides as soon as combat starts. When combat ends, a small
   "Resume / Later" prompt appears. Resume brings back the exact same problem.
 
@@ -321,6 +355,7 @@ Flight paths are perfect lesson time, so Fizzwick speaks up a couple of seconds 
   `Media/Sounds/`: button click, window open/close, right answer, a gentle wrong answer, combo,
   overcharge, forge, scroll, reward, rank-up, exam pass, Fizzwick's chirp, parrot hint, cameo,
   the three Murloc Boarding Party sounds, and a new chime for the In-Flight Lesson pop-up.
+  v0.9 adds two more (21 total): a journal **page** turn and a **specimen** discovery chime.
   They were generated for this addon (ElevenLabs), not taken from the game, and are matched in loudness.
 - **Built-in fallback.** Every sound event still has a built-in game sound. If a file is missing,
   or **Custom sound files** is OFF, the built-in sound plays.
@@ -342,6 +377,10 @@ description only: it is not a clone or imitation of any actor or game character.
 - **12 recorded lines:** greeting, round start, right answer, wrong answer (encouraging), Sprocket's
   hint ("Squawk! Hint, hint!"), combo, rank up, mastered, the In-Flight Lesson offer, landing,
   Murloc Boarding Party start, and goodbye.
+- **5 more in v0.9 (Azeroth Naturalist):** "Grab your field journal! Science time in the wild!",
+  "Sharp eyes! That's real science, partner!", "A new specimen for your journal! Ooh, look at that!",
+  "Welcome to your field journal. You earned every page!" and "Look down! Every zone below is a habitat.
+  Let's study!". Same voice, same rules.
 - **Words always match.** A recording plays only with its own text line in the bubble. The first
   time each of these moments happens in a session, Fizzwick picks the recorded line. After
   that his usual lines rotate, and only some of them are spoken.
@@ -536,9 +575,31 @@ v0.6 (Murloc Boarding Party):
 103. [ ] Change **Sound channel** to Dialog and move the game's Dialog slider: both effects and voice follow it.
 104. [ ] Tell me if any sound is too loud, too quiet, too long, or annoying after a few rounds, and if the voice feels too fast for a 5-year-old.
 
-## Known limits (v0.8)
+**Azeroth Naturalist and the Field Journal (v0.9)**. Restart the game client once (new sound and voice files).
 
-- **Only 12 lines are spoken.** Everything else Fizzwick says stays text-only, and the faction
+105. [ ] The hub shows an **Azeroth Naturalist** tile (no longer "Coming soon"). Clicking it offers **The Field Warden's Survey**; take it or skip it.
+106. [ ] Fizzwick says "Grab your field journal! Science time in the wild!" (voice and bubble) when a Naturalist round starts. You hear a page-turn sound.
+107. [ ] Initiate: every question has 3 big buttons. Try Zone Sorting, What Animals Need, Living or Not?, Day and Night and Seasons.
+108. [ ] Adept: on Spark you get 4 buttons. On Rune/Glyph some questions ask you to type (e.g. "Evaporation", "Herbivore", "Gas"). Try typing in lower case or with "a"/"the" in front: it's accepted.
+109. [ ] Read a few questions and explanations in each band. Tell me about anything that's wrong, confusing, or too hard/easy for the age.
+110. [ ] Master a Naturalist tier: the banner says "New specimen for your Field Journal: ...", a sparkle chime plays, and Fizzwick says "A new specimen for your journal!". The reward screen names it and shows **Open Field Journal**.
+111. [ ] **Open Field Journal** goes straight to the new page (icon, name, "Found in: ...", field note, collected date).
+112. [ ] In the journal, switch band tabs, click "?" pages (shows how to collect it and **Go collect it!**), and check the counter "Specimens: N / 45". Fizzwick says "Welcome to your field journal..." the first time.
+113. [ ] `/aa journal` opens the journal; `/aa nature` opens the Naturalist skill list; the hub tile's **Journal** button and the skill list's **Field Journal** link work; **Back** returns to the skill list.
+114. [ ] A day after mastering a Naturalist tier, its page shows "The ink is fading!" and a **Review now** button. Passing the review restores it.
+115. [ ] Log in on another character on the same account: the journal still has every page.
+116. [ ] Open Azeroth Naturalist, then take a flight path and start the In-Flight Lesson: it's a "look down" skill and Fizzwick says "Look down! Every zone below is a habitat..."
+117. [ ] Parent Panel export / report ends with "Field Journal: N / 45 specimens collected." and has an Azeroth Naturalist section.
+118. [ ] Specimen icons all show a real picture (no green "?" boxes) on Forever, Retail and Classic. Tell me which ones are missing.
+
+## Known limits (v0.9)
+
+- **Naturalist content is a first pass.** About 260 curated items plus generated food-chain, matter,
+  habitat and life-cycle questions. It has been accuracy-checked but not yet played by kids; tell me about
+  anything wrong or unclear.
+- **Specimen icons are in-game icons** chosen to work on every client. A few may look generic, or be missing on
+  very old clients (then you'd see the "?" icon).
+- **Only 17 lines are spoken** (12 from v0.8 plus 5 Naturalist lines). Everything else Fizzwick says stays text-only, and the faction
   leaders never speak. English only (like the rest of the addon for now).
 - **New or replaced sound files need a full game restart**, not `/reload`.
 - **The voice and effects haven't been heard in game yet.** They were checked for loudness and
@@ -621,6 +682,8 @@ AzerothAcademy/
     ScribeGen.lua           Scribe's Scrolls: 15 generators, text/typing checker, WPM, registered as module #2
     LoreData.lua            Lore Chronicles passages, questions, rubrics + Lore Quiz questions (original writing)
     LoreGen.lua             Lore Chronicles (module #3, 15 generators, keyword rubric) + Lore Quiz (unbanded)
+    NaturalistData.lua      Azeroth Naturalist questions, habitats, food chains, substances, life cycles, 45 specimens (original)
+    NaturalistGen.lua       Azeroth Naturalist (module #4, 15 generators, typed-answer checker) + Field Journal rules
     Art.lua                 posed art rules: pose per event/subject, head crops, Sprocket states, fallbacks
     SkillIcons.lua          per-skill in-game icon paths
     BoardingData.lua        Murloc Boarding Party crew orders + Tidehunter sentences (original writing)
@@ -633,9 +696,9 @@ AzerothAcademy/
   UI/                       Widgets (+ reveal/pulse/count-up animations), Hub (+ profile/home), Guide (Fizzwick strip,
                             parrot, cameo card, rank-up celebration), Lessons (skill list/problem/reward for any
                             module), Trial (trial intro/result), ParentPanel, Minimap (minimap button), Flight (flight watcher + toast),
-                            Boarding (Murloc Boarding Party: setup, ship deck, result)
-  Media/Sounds/             19 original sound effects (.ogg) + README.md (events, fallbacks, prompts, voice notes)
-  Media/Sounds/VO/          12 original Fizzwick voice clips (.ogg)
+                            Boarding (Murloc Boarding Party: setup, ship deck, result), Journal (Field Journal)
+  Media/Sounds/             21 original sound effects (.ogg) + README.md (events, fallbacks, prompts, voice notes)
+  Media/Sounds/VO/          17 original Fizzwick voice clips (.ogg)
   Media/Art/                Hex's posed art: 13 x 512 full figures + 13 x 256 head crops (TGA), Manifest.lua, README.md
   tools/convert_art.sh      PNG -> 512 TGA + 256 head crops (ImageMagick) + manifest writer
   tools/make_heads.py       face-centered 256 head-and-chest crops (Python, Pillow + numpy)
@@ -646,6 +709,10 @@ AzerothAcademy/
 ```
 
 ## Developer checks
+
+v0.9 adds harness section 22 (Azeroth Naturalist data + generators + Field Journal + schema 6) and a UI smoke
+pass through the Naturalist tile, survey, every skill, a specimen, the journal and an in-flight round.
+The harness prints the Naturalist question-bank size per band.
 
 The source folder also contains `tests/` and `.luacheckrc`. They're left out of the zip because
 the game doesn't need them. `tests/run_all.sh` runs:
@@ -728,6 +795,28 @@ originals and face-centered head crops, and wrote a 26-entry manifest.
 For v0.5, `tools/convert_art.sh` was run with ImageMagick 7.1.2 on test PNGs. It produced 512x512 RGBA TGAs, a 1024x256 (4-frame) and a 2048x256 (8-frame) strip, and a correct manifest. Removed files dropped out of the manifest, and a bad `STRIP_FRAMES` was rejected.
 
 ## Changelog
+
+**v0.9.0**
+- **Azeroth Naturalist (science), subject #4:** 15 skills across Initiate / Adept / Magister with the usual
+  Spark → Rune → Glyph mastery (9 of the last 10), placement trial ("The Field Warden's Survey"), spaced review,
+  mastery exam, shards, bonus minutes and the parent report. Host: Field Warden Bramble Quickroot (original, neutral).
+  All questions, explanations and field notes are original writing; no game text or art is copied.
+- **Field Journal:** 45 specimen pages collected by mastering Naturalist tiers. Band tabs, a 5 x 3 grid, page view,
+  faded ink + **Review now** when a skill is due or fading, **Go collect it!** on missing pages. New-specimen banner,
+  sound and Fizzwick line; **Open Field Journal** on the reward screen; `/aa journal`, a skill-list link and a hub tile button.
+- **Saved data (schema 6):** `AzerothAcademyDB.journal` (account-wide). Migration from v0.8 creates the journal and fills it
+  with any Naturalist tiers already mastered; a profile reset keeps the family journal.
+- **Fizzwick:** 6 new events (Naturalist round start, right, wrong, new specimen, journal, flight) with 21 lines, and
+  5 new voice clips in his original voice (ElevenLabs, same voice id, about 300 credits). Two new sound effects:
+  `page` (journal / round start) and `specimen` (new page).
+- **In-Flight Lessons:** a subject can choose "look down" skills for flight rounds and its own flight line;
+  Naturalist uses both. `Mastery.Recommend` takes an optional preferred-skill list.
+- **Typed science answers:** short words only (Adept/Magister, Rune/Glyph/trial), forgiving case, punctuation, a leading article
+  and listed alternatives.
+- **Tests:** data validation for every Naturalist item (levels, distractors, lengths, neutrality), every skill x level x tier x
+  purpose generated, food-chain distractors never secretly correct, typed-answer checks, the full engine (trial, mastery →
+  specimens, exam, review → faded ink, flight preference, reset, 5 → 6 migration, report), and UI smoke for the tile, survey,
+  every skill, specimen banner, journal view and actions, slash commands and the in-flight round on all four client runs.
 
 **v0.8.0**
 - **Real sounds:** 19 original, kid-friendly sound effects generated for the addon (ElevenLabs), mono 44.1 kHz Ogg,

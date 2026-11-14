@@ -35,6 +35,12 @@ V.LINES = {
   FZ_FLIGHTLAND_1 = { file = "landing", dur = 3.5 },
   FZ_BOARDSTART_1 = { file = "murloc", dur = 4.4 },
   FZ_BYE_1 = { file = "bye", dur = 3.5 },
+  -- v0.9 Azeroth Naturalist
+  FZ_NATSTART_1 = { file = "nat_start", dur = 3.1 },
+  FZ_NATCORRECT_1 = { file = "nat_correct", dur = 3.0 },
+  FZ_NATSPECIMEN_1 = { file = "nat_specimen", dur = 4.3, big = true },
+  FZ_NATJOURNAL_1 = { file = "nat_journal", dur = 3.8 },
+  FZ_NATFLIGHT_1 = { file = "nat_flight", dur = 4.3 },
 }
 -- event -> clip that fits every line of the event
 V.EVENT_CLIPS = {

@@ -83,9 +83,22 @@ function M.MasteredCount(nodeId)
 end
 
 -- Pick a node for a quick drill: fading tiers first, then least-mastered, then fewest attempts.
-function M.Recommend(bandId, moduleId)
+-- prefer (v0.9, optional): a list of node ids to try first (e.g. a subject's in-flight
+-- skills). Ignored once every preferred skill in this band is fully mastered.
+function M.Recommend(bandId, moduleId, prefer)
   local nodes = ns.Modules.Nodes(moduleId or "runeforger", bandId)
   if #nodes == 0 then return nil end
+  if type(prefer) == "table" and #prefer > 0 then
+    local want, sub, open = {}, {}, false
+    for _, id in ipairs(prefer) do want[id] = true end
+    for _, id in ipairs(nodes) do
+      if want[id] then
+        sub[#sub + 1] = id
+        if M.MasteredCount(id) < 3 then open = true end
+      end
+    end
+    if open then nodes = sub end
+  end
   for _, nodeId in ipairs(nodes) do
     for t = 1, 3 do
       if ns.Progress.GetTierRec(nodeId, t).fading then return nodeId, t end

@@ -19,6 +19,8 @@ G.EVENTS = {
   "BOARDSTART", "BOARDWAVE", "BOARDBOSS", "BOARDSPLASH", "BOARDBROADSIDE", "BOARDWHEEL", "BOARDWIN", "BOARDLOSE",
   -- v0.7: In-Flight Lessons
   "FLIGHTSTART", "FLIGHTDONE", "FLIGHTLAND",
+  -- v0.9: Azeroth Naturalist
+  "NATSTART", "NATCORRECT", "NATWRONG", "NATSPECIMEN", "NATJOURNAL", "NATFLIGHT",
 }
 
 -- Who can appear and how the UI should try to show them. Model IDs are tried in

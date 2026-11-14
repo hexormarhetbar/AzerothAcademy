@@ -144,11 +144,16 @@ function FU.StartQuickRound()
       H.ShowView("trial", "placement")
       return true
     end
-    local nodeId, tier = ns.Mastery.Recommend(band, module.id)
+    local prefer = type(module.flightNodes) == "table" and module.flightNodes[band] or nil
+    local nodeId, tier = ns.Mastery.Recommend(band, module.id, prefer)
     if not nodeId then return false end
     RF.StartRound(nodeId, tier, { size = F.ROUND_SIZE, flight = true })
   end
-  if ns.GuideUI and RF.session then ns.GuideUI.Say("FLIGHTSTART") end
+  if ns.GuideUI and RF.session then
+    -- v0.9: a subject can bring its own sky line (Naturalist: "every zone below is a habitat")
+    local m = RF.session.module
+    ns.GuideUI.Say((m and m.flightEvent) or "FLIGHTSTART")
+  end
   return RF.session ~= nil
 end
 
