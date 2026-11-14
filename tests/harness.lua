@@ -3302,6 +3302,156 @@ do
 end
 
 -------------------------------------------------------------------------
+-- 27. String coverage + translations (v1.0.0-rc)
+local localeStats = {}
+do
+  local function slurp(path)
+    local f = io.open(path, "r")
+    if not f then return "" end
+    local s = f:read("*a"); f:close(); return s
+  end
+  local en = newNS()
+  local EN = en.LocaleData.enUS
+  -- (a) every string key the code names statically exists in enUS
+  local files = { "Main.lua" }
+  for line in io.lines("AzerothAcademy.toc") do
+    line = line:gsub("\r", "")
+    if line:match("%.lua$") and not line:match("^Locales\\") then files[#files + 1] = (line:gsub("\\", "/")) end
+  end
+  local used, missing = {}, {}
+  for _, f in ipairs(files) do
+    local src = slurp(f)
+    ok(#src > 0, "source file readable: " .. f)
+    src = src:gsub("%-%-[^\n]*", "") -- comments may mention keys that are gone
+    for k in src:gmatch("[^%w_]L%.([A-Z][A-Z0-9_]+)") do used[k] = f end
+    for k in src:gmatch("[^%w_]L%[\"([A-Z][A-Z0-9_]+)\"%]") do used[k] = f end
+    for k in src:gmatch("[%w_]Key%s*=%s*\"([A-Z][A-Z0-9_]+)\"") do used[k] = f end
+    for k in src:gmatch("[^%w_]key%s*=%s*\"([A-Z][A-Z0-9_]+)\"") do used[k] = f end
+    for k in src:gmatch("fmt%(\"([A-Z][A-Z0-9_]+)\"") do used[k] = f end
+  end
+  local nUsed = 0
+  for k, f in pairs(used) do
+    if k:sub(-1) == "_" then used[k] = nil end -- a prefix joined at runtime (L["GE_NODE_" .. id])
+  end
+  for k, f in pairs(used) do
+    nUsed = nUsed + 1
+    if EN[k] == nil then missing[#missing + 1] = k .. " (" .. f .. ")" end
+  end
+  table.sort(missing)
+  ok(#missing == 0, "every L key used in code exists in enUS: " .. table.concat(missing, ", "))
+  ok(nUsed > 600, "string scan found the code's keys (" .. nUsed .. ")")
+  localeStats.used = nUsed
+  local nEN = 0
+  for _, v in pairs(EN) do nEN = nEN + 1; ok(type(v) == "string", "enUS values are strings") end
+  localeStats.enUS = nEN
+
+  -- (b) no user-facing English left in code: report + profile go through L
+  ok(not slurp("Core/Report.lua"):find("add%(\"[A-Z][a-z]"), "parent report has no hard-coded English lines")
+  ok(not slurp("UI/Hub.lua"):find("initiate = \"Learn", 1, true), "profile flavor text is localized")
+
+  -- (c) locale files: gated, valid, placeholders intact, good coverage
+  local function fmts(s) local t = {} for m in s:gmatch("%%[-+ #0]*%d*%.?%d*[dsfixX%%]") do t[#t + 1] = m end return table.concat(t, " ") end
+  local function count(s, pat) local n = 0 for _ in s:gmatch(pat) do n = n + 1 end return n end
+  local gated = newNS("deDE")
+  ok(gated.LocaleData.deDE and gated.LocaleData.frFR == nil and gated.LocaleData.zhCN == nil, "only the client's locale is loaded")
+  local translatable = 0
+  for k, v in pairs(EN) do
+    if v:gsub("%%[-+ #0]*%d*%.?%d*[dsfixX%%]", ""):gsub("|c%x%x%x%x%x%x%x%x", ""):find("%a%a") then translatable = translatable + 1 end
+  end
+  local all = newNS(); all.Env.allLocales = true
+  all = (function()
+    local t = { Env = { time = os.time, date = os.date, locale = "enUS", allLocales = true } }
+    for line in io.lines("AzerothAcademy.toc") do
+      line = line:gsub("\r", "")
+      if line:match("^Core\\") or line:match("^Locales\\") then assert(loadfile((line:gsub("\\", "/"))))("AzerothAcademy", t) end
+    end
+    return t
+  end)()
+  ok(#all.LOCALES == 10, "10 release locales")
+  for _, loc in ipairs(all.LOCALES) do
+    local T = all.LocaleData[loc]
+    if ok(type(T) == "table", loc .. " translation table exists") then
+      local n, bad = 0, {}
+      for k, v in pairs(T) do
+        n = n + 1
+        local e = EN[k]
+        if e == nil then bad[#bad + 1] = k .. " (not in enUS)"
+        elseif type(v) ~= "string" or v == "" then bad[#bad + 1] = k .. " (empty)"
+        elseif fmts(e) ~= fmts(v) then bad[#bad + 1] = k .. " (placeholders)"
+        elseif count(e, "|c%x%x%x%x%x%x%x%x") ~= count(v, "|c%x%x%x%x%x%x%x%x") or count(e, "|r") ~= count(v, "|r") then bad[#bad + 1] = k .. " (color codes)"
+        end
+      end
+      ok(#bad == 0, loc .. " strings valid: " .. table.concat(bad, ", "):sub(1, 400))
+      local cov = n / translatable
+      localeStats[loc] = { n = n, cov = cov }
+      ok(cov >= 0.85, string.format("%s covers %d of %d translatable strings (%.0f%%)", loc, n, translatable, cov * 100))
+    end
+  end
+  ok(all.LocaleData.esMX == all.LocaleData.esES, "esMX shares the Spanish table")
+  for _, f in ipairs({ "deDE", "frFR", "esES", "ptBR", "itIT", "ruRU", "koKR", "zhCN", "zhTW" }) do
+    local src = slurp("Locales/" .. f .. ".lua")
+    ok(src:find("MACHINE TRANSLATION", 1, true) and src:find("NEEDS NATIVE%-SPEAKER REVIEW") and src:find("WantLocale", 1, true),
+      f .. ".lua is marked machine-translated and loads only for its locale")
+  end
+  local compat = slurp("Adapters/Compat.lua")
+  for _, loc in ipairs({ "koKR", "zhCN", "zhTW", "ruRU" }) do
+    ok(compat:find(loc .. " = \"Fonts\\\\", 1, true) and compat:find("C.FONT = STANDARD_TEXT_FONT", 1, true), loc .. " uses the client's default font")
+  end
+  local readme = slurp("README.md")
+  ok(readme:find("native-speaker review", 1, true) and readme:find("voice stays English", 1, true), "README: machine translations need review, voice stays English")
+
+  -- (d) every locale: fallback works, every generator and the report run without format errors
+  local function leftovers(s) return type(s) ~= "string" or s:find("%%[ds]") ~= nil or s:find("%f[%a]nil%f[%A]") ~= nil end
+  local perLocale = math.max(1, math.floor(ITER / 200))
+  for _, loc in ipairs(all.LOCALES) do
+    local tns = newNS(loc)
+    local LL, Mods = tns.L, tns.Modules
+    ok(LL.NO_SUCH_KEY_XYZ == "NO_SUCH_KEY_XYZ" and LL.ADDON_TITLE == "Azeroth Academy", loc .. ": fallback chain")
+    if loc ~= "esMX" then ok(LL.BACK ~= "Back" and LL.BACK == tns.LocaleData[loc].BACK, loc .. ": translated label in use") end
+    tns.Env.time = function() return 1800000000 end
+    tns.Progress.Bind({}, {})
+    local errs, gens = {}, 0
+    for _, m in ipairs(Mods.list) do
+      local bands = m.unbanded and { Mods.EVERYONE.id } or Mods.BAND_ORDER
+      for _, band in ipairs(bands) do
+        for _, nodeId in ipairs(Mods.Nodes(m.id, band)) do
+          for level = 1, 5 do
+            for tier = 1, 3 do
+              for _ = 1, perLocale do
+                local okk, p = pcall(Mods.Generate, nodeId, level, tier, tier == 3 and "trial" or "practice")
+                gens = gens + 1
+                local tag = loc .. " " .. nodeId .. " L" .. level .. " T" .. tier
+                if not okk or type(p) ~= "table" then errs[#errs + 1] = tag .. ": " .. tostring(p)
+                else
+                  if leftovers(p.text) or (p.hint and leftovers(p.hint)) or (p.explain and leftovers(p.explain)) then errs[#errs + 1] = tag .. " leftovers: " .. tostring(p.text) end
+                  if p.mode == "choice" then
+                    local hit, seen = 0, {}
+                    for _, c in ipairs(p.choices) do
+                      local s = tostring(c)
+                      if s == tostring(p.answer) then hit = hit + 1 end
+                      if seen[s] then errs[#errs + 1] = tag .. " duplicate choice " .. s end
+                      seen[s] = true
+                    end
+                    if hit ~= 1 then errs[#errs + 1] = tag .. " answer not among choices" end
+                  end
+                end
+              end
+            end
+          end
+        end
+      end
+    end
+    ok(#errs == 0, loc .. ": " .. gens .. " generated problems clean. " .. table.concat(errs, " | "):sub(1, 600))
+    local okR, rep = pcall(tns.Report.Build, { player = "Kid-Realm" })
+    ok(okR and type(rep) == "string" and #rep > 200 and not rep:find("%%[ds]"), loc .. ": parent report builds: " .. tostring(okR and "" or rep))
+    for _, ev in ipairs(tns.Guide.EVENTS) do
+      local okG, line = pcall(tns.Guide.Line, ev, "X")
+      ok(okG and (line == nil or (type(line) == "string" and not line:find("%%[ds]"))), loc .. ": Fizzwick line for " .. ev)
+    end
+  end
+end
+
+-------------------------------------------------------------------------
 print(string.format("Generated %d problems: %d Rune Forger nodes x 5 levels x 3 tiers (%d per node) + 15 Scribe nodes x 5 levels x 3 tiers x 2 purposes.", genCount,
   (function() local n = 0 for _ in pairs(perNode) do n = n + 1 end return n end)(), ITER * 15))
 print(string.format("Lore Chronicles + Lore Quiz: %d generated problems checked.", loreGenCount))
@@ -3313,6 +3463,14 @@ for _, id in ipairs({ "gnomish", "librarian", "mechanics" }) do
     print(string.format("%s: %d generated problems checked; curated items: Initiate %d, Adept %d, Magister %d.", id, st.gen,
       st.items.initiate or 0, st.items.adept or 0, st.items.magister or 0))
   end
+end
+if localeStats.enUS then
+  local parts = {}
+  for _, loc in ipairs({ "deDE", "frFR", "esES", "esMX", "ptBR", "itIT", "ruRU", "koKR", "zhCN", "zhTW" }) do
+    local st = localeStats[loc]
+    if st then parts[#parts + 1] = string.format("%s %d (%.0f%%)", loc, st.n, st.cov * 100) end
+  end
+  print(string.format("Strings: enUS %d keys, %d referenced in code. Translations: %s.", localeStats.enUS, localeStats.used, table.concat(parts, ", ")))
 end
 print(string.format("%d checks, %d failures", checks, failures))
 os.exit(failures == 0 and 0 or 1)

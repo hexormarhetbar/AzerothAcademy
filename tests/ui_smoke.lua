@@ -9,7 +9,15 @@ local LEGACY = arg and arg[2] == "legacy" -- strip C_Timer/BackdropTemplate to e
 math.randomseed(os.time())
 
 local errors = 0
-local function fail(msg) errors = errors + 1; io.write("FAIL: " .. msg .. "\n") end
+local LOCALE = os.getenv("AA_LOCALE") or "enUS" -- v1.0: smoke-test a translated client
+-- On a translated client the English text assertions can't hold, so they are counted and skipped;
+-- Lua errors (scripts, events, slash commands, clicks, string.format) still fail the run.
+local textSkipped = 0
+local function luaFail(msg) errors = errors + 1; io.write("FAIL: " .. msg .. "\n") end
+local function fail(msg)
+  if LOCALE ~= "enUS" then textSkipped = textSkipped + 1; return end
+  luaFail(msg)
+end
 
 -------------------------------------------------------------------------
 -- Mock widget API
@@ -173,7 +181,7 @@ local timeOffset = 0 -- lets the test jump days ahead for spaced review
 time = function(t) if t then return os.time(t) end return os.time() + timeOffset end
 date = os.date
 function GetBuildInfo() return "1.60.1", "70790", "Nov 3 2026", INTERFACE end
-function GetLocale() return "enUS" end
+function GetLocale() return LOCALE end
 function GetRealmName() return "Testrealm" end
 function UnitName() return "Hexkid", nil end
 local inCombat, onTaxi = false, false
@@ -251,7 +259,7 @@ for _, f in ipairs(files) do
   local chunk, err = loadfile(f)
   if not chunk then fail("load " .. f .. ": " .. err) else
     local ok, e = pcall(chunk, "AzerothAcademy", ns)
-    if not ok then fail("run " .. f .. ": " .. tostring(e)) end
+    if not ok then luaFail("run " .. f .. ": " .. tostring(e)) end
   end
 end
 
@@ -259,7 +267,7 @@ local function fire(event, ...)
   for _, w in ipairs(allFrames) do
     if w.__events and w.__events[event] and w.__scripts.OnEvent then
       local ok, e = pcall(w.__scripts.OnEvent, w, event, ...)
-      if not ok then fail("event " .. event .. ": " .. tostring(e)) end
+      if not ok then luaFail("event " .. event .. ": " .. tostring(e)) end
     end
   end
 end
@@ -267,26 +275,110 @@ function update(dt)
   for _, w in ipairs(allFrames) do
     if w.__scripts.OnUpdate and w:IsVisible() then
       local ok, e = pcall(w.__scripts.OnUpdate, w, dt)
-      if not ok then fail("OnUpdate: " .. tostring(e)) end
+      if not ok then luaFail("OnUpdate: " .. tostring(e)) end
     end
   end
 end
 local function slash(msg)
   local ok, e = pcall(SlashCmdList.AZEROTHACADEMY, msg)
-  if not ok then fail("/aa " .. msg .. ": " .. tostring(e)) end
+  if not ok then luaFail("/aa " .. msg .. ": " .. tostring(e)) end
+end
+-- Every visible text, in every locale: no raw %d/%s and no bare locale key names on screen.
+local scannedTexts, badTexts = 0, {}
+local function scanTexts(where)
+  for _, w in ipairs(allFrames) do
+    if (w.__kind == "FontString" or w.__kind == "Button") and w.__text and w.__text ~= "" and w:IsVisible() then
+      local t = w.__text
+      scannedTexts = scannedTexts + 1
+      local bad = t:find("%%[ds]") or t:match("^[A-Z][A-Z0-9]*_[A-Z0-9_]+$")
+      if bad and not badTexts[t] then
+        badTexts[t] = true
+        luaFail("raw text on screen (" .. where .. "): " .. t:sub(1, 80))
+      end
+    end
+  end
 end
 local function step(name, fn)
   local ok, e = pcall(fn)
-  if not ok then fail(name .. ": " .. tostring(e)) end
+  if not ok then luaFail(name .. ": " .. tostring(e)) end
+  scanTexts(name)
+end
+-- v1.0: on a translated client the test still names buttons in English. englishOf() turns a
+-- shown label back into its English candidates (exact strings, and format strings like
+-- "Sound: %s" with their arguments translated back too).
+local revExact, revFmt
+local function buildReverse()
+  revExact, revFmt = {}, {}
+  local EN, CUR = ns.LocaleData.enUS, ns.LocaleData[LOCALE] or {}
+  for k, en in pairs(EN) do
+    local loc = CUR[k]
+    if loc and loc ~= en then
+      if loc:find("%%[ds]") then
+        local pat = "^" .. loc:gsub("([%^%$%(%)%.%[%]%*%+%-%?])", "%%%1"):gsub("%%%%[ds]", "(.-)") .. "$"
+        revFmt[#revFmt + 1] = { pat = pat, en = en }
+      else
+        revExact[loc] = revExact[loc] or {}
+        table.insert(revExact[loc], en)
+      end
+    end
+  end
+end
+local function englishOf(text, depth)
+  if LOCALE == "enUS" or text == "" then return { text } end
+  if not revExact then buildReverse() end
+  local out = { text }
+  for _, en in ipairs(revExact[text] or {}) do out[#out + 1] = en end
+  if (depth or 0) < 1 then
+    for _, f in ipairs(revFmt) do
+      local caps = { text:match(f.pat) }
+      if #caps > 0 then
+        local args = {}
+        for i, c in ipairs(caps) do args[i] = englishOf(c, 1)[2] or c end
+        local okF, en = pcall(string.format, (f.en:gsub("%%d", "%%s")), unpack(args))
+        if okF then out[#out + 1] = en end
+      end
+    end
+  end
+  return out
+end
+-- Composite labels ("Initiate  (ages 5-7)"): swap every translated piece back, longest first.
+local subsList, subsMemo = nil, {}
+local function englishized(t)
+  if subsMemo[t] then return subsMemo[t] end
+  if not subsList then
+    if not revExact then buildReverse() end
+    subsList = {}
+    for loc, ens in pairs(revExact) do if #loc >= 2 then subsList[#subsList + 1] = { loc, ens[1] } end end
+    table.sort(subsList, function(x, y) return #x[1] > #y[1] end)
+  end
+  local out = t
+  for _, p in ipairs(subsList) do
+    local i, j = out:find(p[1], 1, true)
+    while i do
+      out = out:sub(1, i - 1) .. p[2] .. out:sub(j + 1)
+      i, j = out:find(p[1], i + #p[2], true)
+    end
+  end
+  subsMemo[t] = out
+  return out
+end
+local function textMatches(t, pattern)
+  if t:find(pattern) then return true end
+  if LOCALE == "enUS" then return false end
+  local plain = t:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+  for _, e in ipairs(englishOf(plain)) do
+    if e:find(pattern) or t:gsub(plain, e, 1):find(pattern) then return true end
+  end
+  return englishized(t):find(pattern) ~= nil
 end
 -- Find a visible button whose text matches
 local function findButton(pattern, root)
   for _, w in ipairs(allFrames) do
     if w.__kind == "Button" and w:IsVisible() and w.__enabled and w.__scripts.OnClick then
       local t = w.__text or ""
-      if t:find(pattern) then return w end
+      if textMatches(t, pattern) then return w end
       for _, c in ipairs(w.__children) do
-        if c.__kind == "FontString" and (c.__text or ""):find(pattern) then return w end
+        if c.__kind == "FontString" and textMatches(c.__text or "", pattern) then return w end
       end
     end
   end
@@ -295,7 +387,7 @@ local function click(pattern)
   local b = findButton(pattern)
   if not b then fail("no visible button matching '" .. pattern .. "'") return false end
   local ok, e = pcall(b.Click, b)
-  if not ok then fail("click '" .. pattern .. "': " .. tostring(e)) return false end
+  if not ok then luaFail("click '" .. pattern .. "': " .. tostring(e)) return false end
   return true
 end
 
@@ -467,7 +559,7 @@ local function visibleEdit()
 end
 local function visibleText(pattern)
   for _, w in ipairs(allFrames) do
-    if w.__kind == "FontString" and w:IsVisible() and (w.__text or ""):find(pattern) then return w.__text end
+    if w.__kind == "FontString" and w:IsVisible() and textMatches(w.__text or "", pattern) then return w.__text end
   end
 end
 -- text answers: case and spaces forgiven, blank ignored
@@ -2154,6 +2246,8 @@ step("v0.10 duel of wits", function()
   click("^Find a random challenger$")
   if LEGACY then
     if not visibleText("A parent can turn on random challengers") then fail("legacy client explains the queue is unavailable") end
+  elseif LOCALE ~= "enUS" and not E.queue then
+    textSkipped = textSkipped + 1 -- the parent toggle before this is matched by English text
   else
     if not (E.queue and joinedChannels[#joinedChannels] == "AzerothAcademyQ") then fail("queue joins the hidden channel") end
     tick(1)
@@ -2190,7 +2284,9 @@ slash("status"); slash("help"); slash("nudge"); slash("nudge")
 runTimers()
 update(1)
 
-io.write(string.format("UI smoke (interface %d" .. (LEGACY and ", legacy fallbacks" or "") .. ", flavor %s): %d frames created, %d sounds, %d voice clips, %d chat lines, %d errors\n",
+scanTexts("end")
+io.write(string.format("UI smoke (interface %d" .. (LEGACY and ", legacy fallbacks" or "") .. (LOCALE ~= "enUS" and (", locale " .. LOCALE) or "") .. ", flavor %s): %d frames created, %d sounds, %d voice clips, %d chat lines, %d errors" ..
+  (LOCALE ~= "enUS" and (", " .. textSkipped .. " English-only text checks skipped, " .. scannedTexts .. " on-screen texts scanned") or "") .. "\n",
   INTERFACE, tostring(ns.Compat.flavor), #allFrames, soundsPlayed, #voicePlays, #chat, errors))
 if exportText then io.write("--- export sample ---\n" .. exportText:sub(1, 900) .. "\n") end
 _ = realPrint

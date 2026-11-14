@@ -5,8 +5,20 @@
 local ADDON, ns = ...
 
 ns.ADDON = ADDON or "AzerothAcademy"
-ns.VERSION = "0.15.0"
+ns.VERSION = "1.0.0-rc"
 ns.Env = ns.Env or {}
+
+-- v1.0 locales: each Locales/<code>.lua only fills its table when that locale is in use
+-- (keeps memory low). Tests set ns.Env.allLocales to load every translation.
+ns.LOCALES = { "deDE", "frFR", "esES", "esMX", "ptBR", "itIT", "ruRU", "koKR", "zhCN", "zhTW" }
+function ns.ClientLocale()
+  local l = ns.Env.locale or (GetLocale and GetLocale()) or "enUS"
+  if l == "enGB" then l = "enUS" end
+  return l
+end
+function ns.WantLocale(code)
+  return ns.Env.allLocales and true or ns.ClientLocale() == code
+end
 
 local Util = {}
 ns.Util = Util

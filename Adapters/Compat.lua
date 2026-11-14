@@ -55,7 +55,15 @@ local FLAVOR_SETTINGS = {
 C.settings = FLAVOR_SETTINGS[C.flavor] or FLAVOR_SETTINGS.mainline
 
 C.BACKDROP_TEMPLATE = BackdropTemplateMixin and "BackdropTemplate" or nil
-C.FONT = STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
+-- v1.0: always the client's default font. Localized clients set STANDARD_TEXT_FONT to a font
+-- with the right glyphs; the table is only a fallback if that global is missing.
+C.LOCALE_FONTS = {
+  koKR = "Fonts\\2002.TTF",           -- Korean
+  zhCN = "Fonts\\ARKai_T.ttf",        -- Simplified Chinese
+  zhTW = "Fonts\\bLEI00D.ttf",        -- Traditional Chinese
+  ruRU = "Fonts\\FRIZQT___CYR.TTF",   -- Cyrillic
+}
+C.FONT = STANDARD_TEXT_FONT or C.LOCALE_FONTS[(GetLocale and GetLocale()) or ""] or "Fonts\\FRIZQT__.TTF"
 
 -- CreateFrame that optionally adds BackdropTemplate and never hard-fails on a template.
 function C.CreateFrame(frameType, name, parent, template, wantBackdrop)

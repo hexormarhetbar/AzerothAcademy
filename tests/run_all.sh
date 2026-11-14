@@ -16,4 +16,9 @@ lua tests/ui_smoke.lua 16001
 lua tests/ui_smoke.lua 120105
 lua tests/ui_smoke.lua 11509
 lua tests/ui_smoke.lua 16001 legacy
+echo "== UI smoke on translated clients (v1.0: Lua errors + raw-text scan; English text checks skipped) =="
+AA_LOCALE=deDE lua tests/ui_smoke.lua 16001
+AA_LOCALE=ruRU lua tests/ui_smoke.lua 11509
+AA_LOCALE=koKR lua tests/ui_smoke.lua 120105
+AA_LOCALE=zhCN lua tests/ui_smoke.lua 16001 legacy
 echo "ALL CHECKS PASSED"

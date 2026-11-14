@@ -1,0 +1,56 @@
+# Short UI labels translated by hand (machine translation mangles 1-2 word labels).
+# Columns: KEY deDE frFR esES ptBR itIT ruRU koKR zhTW zhCN   (tab separated; still needs native review)
+RESUME	Fortsetzen	Reprendre	Continuar	Continuar	Riprendi	Продолжить	계속하기	繼續	继续
+LATER	Später	Plus tard	Más tarde	Mais tarde	Più tardi	Позже	나중에	稍後	稍后
+BACK	Zurück	Retour	Atrás	Voltar	Indietro	Назад	뒤로	返回	返回
+CLOSE	Schließen	Fermer	Cerrar	Fechar	Chiudi	Закрыть	닫기	關閉	关闭
+HUB	Übersicht	Accueil	Inicio	Início	Home	Главная	홈	大廳	大厅
+NEXT	Weiter	Suivant	Siguiente	Próximo	Avanti	Далее	다음	下一個	下一个
+SUBMIT	Antworten	Valider	Responder	Responder	Rispondi	Ответить	제출	提交	提交
+HINT	Tipp	Indice	Pista	Dica	Suggerimento	Подсказка	힌트	提示	提示
+CONTINUE	Weiter	Continuer	Continuar	Continuar	Continua	Продолжить	계속	繼續	继续
+PRACTICE	Üben	S'entraîner	Practicar	Praticar	Esercitati	Тренировка	연습	練習	练习
+NOT_YET	Noch nicht	Pas encore	Todavía no	Ainda não	Non ancora	Пока нет	아직	還沒有	还没有
+COMING_SOON	Bald verfügbar	Bientôt	Próximamente	Em breve	Prossimamente	Скоро	곧 출시	即將推出	即将推出
+SAVED	Gespeichert.	Enregistré.	Guardado.	Salvo.	Salvato.	Сохранено.	저장됨.	已儲存。	已保存。
+EXIT_ROUND	Schmiede verlassen	Quitter la forge	Salir de la forja	Sair da forja	Esci dalla forgia	Покинуть кузницу	대장간 나가기	離開熔爐	离开熔炉
+QUICK_DRILL	Schnelltraining	Exercice rapide	Práctica rápida	Treino rápido	Esercizio veloce	Быстрая тренировка	빠른 연습	快速練習	快速练习
+PARENT_PANEL	Elternbereich	Espace parents	Panel para padres	Painel dos pais	Area genitori	Для родителей	부모 패널	家長面板	家长面板
+PARENT_SAVE	Speichern	Enregistrer	Guardar	Salvar	Salva	Сохранить	저장	儲存	保存
+PARENT_LOCK	Sperren	Verrouiller	Bloquear	Bloquear	Blocca	Заблокировать	잠금	鎖定	锁定
+PIN_UNLOCK	Entsperren	Déverrouiller	Desbloquear	Desbloquear	Sblocca	Разблокировать	잠금 해제	解鎖	解锁
+PIN_SAVE	PIN speichern	Enregistrer le PIN	Guardar PIN	Salvar PIN	Salva PIN	Сохранить PIN	PIN 저장	儲存 PIN	保存 PIN
+SELECT_ALL	Alles auswählen	Tout sélectionner	Seleccionar todo	Selecionar tudo	Seleziona tutto	Выделить всё	모두 선택	全選	全选
+ON	AN	OUI	SÍ	LIGADO	ON	ВКЛ	켜짐	開	开
+OFF	AUS	NON	NO	DESLIGADO	OFF	ВЫКЛ	꺼짐	關	关
+PP_ON	An	Oui	Sí	Ligado	On	Вкл	켜짐	開	开
+PP_OFF	Aus	Non	No	Desligado	Off	Выкл	꺼짐	關	关
+EXAM_BUTTON	Meisterprüfung	Examen de maîtrise	Examen de maestría	Exame de maestria	Esame di maestria	Экзамен мастерства	숙련 시험	精通考試	精通考试
+TIER_SPARK	Funke	Étincelle	Chispa	Faísca	Scintilla	Искра	불꽃	火花	火花
+TIER_RUNE	Rune	Rune	Runa	Runa	Runa	Руна	룬	符文	符文
+TIER_GLYPH	Glyphe	Glyphe	Glifo	Glifo	Glifo	Символ	문양	雕紋	雕纹
+BAND_INITIATE	Anwärter	Initié	Iniciado	Iniciado	Iniziato	Новичок	입문자	新手	新手
+BAND_ADEPT	Adept	Adepte	Adepto	Adepto	Adepto	Адепт	숙련자	熟手	熟手
+BAND_MAGISTER	Magister	Magistère	Magíster	Magister	Magister	Магистр	마법학자	大師	大师
+BAND_EVERYONE	Alle	Tout le monde	Todos	Todos	Tutti	Все	모두	所有人	所有人
+MOD_RUNEFORGER	Runenschmiede	Forge-runes	Forjador de runas	Forjador de Runas	Forgiarune	Рунная кузница	룬 대장간	符文熔爐	符文熔炉
+MOD_SCRIBE	Schreiberrollen	Parchemins du scribe	Pergaminos del escriba	Pergaminhos do Escriba	Pergamene dello scriba	Свитки писца	서기의 두루마리	書記卷軸	书记卷轴
+MOD_LORE	Chroniken der Sagen	Chroniques du savoir	Crónicas del saber	Crônicas do Saber	Cronache del sapere	Летописи преданий	전승 연대기	傳說編年史	传说编年史
+MOD_NATURALIST	Naturforscher von Azeroth	Naturaliste d'Azeroth	Naturalista de Azeroth	Naturalista de Azeroth	Naturalista di Azeroth	Натуралист Азерота	아제로스 자연학자	艾澤拉斯博物學家	艾泽拉斯博物学家
+MOD_GNOMISH	Gnomische Ingenieurskunst	Ingénierie gnome	Ingeniería gnómica	Engenharia Gnômica	Ingegneria gnomesca	Гномская инженерия	노움 기계공학	地精工程學	侏儒工程学
+MOD_LIBRARIAN	Bibliotheksquests	Quêtes de la bibliothèque	Misiones de biblioteca	Missões da Biblioteca	Missioni in biblioteca	Задания библиотеки	도서관 퀘스트	圖書館任務	图书馆任务
+MOD_MECHANICS	Akademie der Mechaniken	Académie des mécaniques	Academia de mecánicas	Academia de Mecânicas	Accademia delle meccaniche	Академия механик	전투 기술 아카데미	機制學院	机制学院
+FLIGHT_START	Los geht's	Commencer	Empezar	Começar	Inizia	Начать	시작	開始	开始
+FLIGHT_NOTNOW	Nicht jetzt	Pas maintenant	Ahora no	Agora não	Non ora	Не сейчас	나중에	現在不要	现在不要
+PARENT_START	Start	Commencer	Empezar	Começar	Inizia	Начать	시작	開始	开始
+DUEL_ACCEPT	Annehmen	Accepter	Aceptar	Aceitar	Accetta	Принять	수락	接受	接受
+DUEL_DECLINE	Nein, danke	Non merci	No, gracias	Não, obrigado	No, grazie	Нет, спасибо	괜찮아요	不用了，謝謝	不用了，谢谢
+DUEL_CANCEL	Abbrechen	Annuler	Cancelar	Cancelar	Annulla	Отмена	취소	取消	取消
+DUEL_BACK	Zurück	Retour	Atrás	Voltar	Indietro	Назад	뒤로	返回	返回
+DUEL_COUNT_GO	Los!	Partez !	¡Ya!	Já!	Via!	Вперёд!	출발!	開始！	开始！
+DUEL_RIGHT	Richtig!	Correct !	¡Correcto!	Certo!	Giusto!	Верно!	정답!	正確！	正确！
+DUEL_SUBMIT	Fertig	Terminé	Listo	Pronto	Fatto	Готово	완료	完成	完成
+BOARD_RESUME	Fortsetzen	Reprendre	Continuar	Continuar	Riprendi	Продолжить	계속하기	繼續	继续
+BOARD_PAUSED	Pause	En pause	En pausa	Pausado	In pausa	Пауза	일시 정지	已暫停	已暂停
+BOARD_TYPE_HERE	Hier tippen	Tape ici	Escribe aquí	Digite aqui	Scrivi qui	Печатай здесь	여기에 입력	在此輸入	在此输入
+CAMEO_THANKS	Danke!	Merci !	¡Gracias!	Obrigado!	Grazie!	Спасибо!	고마워요!	謝謝！	谢谢！

@@ -1,4 +1,4 @@
-# Azeroth Academy: Architecture (v0.15)
+# Azeroth Academy: Architecture (v1.0.0-rc)
 
 ## Goals that shape the code
 1. **WoW Forever first, Retail second.** Forever (1.60.1, interface 16001) is a Mainline-family
@@ -632,3 +632,17 @@ UI position, shards, and stats are untouched. The report notes "carried over fro
 - Duel of Wits trusts the host for the final ranking and only sanity-checks racers; a modified host could misreport.
   "Rematch?" is an emote, not a one-click rematch (the challenger starts a new duel).
 - Duels haven't run between two real clients yet; channel/whisper behaviour on Forever is assumed to match Retail.
+
+## Localization (v1.0.0-rc)
+
+- `Locales/enUS.lua` is the source of truth. `Locales/<code>.lua` files start with
+  `if not ns.WantLocale("<code>") then return end`, so the client only builds its own table (esES also fills esMX).
+  `ns.ClientLocale()` maps enGB to enUS. `Locales/Init.lua` builds `ns.L` as: client locale → enUS → the key itself.
+- Lua 5.1 has no positional format arguments, so every translation must keep the `%d` / `%s` order. The generator
+  (`tools/translate_locales.py`) enforces that, and the harness checks it again for every key in every locale.
+- Generators build text only through `fmt(key, ...)` / `L`, so templates are localized while curated data (words,
+  passages, item banks) stays English. Choices and answers come from the same strings, so checking stays consistent
+  in every language; the harness sweeps every node in all ten locales for duplicate choices and leftovers.
+- `C.FONT` = `STANDARD_TEXT_FONT` (the client's localized font), falling back to `C.LOCALE_FONTS[locale]`.
+- Voice lines (`Core/Voice.lua`) are keyed by English line keys and play the same English clips in every locale.
+

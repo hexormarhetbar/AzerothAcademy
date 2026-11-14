@@ -1,4 +1,4 @@
-# Azeroth Academy v0.15.0 (test build)
+# Azeroth Academy v1.0.0-rc (release candidate)
 
 A free learning addon for kids ages 5 to 13. Lessons are framed as Academy quests in Azeroth.
 This build has the **Main Hub** and two subjects: **Rune Forger** (math) and, new in v0.3,
@@ -50,6 +50,9 @@ New in v0.15: **portrait slots for the hosts**: Chronicler Zixi and Archivist Qu
 full figure + 256x256 head crop) that `tools/convert_art.sh` fills. **The real art is pending Hex's approval**; until
 then each slot shows a tasteful placeholder loaded from the game (the host's subject icon in a gold frame). The Murloc
 Tidehunter stays on the in-game murloc model by design (no custom murloc art).
+New in v1.0.0-rc: **ten languages** (deDE, frFR, esES/esMX, ptBR, itIT, ruRU, koKR, zhCN, zhTW). The interface,
+Fizzwick's lines, the parent report and question templates follow the client language. They are **machine translations
+that need native-speaker review**; the curated question banks and Fizzwick's voice stay English. See "Languages".
 Progress stays on your computer. The only thing the addon ever sends is Duel of Wits race data, inside the game, to
 the players you race (see "Duel of Wits").
 
@@ -80,9 +83,50 @@ moves to a new patch and the addon shows as "out of date", type
 `/dump select(4, GetBuildInfo())` in game and put that number into the `## Interface:` line.
 Or tick **Load out of date AddOns** on the AddOns screen.
 
+## Languages (v1.0.0-rc)
+
+The addon follows your game client's language automatically. There is no setting to change.
+
+| Locale | Language | Status |
+|---|---|---|
+| enUS / enGB | English | Source text, complete |
+<!-- locales:start -->
+| deDE | German | Machine translation (Argos), 1515 of 1572 strings (96%). **Needs native-speaker review** |
+| frFR | French | Machine translation (NLLB-200), 1405 of 1572 strings (89%). **Needs native-speaker review** |
+| esES | Spanish (Spain) | Machine translation (Argos), 1478 of 1572 strings (94%). **Needs native-speaker review** |
+| esMX | Spanish (Latin America, same table as esES) | Machine translation (Argos), 1478 of 1572 strings (94%). **Needs native-speaker review** |
+| ptBR | Portuguese (Brazil) | Machine translation (NLLB-200), 1552 of 1572 strings (99%). **Needs native-speaker review** |
+| itIT | Italian | Machine translation (Argos), 1517 of 1572 strings (97%). **Needs native-speaker review** |
+| ruRU | Russian | Machine translation (Argos), 1487 of 1572 strings (95%). **Needs native-speaker review** |
+| koKR | Korean | Machine translation (NLLB-200), 1350 of 1572 strings (86%). **Needs native-speaker review** |
+| zhCN | Simplified Chinese | Machine translation (NLLB-200), 1364 of 1572 strings (87%). **Needs native-speaker review** |
+| zhTW | Traditional Chinese | Machine translation (NLLB-200 + OpenCC), 1364 of 1572 strings (87%). **Needs native-speaker review** |
+<!-- locales:end -->
+
+- **These translations are machine-made and need native-speaker review before a final release.**
+  They were generated offline: Argos Translate for de/es/it/ru, and Meta's NLLB-200 (distilled 600M) for
+  fr/pt/ko/zh, because Argos output there wasn't usable. About 55 short buttons and titles were translated by hand
+  (`tools/locale_overrides.tsv`). Expect odd wording, and please send corrections.
+- **Anything a translation lost falls back to English.** Before it is kept, every translated string must still have
+  the same `%d` / `%s` placeholders in the same order, the same color codes, no runaway or looping output, and no
+  stray Latin words in ko/zh/ru. Character and place names (Fizzwick, Zixi, Thrall, Gadgetzan...) and `/aa`
+  commands stay as they are.
+- **What is translated:** the whole interface, Fizzwick's lines, the parent report, and the question templates
+  (the sentences around numbers and names). **What stays English:** the curated question banks and stories (Lore
+  passages, spelling and vocabulary words, typing sentences, curated science, programming, research and tactics
+  items), and the words a kid has to type. Spelling and typing practice is English practice by design.
+- **Fizzwick's voice stays English** in every language. The recorded clips are English only, and the text bubble
+  shows the translated line.
+- **Fonts:** the addon always uses the client's default font (`STANDARD_TEXT_FONT`), so Korean, Chinese and Russian
+  clients get their own glyph fonts. If that global is missing it falls back to `2002.TTF` (koKR), `ARKai_T.ttf`
+  (zhCN), `bLEI00D.ttf` (zhTW) or `FRIZQT___CYR.TTF` (ruRU).
+- esMX uses the same Spanish table as esES.
+- To regenerate after English text changes: `python3 tools/translate_locales.py [locale ...]` (dev tool; it only
+  translates new or changed strings).
+
 ## Install
 
-1. Unzip `AzerothAcademy-v0.5.zip`. (Upgrading from an earlier version? Delete the old `AzerothAcademy` folder first, then copy the new one in. Progress carries over automatically.) You should get a folder named `AzerothAcademy` with
+1. Unzip `AzerothAcademy-v1.0.0-rc.zip`. (Upgrading from an earlier version? Delete the old `AzerothAcademy` folder first, then copy the new one in. Progress carries over automatically.) You should get a folder named `AzerothAcademy` with
    `AzerothAcademy.toc` directly inside it.
 2. Move that folder into the AddOns folder:
    - WoW Forever: `World of Warcraft\_forever_\Interface\AddOns\`
@@ -92,7 +136,7 @@ Or tick **Load out of date AddOns** on the AddOns screen.
 3. The final path should be `...\Interface\AddOns\AzerothAcademy\AzerothAcademy.toc`
    (not `AddOns\AzerothAcademy\AzerothAcademy\...`).
 4. Start the game. On the character screen, click **AddOns** and make sure **Azeroth Academy** is ticked.
-5. Log in. Chat should show `Azeroth Academy: Loaded v0.8.0. Type /aa to open the Academy.`
+5. Log in. Chat should show `Azeroth Academy: Loaded v1.0.0-rc. Type /aa to open the Academy.` (in your client's language).
 
 ## Slash commands
 
@@ -815,6 +859,24 @@ Azeroth Academy v0.10.0** (two accounts, or a friend), both with an age band pic
 177. [ ] Murloc Boarding Party: the Tidehunter still appears as the in-game murloc model.
 178. [ ] (When you have the art) Put `zixi_portrait.png` and `quill_portrait.png` in `Media/Art/src/`, run `sh tools/convert_art.sh`, restart the game: the placeholders become your portraits, and Fizzwick's poses are untouched.
 
+**Languages (v1.0.0-rc)**
+
+179. [ ] If you can, switch the game client language (Battle.net app → game settings → Text Language) to German or another language and log in: chat says the loaded line in that language, the hub, buttons, Fizzwick's bubbles and the Parent Panel are translated, and nothing shows a raw `%d`, `%s` or a key name like `FZ_GREET_1`.
+180. [ ] On a Korean, Chinese or Russian client, letters render (no empty boxes). The addon uses the client's own font.
+181. [ ] Fizzwick still speaks English in every language, and the text bubble shows the translated line.
+182. [ ] Lore passages, spelling words and typing sentences stay English (by design). Questions that mix a translated sentence with English names still read OK.
+183. [ ] Long German or French labels fit their buttons (tell me which ones overflow).
+184. [ ] Ask a native speaker to skim one subject in their language and send corrections.
+
+## Known limits (v1.0.0-rc)
+
+- **Translations are machine-made** (Argos Translate / NLLB-200 plus ~55 hand-translated labels) and need
+  native-speaker review. Strings a translation broke fall back to English, so some screens mix languages.
+- **Curated content stays English**: stories and passages, spelling/vocabulary/typing words, and curated question
+  banks. Fizzwick's voice clips are English only.
+- Numbers use English separators (12,345) in every language, because typed answers are parsed that way.
+- German and French text runs longer; a few buttons may clip until checked in game.
+
 ## Known limits (v0.15)
 
 - **Host portrait art is pending Hex.** The slots, sizes, script and fallbacks are ready; only placeholders ship.
@@ -1092,6 +1154,21 @@ originals and face-centered head crops, and wrote a 26-entry manifest.
 For v0.5, `tools/convert_art.sh` was run with ImageMagick 7.1.2 on test PNGs. It produced 512x512 RGBA TGAs, a 1024x256 (4-frame) and a 2048x256 (8-frame) strip, and a correct manifest. Removed files dropped out of the manifest, and a bad `STRIP_FRAMES` was rejected.
 
 ## Changelog
+
+**v1.0.0-rc**
+- **Ten locales:** `Locales/deDE, frFR, esES (+esMX), ptBR, itIT, ruRU, koKR, zhCN, zhTW .lua`, machine-translated
+  (<!-- total -->13032<!-- /total --> strings total) and marked for native-speaker review. Each file only loads on its own client
+  (`ns.WantLocale`), so only one table is in memory. `Locales/Others.lua` (empty stubs) is gone.
+- **Externalized strings:** the parent report (`RPT_*`), Boarding report lines and the profile band blurbs now go through
+  `L`. A static scan finds no code key missing from enUS.
+- **Fonts:** `C.FONT` is the client's default font, with koKR/zhCN/zhTW/ruRU fallbacks in `C.LOCALE_FONTS`.
+- **Tools:** `tools/translate_locales.py` (offline, cached, protects placeholders/colors/names/commands, drops any
+  string that loses them) and `tools/locale_overrides.tsv` (hand-translated short labels).
+- **Tests:** harness section 27: key coverage, per-locale validity (placeholders, color codes), coverage of at least 85%
+  per locale, load gating, fallback, fonts, README notes, and every generator, the report and Fizzwick's lines run
+  in all ten locales with no format leftovers or duplicate choices. UI smoke runs on deDE, ruRU, koKR and zhCN clients too.
+- **Portrait slots:** the Tidehunter keeps the in-game murloc model (Hex's decision); only Zixi and Quill have slots.
+- Fizzwick's voice stays English (no new audio).
 
 **v0.15.0**
 - **Host portrait slots** for Chronicler Zixi and Archivist Quill: `Art.HOSTS`, `Art.HostFor`, `Art.Host` (head crop ->

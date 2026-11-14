@@ -3,8 +3,7 @@ local _, ns = ...
 local data = ns.LocaleData or {}
 local enUS = data.enUS or {}
 
-local locale = (ns.Env.locale) or (GetLocale and GetLocale()) or "enUS"
-if locale == "enGB" then locale = "enUS" end
+local locale = ns.ClientLocale()
 ns.locale = locale
 local cur = data[locale] or {}
 
