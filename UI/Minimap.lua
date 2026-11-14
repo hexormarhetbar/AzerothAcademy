@@ -33,7 +33,7 @@ end
 -- Tooltip lines (also used by the LibDataBroker path).
 function MB.TooltipLines()
   local P = ns.Progress
-  local lines = { L.MM_TITLE, L.MM_HELP_LEFT, L.MM_HELP_RIGHT, L.MM_HELP_DRAG }
+  local lines = { L.MM_TITLE, L.MM_HELP_LEFT, L.MM_HELP_RIGHT, L.DUEL_MM_HELP, L.MM_HELP_DRAG }
   if P.char then
     local info = P.GetRankInfo()
     local earned, cap = P.GetTodayMinutes()
@@ -65,8 +65,16 @@ function MB.RightClick()
   ns.Hub.Open("parent")
 end
 
+-- v0.10: Shift-click or middle-click opens Duel of Wits
+function MB.DuelClick()
+  if C.InCombat() then C.Print(L.NO_COMBAT) return end
+  if ns.DuelUI then ns.DuelUI.Open() end
+end
+
 function MB.OnClick(button)
-  if button == "RightButton" then MB.RightClick() else MB.LeftClick() end
+  local shift = IsShiftKeyDown and IsShiftKeyDown()
+  if button == "MiddleButton" or (shift and button ~= "RightButton") then MB.DuelClick()
+  elseif button == "RightButton" then MB.RightClick() else MB.LeftClick() end
 end
 
 local function minimapShape()
@@ -123,7 +131,7 @@ function MB.Create()
   b:SetSize(31, 31)
   b:SetFrameStrata("MEDIUM")
   if b.SetFrameLevel and Minimap.GetFrameLevel then b:SetFrameLevel((Minimap:GetFrameLevel() or 1) + 8) end
-  b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+  b:RegisterForClicks("LeftButtonUp", "RightButtonUp", "MiddleButtonUp")
   b:RegisterForDrag("LeftButton")
   b:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
   local bg = b:CreateTexture(nil, "BACKGROUND")

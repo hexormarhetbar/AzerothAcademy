@@ -48,6 +48,8 @@ that file again until the next `/reload`. You can replace any file with your own
 | `flight.ogg` | The In-Flight Lesson pop-up appears on a flight path | 0.5-0.9 s | TELL_MESSAGE (3081) |
 | `page.ogg` | The Field Journal opens or turns to another band (v0.9) | 0.4-0.8 s | IG_ABILITY_PAGE_TURN (836) |
 | `specimen.ogg` | A new specimen is collected for the Field Journal (v0.9) | 0.7-1.2 s | IG_QUEST_LIST_COMPLETE (878) |
+| `countdown.ogg` | Each beat of the Duel of Wits 3-2-1 countdown (v0.10) | 0.5-0.8 s | RAID_WARNING (8959) |
+| `duelwin.ogg` | You win a Duel of Wits race (v0.10) | 1.2-2.0 s | UI_EPICLOOT_TOAST (31578), LEVELUPSOUND (888) |
 
 ## Sound-effect briefs
 
@@ -77,6 +79,8 @@ original sound and none imitated any game's audio.
 - **flight.ogg:** "Friendly little airship bell and propeller whirr, a bright two-note 'ding-ding' inviting you to a lesson, cartoon goblin gadget."
 - **page.ogg:** "A single soft paper page turning in an old leather field notebook, short and crisp, gentle, no music."
 - **specimen.ogg:** "Cheerful nature discovery chime: a bright magical sparkle with a tiny leafy rustle and a happy two-note marimba ding, cartoon, short."
+- **countdown.ogg (v0.10):** "Single soft wooden clock tick with a gentle bright chime, friendly game countdown beep, clean, no voice." (0.8 s requested)
+- **duelwin.ogg (v0.10):** "Short cheerful fantasy victory fanfare, sparkling bells and small brass flourish, kid-friendly game win jingle, no voice." (2.5 s requested)
 
 ## Professor Fizzwick's voice (v0.8.0)
 
@@ -117,6 +121,10 @@ Some of Fizzwick's lines are spoken aloud by an **original designed voice**.
 | `VO/nat_specimen.ogg` | "A new specimen for your journal! Ooh, look at that!" (`FZ_NATSPECIMEN_1`) | New Field Journal specimen (v0.9) |
 | `VO/nat_journal.ogg` | "Welcome to your field journal. You earned every page!" (`FZ_NATJOURNAL_1`) | Opening the Field Journal (v0.9) |
 | `VO/nat_flight.ogg` | "Look down! Every zone below is a habitat. Let's study!" (`FZ_NATFLIGHT_1`) | In-flight Naturalist round (v0.9) |
+| `VO/duel_invite.ogg` | "A challenger appears! Ready for a duel of wits?" (`FZ_DUELINVITE_1`) | A Duel of Wits challenge arrives (v0.10) |
+| `VO/duel_start.ogg` | "Brains ready? Let the duel of wits begin!" (`FZ_DUELSTART_1`) | A duel race starts (v0.10) |
+| `VO/duel_win.ogg` | "Victory! Your brain won that duel fair and square!" (`FZ_DUELWIN_1`) | You won a duel (v0.10) |
+| `VO/duel_done.ogg` | "Great race! Every duel makes your brain stronger." (`FZ_DUELDONE_1`) | A duel ends and you did not win (v0.10) |
 
 ## Voice design brief (original)
 

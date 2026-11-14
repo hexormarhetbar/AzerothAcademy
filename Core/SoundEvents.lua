@@ -38,10 +38,13 @@ S.EVENTS = {
   -- v0.9 Azeroth Naturalist / Field Journal
   page       = { kits = { "IG_ABILITY_PAGE_TURN", 836 } },
   specimen   = { kits = { "IG_QUEST_LIST_COMPLETE", 878 }, important = true },
+  -- v0.10 Duel of Wits
+  countdown  = { kits = { "RAID_WARNING", 8959 } },
+  duelwin    = { kits = { "UI_EPICLOOT_TOAST", 31578, "LEVELUPSOUND", 888 }, important = true },
 }
 S.ORDER = { "click", "open", "close", "correct", "wrong", "combo", "overcharge", "forge",
   "scroll", "reward", "rankup", "exampass", "chirp", "hint", "cameo", "splash", "cannon", "gurgle", "flight",
-  "page", "specimen" }
+  "page", "specimen", "countdown", "duelwin" }
 
 S.DEFAULTS = { enabled = true, channel = "SFX", level = "all", custom = true }
 

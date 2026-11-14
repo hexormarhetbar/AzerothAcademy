@@ -4,7 +4,7 @@
 local _, ns = ...
 local Util = ns.Util
 local D = ns.ScribeData
-local random, floor, max, min, abs = math.random, math.floor, math.max, math.min, math.abs
+local random, floor, max, min, abs = Util.Random, math.floor, math.max, math.min, math.abs
 
 local SC = {}
 ns.Scribe = SC

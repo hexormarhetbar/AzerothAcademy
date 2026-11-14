@@ -210,6 +210,34 @@ function GameTooltip:SetOwner() tooltipLines = {} end
 function GameTooltip:AddLine(t) tooltipLines[#tooltipLines + 1] = t end
 if LEGACY then GetMinimapShape = nil end
 
+-- v0.10 Duel of Wits comms mocks (modern C_ChatInfo, or the legacy globals)
+local addonSent, prefixes, joinedChannels, leftChannels = {}, {}, {}, {}
+local inGroup, friendNames, channelIds, shiftDown = false, {}, {}, false
+local function recordAddon(p, m, ch, t)
+  if #m > 255 then error("addon message longer than 255 bytes") end
+  addonSent[#addonSent + 1] = { prefix = p, msg = m, channel = ch, target = t }
+end
+if not LEGACY then
+  C_ChatInfo = {
+    RegisterAddonMessagePrefix = function(p) prefixes[p] = true; return true end,
+    SendAddonMessage = function(p, m, ch, t) recordAddon(p, m, ch, t); return 0 end,
+  }
+  function GetNormalizedRealmName() return "Testrealm" end
+  C_FriendList = { GetFriendInfo = function(n) return friendNames[n] and { name = n } or nil end }
+  function IsInGroup() return inGroup end
+  function IsInRaid() return false end
+else
+  function SendAddonMessage(p, m, ch, t) recordAddon(p, m, ch, t) end
+  function GetNumPartyMembers() return inGroup and 1 or 0 end
+  function GetNumRaidMembers() return 0 end
+  function GetNumFriends() return 0 end
+end
+function IsInGuild() return true end
+function JoinTemporaryChannel(n) joinedChannels[#joinedChannels + 1] = n; channelIds[n] = 5 end
+function GetChannelName(n) return channelIds[n] or 0 end
+function LeaveChannelByName(n) leftChannels[#leftChannels + 1] = n; channelIds[n] = nil end
+function IsShiftKeyDown() return shiftDown end
+
 -------------------------------------------------------------------------
 -- Load the addon exactly as the client would: files listed in the .toc
 -------------------------------------------------------------------------
@@ -1664,6 +1692,238 @@ do
   if not ns.Report.Build({}):find("Field Journal: %d+ / 45") then fail("progress report shows the Field Journal") end
   hub:Hide()
 end
+
+
+-- v0.10 Duel of Wits: host a party race, join one by invite, auto-declines,
+-- version mismatch, combat forfeit, parent settings, random queue, minimap entry
+step("v0.10 duel of wits", function()
+  local DP, DU, Duel = ns.DuelProto, ns.DuelUI, ns.Duel
+  local GU = ns.GuideUI
+  ns.Progress.SetBand("adept")
+  if not LEGACY and not prefixes[DP.PREFIX] then fail("duel prefix registered at login") end
+  if not DU.engine then fail("duel engine created at login") end
+  local function decode(i) return DP.Decode(addonSent[i].msg) end
+  local function lastSent(mtype)
+    for i = #addonSent, 1, -1 do
+      local _, t, f = decode(i)
+      if t == mtype then return addonSent[i], f end
+    end
+  end
+  local function peer(mtype, from, channel, ...)
+    fire("CHAT_MSG_ADDON", DP.PREFIX, DP.Encode(mtype, ...), channel or "WHISPER", from)
+  end
+  local function tick(sec)
+    for _ = 1, math.floor(sec / 0.25 + 0.5) do clock = clock + 0.25; update(0.25) end
+  end
+  local function chatHas(pat) for _, m in ipairs(chat) do if m:find(pat, 1, true) then return true end end end
+
+  -- entry points: hub button, slash, minimap
+  slash("")
+  if ns.Hub.current ~= "home" then ns.Hub.ShowView("home") end
+  click("Duel of Wits")
+  if ns.Hub.current ~= "duel" then fail("hub button opens Duel of Wits") end
+  local dv = ns.Hub.GetView("duel")
+  if dv.mode ~= "setup" then fail("duel opens on setup") end
+  hub:Hide()
+  local mm = named.AzerothAcademyMinimapButton
+  if mm then
+    if not (mm.__clicks and table.concat(mm.__clicks, ","):find("MiddleButtonUp")) then fail("minimap registers middle-click") end
+    mm.__scripts.OnClick(mm, "MiddleButton")
+    if not (hub:IsShown() and ns.Hub.current == "duel") then fail("middle-click opens duels") end
+    hub:Hide()
+    shiftDown = true
+    mm.__scripts.OnClick(mm, "LeftButton")
+    shiftDown = false
+    if not (hub:IsShown() and ns.Hub.current == "duel") then fail("shift-click opens duels") end
+    local tl = table.concat(ns.MinimapButton.TooltipLines(), "\n")
+    if not tl:find("Duel of Wits", 1, true) then fail("minimap tooltip mentions duels") end
+  end
+
+  -- (1) host a party race
+  slash("duel")
+  if ns.Hub.current ~= "duel" then fail("/aa duel opens the setup") end
+  click("Rune Forger")
+  click("Questions: 5")
+  click("My group")
+  click("^Send challenge$")
+  if not visibleText("You are not in a group.") then fail("party duel without a group explains why") end
+  inGroup = true
+  click("> My group <")
+  click("^Send challenge$")
+  local inv, f = lastSent("INV")
+  if not (inv and inv.channel == "PARTY" and f[2] == "runeforger" and f[3] == "5") then fail("INV broadcast to the party") end
+  local id = f and f[1]
+  if not visibleText("Waiting room") then fail("lobby shows the waiting room") end
+  peer("ACC", "Pal-Testrealm", "WHISPER", id, "initiate", "Pal", 2, 3, "0.10.0")
+  if not visibleText("^Pal") then fail("lobby lists the new racer") end
+  click("^Start race!$")
+  local sta, sf = lastSent("STA")
+  if not (sta and sta.channel == "PARTY" and tonumber(sf[2])) then fail("STA with a seed goes to the party") end
+  if dv.mode ~= "race" then fail("countdown switches to the race screen") end
+  if GU.lastEvent ~= "DUELSTART" then fail("Fizzwick starts the duel, got " .. tostring(GU.lastEvent)) end
+  tick(1)
+  if not (dv.big.__text == "3" or dv.big.__text == "2") then fail("countdown digits, got " .. tostring(dv.big.__text)) end
+  peer("ACK", "Pal-Testrealm", "WHISPER", id, "STA")
+  tick(3)
+  local E = DU.engine
+  if E.duel.state ~= "race" then fail("race starts after 3-2-1") end
+  -- the peer's set is reproducible from the seed + its band
+  local peerSet = Duel.BuildSet("runeforger", "initiate", E.duel.seed, 5)
+  if not (peerSet and #peerSet == 5) then fail("peer can rebuild its set") end
+  for q = 1, 5 do
+    local p = E:Current()
+    if not p then fail("question " .. q .. " shown") break end
+    local btn
+    for _, b in ipairs(dv.choices) do if b:IsVisible() and tostring(b.value) == tostring(q == 2 and "__no__" or p.answer) then btn = b end end
+    if q == 2 then
+      for _, b in ipairs(dv.choices) do if b:IsVisible() and tostring(b.value) ~= tostring(p.answer) then btn = b end end
+    end
+    if not btn then fail("answer button for question " .. q) break end
+    clock = clock + 2
+    btn:Click()
+    if q == 2 and not (dv.feedback.__text or ""):find("+3 seconds", 1, true) then fail("wrong answer shows the penalty") end
+    if q == 2 then peer("PRG", "Pal-Testrealm", "WHISPER", id, 1, 2, 2, 4000, 0, 0) end
+  end
+  if not visibleText("Waiting for the other racers") then fail("finished host waits for the others") end
+  if GU.lastEvent ~= "DUELWAIT" then fail("Fizzwick cheers while waiting, got " .. tostring(GU.lastEvent)) end
+  peer("FIN", "Pal-Testrealm", "WHISPER", id, 2, 5, 3, 14000, 0, 0)
+  tick(0.5)
+  if dv.mode ~= "result" then fail("results screen after everyone finished, got " .. tostring(dv.mode)) end
+  if not visibleText("Winner: ") then fail("results name a winner") end
+  if not visibleText("You earned %d+ shards") then fail("results show the reward") end
+  local res = lastSent("RES")
+  if not (res and res.channel == "PARTY") then fail("host broadcasts RES") end
+  if not (GU.lastEvent == "DUELWIN" or GU.lastEvent == "DUELDONE") then fail("Fizzwick reacts to the result") end
+  if ns.Progress.char.duel.played ~= 1 then fail("duel stats recorded") end
+  click("^Good game!$")
+  local emo, ef = lastSent("EMO")
+  if not (emo and emo.channel == "WHISPER" and ef[2] == "1") then fail("emote sends a preset id only") end
+  peer("EMO", "Pal-Testrealm", "WHISPER", id, 2)
+  if not chatHas("Pal: Well played!") then fail("incoming emote shown as preset text") end
+  if not findButton("^Block$") then fail("results offer Block") else click("^Block$") end
+  if not DU.IsBlocked("Pal-Testrealm") then fail("Block stores the player") end
+  click("^New duel$")
+  if dv.mode ~= "setup" or E.duel then fail("New duel returns to setup") end
+  peer("INV", "Pal-Testrealm", "WHISPER", "77701", "scribe", 5, "WHISPER", "Pal", "initiate", 1, 1, "0.10.0")
+  if E.invite then fail("blocked player's invite ignored") end
+  local dec, df = lastSent("DEC")
+  if not (dec and df[2] == "busy") then fail("blocked invite gets a neutral 'busy'") end
+  ns.Util.Wipe(ns.Progress.account.duel.blocked)
+
+  -- (2) accept an invite, then combat forfeits
+  hub:Hide()
+  peer("INV", "Rival-Testrealm", "WHISPER", "88801", "naturalist", 5, "WHISPER", "Rival", "magister", 4, 5, "0.10.0")
+  local popup = named.AzerothAcademyDuelInvite
+  if not (popup and popup:IsShown()) then fail("invite pop-up shows with the window closed") end
+  if not visibleText("Rival challenges you") then fail("pop-up names the challenger") end
+  click("^Accept$")
+  local acc, af = lastSent("ACC")
+  if not (acc and acc.target == "Rival-Testrealm" and af[1] == "88801") then fail("ACC whispered to the host") end
+  if not (hub:IsShown() and ns.Hub.current == "duel") then fail("accepting opens the waiting room") end
+  peer("LOB", "Rival-Testrealm", "WHISPER", "88801", "naturalist", 5, "WHISPER", 2,
+    "Rival-Testrealm", "Rival", "magister", 4, 5, "joined", "Hexkid-Testrealm", "Hexkid", "adept", 1, 1, "joined")
+  if not visibleText("Waiting for the challenger") then fail("racer waits for the host") end
+  peer("STA", "Rival-Testrealm", "WHISPER", "88801", 4242, 3, "adept", "naturalist", 5, "WHISPER", 2,
+    "Rival-Testrealm", "Rival", "magister", 4, 5, "Hexkid-Testrealm", "Hexkid", "adept", 1, 1)
+  if not (lastSent("ACK") and E.duel and E.duel.state == "countdown") then fail("racer ACKs STA and counts down") end
+  tick(3.5)
+  if not E:Current() then fail("racer gets questions") end
+  local mine = Duel.BuildSet("naturalist", "adept", 4242, 5)
+  if not (mine and E.duel.set[1].text == mine[1].text) then fail("racer set comes from the shared seed + own band") end
+  inCombat = true
+  fire("PLAYER_REGEN_DISABLED")
+  local lev, lf = lastSent("LEV")
+  if not (lev and lf[2] == "combat") then fail("combat sends LEAVE(combat)") end
+  if not chatHas("You left the race because combat started") then fail("combat forfeit explained") end
+  if E.duel then fail("combat leaves the duel") end
+  peer("INV", "Rival-Testrealm", "WHISPER", "88802", "lore", 5, "WHISPER", "Rival", "magister", 4, 5, "0.10.0")
+  local dec2, d2 = lastSent("DEC")
+  if not (dec2 and d2[1] == "88802" and d2[2] == "combat") then fail("invite in combat auto-declined") end
+  inCombat = false
+  fire("PLAYER_REGEN_ENABLED")
+  inInstance = true
+  peer("INV", "Rival-Testrealm", "WHISPER", "88803", "lore", 5, "WHISPER", "Rival", "magister", 4, 5, "0.10.0")
+  local _, d3 = lastSent("DEC")
+  if not (d3 and d3[1] == "88803" and d3[2] == "instance") then fail("invite in an instance auto-declined") end
+  if not chatHas("said no to a duel challenge") then fail("auto-decline mentioned in chat") end
+  inInstance = false
+  -- version mismatch
+  fire("CHAT_MSG_ADDON", DP.PREFIX, (DP.Encode("INV", "99901", "runeforger", 5, "WHISPER", "Future", "adept", 1, 1, "9.0"):gsub("^AA%d+", "AA9")), "WHISPER", "Future-Testrealm")
+  local ver, vf = lastSent("VER")
+  if not (ver and vf[1] == "99901" and tonumber(vf[2]) == DP.VERSION) then fail("version mismatch answered with VER") end
+  if not chatHas("different Azeroth Academy version") then fail("version mismatch explained") end
+  if E.invite then fail("mismatched invite not shown") end
+  -- invite timeout auto-declines
+  peer("INV", "Slow-Testrealm", "WHISPER", "55501", "runeforger", 10, "WHISPER", "Slow", "adept", 1, 1, "0.10.0")
+  if not E.invite then fail("normal invite shown") end
+  tick(26)
+  local _, d4 = lastSent("DEC")
+  if E.invite or not (d4 and d4[1] == "55501" and d4[2] == "timeout") then fail("unanswered invite auto-declines") end
+  if popup:IsShown() then fail("pop-up closes on timeout") end
+  -- parent switch
+  ns.Progress.account.settings.duel.enabled = false
+  peer("INV", "Pal-Testrealm", "PARTY", "66601", "runeforger", 5, "PARTY", "Pal", "adept", 1, 1, "0.10.0")
+  local _, d5 = lastSent("DEC")
+  if E.invite or not (d5 and d5[2] == "parent") then fail("parent switch auto-declines") end
+  ns.Progress.account.settings.duel.enabled = true
+
+  -- (3) Parent Panel: duel settings overlay
+  ns.Hub.Open("parent")
+  local pv3 = ns.Hub.GetView("parent")
+  pv3.unlocked = true
+  pv3:Refresh()
+  click("^Duel of Wits settings$")
+  if not (pv3.duelPanel and pv3.duelPanel:IsShown()) then fail("duel settings overlay opens") end
+  if not findButton("^Allow random challengers: Off$") then fail("random challengers default Off") end
+  click("^Allow random challengers: Off$")
+  if not ns.Progress.account.settings.duel.random then fail("random toggle saved") end
+  click("^Friends only: Off$")
+  if not ns.Progress.account.settings.duel.friendsOnly then fail("friends-only toggle saved") end
+  click("^Friends only: On$")
+  local before = ns.Duel.AliasText(ns.Progress.account.settings.duel.alias[1], ns.Progress.account.settings.duel.alias[2])
+  click("^Duel name: ")
+  local after = ns.Duel.AliasText(ns.Progress.account.settings.duel.alias[1], ns.Progress.account.settings.duel.alias[2])
+  if before == after then fail("alias cycles") end
+  click("^Close$")
+  ns.Hub.ShowView("home")
+
+  -- (4) random queue
+  slash("duel queue")
+  if DU.sel.scope ~= "QUEUE" then fail("/aa duel queue picks the random queue") end
+  click("^Find a random challenger$")
+  if LEGACY then
+    if not visibleText("A parent can turn on random challengers") then fail("legacy client explains the queue is unavailable") end
+  else
+    if not (E.queue and joinedChannels[#joinedChannels] == "AzerothAcademyQ") then fail("queue joins the hidden channel") end
+    tick(1)
+    local q, qf = lastSent("Q")
+    if not (q and q.channel == "CHANNEL" and q.target == 5 and #qf == 4) then fail("queue beacon on the hidden channel carries 4 fields") end
+    if not visibleText("Looking for a challenger") then fail("queue status shown") end
+    -- a matching beacon from another kid: lower nonce hosts. Force us to host.
+    E.queue.nonce = "000000000"
+    peer("Q", "Stranger-Otherrealm", "CHANNEL", "runeforger", 5, "adept", "999999999")
+    local qi, qif = lastSent("INV")
+    if not (qi and qi.target == "Stranger-Otherrealm" and qif[4] == "QUEUE" and qif[5] == "") then fail("queue match sends an anonymous invite") end
+    peer("ACC", "Stranger-Otherrealm", "WHISPER", qif[1], "adept", "", 7, 8, "0.10.0")
+    if not (E.duel and E.duel.state == "countdown") then fail("queue duel starts automatically") end
+    if E.queue or leftChannels[#leftChannels] ~= "AzerothAcademyQ" then fail("matched: left the hidden channel") end
+    tick(4)
+    local anyName = false
+    for _, b in ipairs(dv.bars) do if (b.name.__text or ""):find("Stranger", 1, true) then anyName = true end end
+    if anyName then fail("random duel never shows the character name") end
+    if not visibleText("Daring Mechastrider") and not visibleText(ns.Duel.AliasText(7, 8)) then fail("random opponent shown by alias") end
+    click("^Leave race$")
+    if E.duel then fail("leave race works") end
+    -- stop searching
+    slash("duel queue")
+    click("^Find a random challenger$")
+    click("^Stop searching$")
+    if E.queue then fail("stop searching leaves the queue") end
+  end
+  ns.Progress.account.settings.duel.random = false
+  inGroup = false
+  hub:Hide()
+end)
 
 slash("status"); slash("help"); slash("nudge"); slash("nudge")
 runTimers()

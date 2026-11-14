@@ -7,6 +7,7 @@ events:RegisterEvent("ADDON_LOADED")
 events:RegisterEvent("PLAYER_LOGIN")
 events:RegisterEvent("PLAYER_REGEN_DISABLED")
 events:RegisterEvent("PLAYER_REGEN_ENABLED")
+events:RegisterEvent("CHAT_MSG_ADDON") -- v0.10 Duel of Wits
 
 local function init()
   if ns.ready then return end
@@ -16,7 +17,7 @@ local function init()
   ns.ready = true
 end
 
-events:SetScript("OnEvent", function(self, event, arg1)
+events:SetScript("OnEvent", function(self, event, arg1, arg2, arg3, arg4)
   if event == "ADDON_LOADED" then
     if arg1 == ADDON then
       init()
@@ -25,6 +26,7 @@ events:SetScript("OnEvent", function(self, event, arg1)
   elseif event == "PLAYER_LOGIN" then
     init()
     if ns.MinimapButton then pcall(ns.MinimapButton.Create) end
+    if ns.DuelUI then pcall(ns.DuelUI.Init) end
     C.Print(string.format(L.LOADED, ns.VERSION))
     if ns.Progress.GetBand() then
       local due = #ns.Review.Due()
@@ -32,9 +34,13 @@ events:SetScript("OnEvent", function(self, event, arg1)
     end
   elseif event == "PLAYER_REGEN_DISABLED" then
     if ns.FlightUI then ns.FlightUI.HideToast() end
+    if ns.DuelUI then ns.DuelUI.OnCombat() end
     if ns.Hub then ns.Hub.HideForCombat() end
   elseif event == "PLAYER_REGEN_ENABLED" then
     if ns.Hub then ns.Hub.OfferResume() end
+  elseif event == "CHAT_MSG_ADDON" then
+    -- arg1 prefix, arg2 message, arg3 channel, arg4 sender
+    if arg1 == ns.DuelProto.PREFIX and ns.ready and ns.DuelUI then ns.DuelUI.Receive(arg2, arg3, arg4) end
   end
 end)
 
@@ -45,7 +51,13 @@ SLASH_AZEROTHACADEMY1 = "/aa"
 SLASH_AZEROTHACADEMY2 = "/academy"
 SlashCmdList.AZEROTHACADEMY = function(msg)
   init()
-  msg = (msg or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
+  local raw = (msg or ""):gsub("^%s+", ""):gsub("%s+$", "")
+  msg = raw:lower()
+  if msg == "duel" or msg:match("^duel%s") then
+    -- v0.10: keep the original case of a character name
+    if ns.DuelUI then ns.DuelUI.Slash(raw:match("^%S+%s+(.+)$") or "") end
+    return
+  end
   if msg == "" then
     ns.Hub.Toggle()
   elseif msg == "drill" then

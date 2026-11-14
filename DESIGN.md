@@ -1,4 +1,4 @@
-# Azeroth Academy: Architecture (v0.5)
+# Azeroth Academy: Architecture (v0.10)
 
 ## Goals that shape the code
 1. **WoW Forever first, Retail second.** Forever (1.60.1, interface 16001) is a Mainline-family
@@ -367,27 +367,129 @@ The IDs were cross-checked on Wowhead's Classic and Retail NPC pages, and both l
 - **UI (`UI/Journal.lua`, view `journal`):** band tabs, 5 x 3 grid, page panel; actions reuse `Lessons.StartRound`
   (missing page or fading) and `Lessons.StartReview` (due).
 
-## Data model (schema 6)
+## Duel of Wits (v0.10)
+
+Multiplayer learning races. Three layers, so the hard parts are testable headless:
+
+- **`Core/DuelProto.lua` (pure): the wire format.**
+  - Message = `AA<protocol>~<TYPE>~field~...`. Prefix `AzAcadDuel` (<= 16 chars), protocol `1`.
+    Fields are escaped (`%` `~` `|` newline -> `%XX`), so no field can inject a separator or a chat escape code.
+  - **Chunking:** anything over 250 bytes becomes `AC~<id>~<i>~<n>~<slice>` pieces of 200 bytes; the assembler is
+    keyed by sender + id, accepts pieces in any order and drops partials after 20 s.
+  - **Throttle queue:** ChatThrottleLib-style token bucket (burst 8, refill 1/s, well under the client's per-prefix
+    limit). Progress/state messages carry a coalescing key, so a queued update is replaced instead of piling up.
+- **`Core/Duel.lua` (pure): the engine.** `Duel.NewEngine{ me, realm, now, send, band, display, settings, context,
+  isFriend, isBlocked, groupChannel, inGuild, queueChannel, queueJoin, queueLeave, notify }`; methods `Host`, `Accept`,
+  `Decline`, `Start`, `Answer`, `Leave`, `Emote`, `QueueJoin/Leave`, `OnCombat`, `Receive(msg, channel, sender)`,
+  `Update()`. It never calls WoW: transport, clock and context are injected.
+- **`UI/Duel.lua`:** binds the engine to Compat (`C.SendAddonMessage`, `C.GroupChannel`, `C.IsFriend`, hidden channel),
+  ticks it every 0.1 s from its own frame, and draws setup/waiting room, the invite pop-up, race and results.
+  `Main.lua` routes `CHAT_MSG_ADDON` for our prefix and `/aa duel [name|queue|leave]`; combat calls `OnCombat`.
+
+### Protocol (star topology)
+
+The challenger hosts. Racers whisper the host; the host broadcasts on PARTY/RAID/GUILD (one message for everyone)
+or whispers each racer (one-player and random duels).
+
+| Type | From -> to | Fields | Reliability |
+|---|---|---|---|
+| `INV` | host -> scope | id, subject, length, scope, display, band, aliasA, aliasB, addonVersion | once (popup) |
+| `ACC` | racer -> host | id, band, display, aliasA, aliasB, addonVersion | ACK + retry |
+| `DEC` | racer -> host | id, reason (`declined/timeout/busy/combat/instance/parent/friendsOnly`) | once |
+| `VER` | either | id, protocol | once; format frozen forever |
+| `LOB` | host -> racers | id, subject, length, scope, n, n x (name, display, band, aA, aB, status) | re-sent every 10 s |
+| `FUL` / `CAN` | host -> racer(s) | id (+ reason) | once |
+| `STA` | host -> racers | id, seed, countdown, typeBand, subject, length, scope, n, n x (name, display, band, aA, aB) | ACK + retry |
+| `PRG` | racer -> host | id, seq, answered, correct, elapsedMs, wpm, acc | seq-numbered, coalesced, keepalive 4 s |
+| `FIN` | racer -> host | same as PRG | ACK + retry |
+| `ST8` | host -> racers | id, seq, n, n x (answered, correct, time x10, status) by racer index | seq-numbered, 1 s (more for whispers) |
+| `RES` | host -> racers | id, n, n x (answered, correct, elapsedMs, wpm, acc, status, valid) | ACK + retry |
+| `LEV` | either | id, reason (`left/combat/...`) | once; silence timeout backs it up |
+| `EMO` | racer -> racers | id, emote index (1-4) | once, rate-limited both ends |
+| `ACK` | either | id, type acknowledged | - |
+| `Q` | queued -> hidden channel | subject, length, band, nonce | every 8 s while searching |
+
+- **Retries:** reliable messages repeat every 2 s up to 5 times until the matching `ACK`. Group-scope `STA`/`RES` go out
+  once on the group channel, then repeat by whisper only to racers that haven't acknowledged.
+- **Ordering:** `PRG` and `ST8` carry sequence numbers; anything not newer than the last accepted one is dropped.
+  Duplicate `ACC`/`STA`/`FIN`/`RES` are re-acknowledged but applied once.
+- **Handshake:** the version is in every header. A client that gets an `INV` with another protocol answers `VER`
+  and tells its kid; the host shows the mismatch and a one-player duel closes. Non-`VER` messages with another
+  protocol are ignored, so mismatched clients can never half-run a race.
+- **Timeouts:** invite 25 s (auto-decline), empty lobby 120 s (20 s for a random match), racer silence 15 s during
+  a race (marked `left`), maximum race `length x 45 + 20` s (still racing = `dnf`). If the host goes silent, each
+  racer finishes its own questions and ranks the race locally ("partial"); a late `RES` still replaces it.
+- **Combat:** the engine declines pending invites, leaves the queue and leaves an active race with reason `combat`.
+  The other racers continue. In instances every invite is declined (Midnight-era clients also limit addon messages there).
+
+### Questions
+
+- `Duel.BuildSet(subject, band, seed, length)` seeds a Park-Miller generator with a hash of
+  `seed:subject:band:length` and runs the normal generators through `Util.WithRNG`. All generators draw through
+  `Util.Random` (Namespace's `random`), so the same inputs build the same set on every client and Lua build.
+  The Lore/Naturalist shuffle bags (solo history) are swapped out while the set is built and restored afterwards.
+- Spark (tier 1) practice problems, levels 1-3, nodes cycled through a seeded shuffle; anything that isn't buttons is
+  re-rolled (duels are button races). Typing races use the youngest racer's band and its Scribe typing skill, so
+  everyone types the same lines; a line is correct at the Spark typing pass mark (85%).
+- Each racer uses its **own** band (from the host's `STA` list, not trusted for anything else).
+
+### Scoring, anti-cheat, rewards
+
+- Score = correct answers (more is better), then time = elapsed + 3 s per wrong answer (less is better). Exact ties
+  (within 0.05 s) share the rank. `left` racers and invalid reports rank last.
+- The host validates every report: integers, `correct <= answered <= length`, never going backwards, at least 0.4 s per
+  answer on average, and elapsed no more than 8 s ahead of the host's own race clock. A failing racer is "not counted".
+  This stops accidents and casual tampering, not a rewritten addon; rewards only ever change the cheater's own game.
+- Rewards (each client, once per duel): 2 shards per correct, +5 finished, +10 win against a real opponent, max 40.
+  2 bonus minutes for a finished race against an opponent who answered at least half the questions, max 10 per day
+  from duels (`AzerothAcademyDB.duel.minutes/day`) and always within the shared daily cap (`Progress.AwardDuelMinutes`).
+  Answers add to tier-1 `attempts/correct/time` (practice stats in the report) and never to `recent`, so duels can't
+  master a tier.
+
+### Safety design (kid-first)
+
+- **Off switches, PIN-protected:** Parent Panel -> Duel of Wits settings: duels on/off (default on, covers group,
+  guild and one-player duels), friends only (default off), allow random challengers (**default off**), duel name,
+  clear blocked list. With duels off or friends-only, invites are declined automatically.
+- **No free text anywhere.** No message type carries player-typed text. Emotes are indexes into four preset lines,
+  rate-limited (one per 3 s, six per duel) on both sides. The only typed text in a duel is the kid's own typing-race
+  line, which is checked locally and never sent.
+- **Minimum data:** messages carry subject, length, age band, two alias indexes, scores and state. The queue beacon is
+  subject, length, band and a random nonce. No level, class, zone, guild or real name is ever sent.
+- **Random challengers never see names.** In `QUEUE` scope the display fields are sent empty and every screen shows
+  the alias (preset adjective + creature chosen by the parent, randomised once on first load). WoW itself always gives
+  addons the sender's character name; the addon uses it only to address whispers and to block.
+- **Hidden queue channel:** `AzerothAcademyQ` is joined only while searching, removed from every chat window, and left
+  as soon as a match starts, the search stops or times out (5 min), combat starts, or the parent setting turns off.
+- **Matching** is limited to the same subject and length and an age band at most one step away.
+- **Block** on every result row: blocked players' invites get a neutral "busy", their emotes and queue beacons are
+  ignored. Nothing is reported anywhere; the list lives in the account SavedVariables and can be cleared by a parent.
+
+## Data model (schema 7)
 
 ```lua
 AzerothAcademyDB = {            -- account-wide: parent settings + daily minutes + Field Journal
-  version  = 6,
+  version  = 7,
   settings = { minutesPerMastery = 10, dailyCap = 60, unlockAllTiers = false, reviews = true,
                sound = { enabled = true, channel = "SFX", level = "all"|"important", custom = true },   -- v0.4
                reducedMotion = false, cameos = true,                                                -- v0.4
                minimap = { hide = false, angle = 225 },                                             -- v0.6.1
                flight = { mode = "off"|"toast"|"auto" },                                            -- v0.7
-               voice = { enabled = true } },                                                        -- v0.8
+               voice = { enabled = true },                                                          -- v0.8
+               duel = { enabled = true, friendsOnly = false, random = false,                        -- v0.10
+                        alias = { adj, creature }, aliasPicked = true } },
   minutes  = { day = "YYYY-MM-DD", earned = 0 },   -- shared so alts can't double the cap
   pin      = { salt = "123456", hash = "..." },    -- soft lock only
   ui       = { point, relPoint, x, y },
   journal  = { entries = { ["nodeId:tier"] = { at = ts } } },                                       -- v0.9
+  duel     = { blocked = { ["name-realm"] = true }, day = "YYYY-MM-DD", minutes = 0 },              -- v0.10
 }
 AzerothAcademyCharDB = {        -- per character: the kid's learning progress
-  version = 6,
+  version = 7,
   profile = { band = "initiate"|"adept"|"magister", created = ts },
   shards  = 0,
   stats   = { rounds, problems, firstCorrect, time },
+  duel    = { played, wins, finished },                                                             -- v0.10
   modules = { [moduleId] = {
     nodes = { [nodeId] = { tiers = { [1..3] = {
                 attempts, correct, time, recent = {1,0,1,...} (last 10), mastered, masteredAt,
@@ -397,6 +499,10 @@ AzerothAcademyCharDB = {        -- per character: the kid's learning progress
   } },
 }
 ```
+
+**Migration v6 → v7** (v0.10): `settings.duel`, `duel` and `char.duel` are filled in by `ApplyDefaults`; both
+versions go to 7. The first `Bind` that sees no `aliasPicked` picks a random duel name once.
+Duel tier-1 practice records add a `duel` counter next to `attempts`.
 
 **Migration v5 → v6** (v0.9): `journal` is filled in by `ApplyDefaults`, both versions go to 6, and
 `Progress.Bind` then runs `Journal.Sync()`, so Naturalist tiers already mastered get their pages (with
@@ -454,3 +560,6 @@ UI position, shards, and stats are untouched. The report notes "carried over fro
   translations must keep that order or move to a token-replacement formatter.
 - Thousands separators are hardcoded as commas.
 - Reviews use the local clock; a big clock change can make several reviews due at once (capped at 2 per round).
+- Duel of Wits trusts the host for the final ranking and only sanity-checks racers; a modified host could misreport.
+  "Rematch?" is an emote, not a one-click rematch (the challenger starts a new duel).
+- Duels haven't run between two real clients yet; channel/whisper behaviour on Forever is assumed to match Retail.

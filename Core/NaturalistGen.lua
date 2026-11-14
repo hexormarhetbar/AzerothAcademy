@@ -10,7 +10,7 @@
 local _, ns = ...
 local Util = ns.Util
 local D = ns.NaturalistData
-local random, abs = math.random, math.abs
+local random, abs = Util.Random, math.abs
 
 local NA = {}
 ns.Naturalist = NA

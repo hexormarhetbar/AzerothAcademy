@@ -41,6 +41,11 @@ V.LINES = {
   FZ_NATSPECIMEN_1 = { file = "nat_specimen", dur = 4.3, big = true },
   FZ_NATJOURNAL_1 = { file = "nat_journal", dur = 3.8 },
   FZ_NATFLIGHT_1 = { file = "nat_flight", dur = 4.3 },
+  -- v0.10 Duel of Wits
+  FZ_DUELINVITE_1 = { file = "duel_invite", dur = 3.7 },
+  FZ_DUELSTART_1 = { file = "duel_start", dur = 4.0 },
+  FZ_DUELWIN_1 = { file = "duel_win", dur = 4.2, big = true },
+  FZ_DUELDONE_1 = { file = "duel_done", dur = 3.9 },
 }
 -- event -> clip that fits every line of the event
 V.EVENT_CLIPS = {

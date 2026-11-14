@@ -1,4 +1,4 @@
-# Azeroth Academy v0.9.0 (test build)
+# Azeroth Academy v0.10.0 (test build)
 
 A free learning addon for kids ages 5 to 13. Lessons are framed as Academy quests in Azeroth.
 This build has the **Main Hub** and two subjects: **Rune Forger** (math) and, new in v0.3,
@@ -27,7 +27,11 @@ New in v0.9: **Azeroth Naturalist**, subject #4 (science). Field Warden Bramble 
 greenhouse at the Knowledge Exchange in Gadgetzan. Kids sort creatures by zone, follow food chains and the
 water cycle through Thousand Needles, mix states of matter in a goblin alchemy lab, and design fair tests.
 Every mastered tier adds a specimen page to the new **Field Journal**, a bestiary shared by the whole account.
-Everything stays on your computer. Nothing is sent anywhere.
+New in v0.10: **Duel of Wits**, learning races with other players. Challenge your group, your guild or one
+player (or, only if a parent allows it, a random challenger). Everyone answers the same kind of questions at their
+own age band; most correct wins and time breaks ties. Nothing typed is ever sent: only scores and four preset emotes.
+Progress stays on your computer. The only thing the addon ever sends is Duel of Wits race data, inside the game, to
+the players you race (see "Duel of Wits").
 
 ## Which game clients it targets
 
@@ -91,6 +95,10 @@ Or tick **Load out of date AddOns** on the AddOns screen.
 | `/aa flight [off\|toast\|auto]` | In-Flight Lessons: off, ask first with a pop-up (default), or open a quick round automatically (v0.7) |
 | `/aa flight test` / `/aa flight land` | Pretend to take off / land, to test In-Flight Lessons without flying (v0.7) |
 | `/aa voice [on\|off]` | Fizzwick's recorded voice on or off (no argument flips it). Uses the same volume as the sound effects (v0.8) |
+| `/aa duel` | Open Duel of Wits: pick a subject, 5 or 10 questions, and who to challenge (v0.10) |
+| `/aa duel <name>` | Open Duel of Wits ready to challenge that player (`Name` or `Name-Realm`) (v0.10) |
+| `/aa duel queue` | Open Duel of Wits on **Random challenger** (only works if a parent turned it on) (v0.10) |
+| `/aa duel leave` | Leave the current race, waiting room or random search (v0.10) |
 | `/aa nudge` | Old command: turns In-Flight Lessons off, or back on (ask first) |
 | `/aa help` | List the commands |
 
@@ -107,7 +115,45 @@ A round button with Fizzwick's face sits on the edge of the minimap.
 - If another addon has already loaded LibDBIcon, Azeroth Academy registers with it instead, so you get
   one button that minimap-button collectors (like those in ElvUI or Minimap Button Bag) can manage.
   Azeroth Academy doesn't ship any libraries.
+- **Shift-click** or **middle-click** opens Duel of Wits (v0.10).
 - Like the hub, it does nothing in combat.
+
+## Duel of Wits (v0.10)
+
+Race other players who also have Azeroth Academy. Open it from the hub's **Duel of Wits** button, `/aa duel`,
+or shift/middle-click on the minimap button.
+- **Setup:** pick a subject (Rune Forger, Scribe's Scrolls, Typing race, Lore Chronicles, Azeroth Naturalist or
+  the Lore Quiz), **5** or **10** questions, and who to challenge: **My group** (party or raid), **My guild**,
+  **One player** (type their name), or **Random challenger**. Then **Send challenge**.
+- **Invites:** everyone challenged gets a small pop-up (**Accept** / **No thanks**), even with the Academy closed.
+  It says no by itself after 25 seconds, and right away in combat, in a dungeon/raid/battleground, when duels are off
+  in the Parent Panel, or (with **Friends only**) when the challenger isn't on your friends list.
+- **Waiting room:** the challenger sees who joined (2 to 5 racers) and presses **Start race!**.
+- **The race:** a 3-2-1 countdown, then everyone answers their own questions. Questions come from one shared
+  seed plus **each racer's own age band**, so a 6-year-old and a 12-year-old can race fairly. A bar per racer
+  shows how far everyone got. Each question gets one try; a wrong answer adds 3 seconds.
+- **Typing race:** everyone types the **same lines** (at the youngest racer's level). The result shows WPM and accuracy;
+  a line counts as correct at 85% accuracy or better.
+- **Results:** most correct answers wins, time breaks ties. Fizzwick cheers, and you get shards (2 per correct answer,
+  +5 for finishing, +10 for winning, at most 40). Finishing against a real opponent also gives **2 bonus minutes,
+  at most 10 a day from duels**, and always inside the parent's daily cap. Duel answers count as practice (accuracy
+  and time in the report) but **never** count toward mastery, so duels can't skip the 9-of-10 rule.
+- After the race: four preset emotes (**Good game!**, **Well played!**, **Rematch?**, **That was fun!**), a
+  **Block** button per racer, and **New duel**.
+- **Combat** during a race makes you leave it (the others keep racing). If someone disconnects, the race finishes
+  without them; if the challenger disconnects, your game scores the race itself.
+- **Both players need v0.10.0.** A different version says so in chat and the duel doesn't start.
+
+**Safety (Parent Panel → Duel of Wits settings):**
+- **Group, guild & friend duels: On** (default). Off = every invite is declined.
+- **Friends only: Off** (default). On = only players on your character's friends list can challenge you, and
+  random challengers are off too.
+- **Allow random challengers: Off** (default). Only when a parent turns this on can the kid search for a random
+  opponent. Random races match the same subject and length and an age band at most one step away. Random
+  opponents only ever see your **duel name** (like "Clever Gryphon", picked from preset words in the Parent Panel),
+  never your character name, and you only see theirs.
+- **No free text, ever.** There is no chat box. Only scores, the four preset emotes and the duel name are sent.
+- **Clear blocked list.** Blocked players can't challenge you or send emotes; they just see "busy".
 
 ## In-Flight Lessons (v0.7)
 
@@ -413,6 +459,8 @@ The first visit asks you to create a 4–6 digit PIN. After that, the PIN unlock
 - **Minimap button: ON/OFF** (v0.6.1).
 - **In-flight lessons: Off / Ask first / Auto-open** (v0.7). Click to cycle.
 - **Fizzwick's voice: ON/OFF** (v0.8).
+- **Duel of Wits settings** (v0.10): duels on/off, friends only, allow random challengers (off by default),
+  the duel name random opponents see, and clearing the blocked list.
   - The panel uses the full window height, so Fizzwick's strip is hidden while it's open.
 - A `!` next to a tier means it's **fading** (missed its last review).
 - **Export Report:** a text report. Click *Select All*, then press Ctrl+C. The **Report:** button at the
@@ -592,6 +640,44 @@ v0.6 (Murloc Boarding Party):
 117. [ ] Parent Panel export / report ends with "Field Journal: N / 45 specimens collected." and has an Azeroth Naturalist section.
 118. [ ] Specimen icons all show a real picture (no green "?" boxes) on Forever, Retail and Classic. Tell me which ones are missing.
 
+**Duel of Wits (v0.10)**. Restart the game client once (new sound and voice files). You need **two players with
+Azeroth Academy v0.10.0** (two accounts, or a friend), both with an age band picked. Call them A and B.
+
+119. [ ] A: the hub has a gold **Duel of Wits** button; `/aa duel` and shift-click / middle-click on the minimap button open the same screen. The minimap tooltip has a "Shift-click or middle-click" line.
+120. [ ] A and B in a party. A picks Rune Forger, 5 questions, **My group**, **Send challenge**. B gets the pop-up (even with the Academy closed) naming A, the subject and 5 questions, and Fizzwick says "A challenger appears!..." if B's Academy is open.
+121. [ ] B clicks **Accept**: B's waiting room says "Waiting for the challenger..."; A's lists B as "ready". A clicks **Start race!**.
+122. [ ] Both see 3-2-1 (a tick sound each), then "Go!" and the first question. Give A and B different age bands: each gets questions for their own band.
+123. [ ] The race bars move for both players as each answers (within a second or two). A wrong answer says "+3 seconds" and shows the right answer.
+124. [ ] The first to finish sees "Waiting for the other racers...". When both are done, both see the same ranking, a "Winner:" line, a reward line and Fizzwick's win (fanfare) or "Great race!" line.
+125. [ ] Shards went up by the reward, and the minutes line rose by 2 (if the daily cap allows). Play 6 duels: duel minutes stop at 10 for the day.
+126. [ ] Emote buttons: B sees "A: Good game!" in chat and on the results screen. Clicking emotes fast only sends one every 3 seconds.
+127. [ ] **Block** on the results screen: A blocks B. B challenges A again: B sees "can't duel right now (busy)", A sees nothing. Clear it in Parent Panel → Duel of Wits settings → **Clear blocked list**.
+128. [ ] **One player:** `/aa duel B-name` opens with the name filled in. Send it; B gets the pop-up. Let it sit 25 seconds: it closes and A is told B didn't answer.
+129. [ ] Typing race with A and B in different bands: both type the same lines; results show WPM and accuracy.
+130. [ ] Guild: **My guild** invites everyone in the guild with the addon. Up to 5 racers can join; later ones are told it's full.
+131. [ ] B enters combat during a race (hit a training dummy): B leaves with "You left the race because combat started"; A keeps racing and B shows as "left". B can't be invited while in combat or inside a dungeon (A is told why).
+132. [ ] Disconnect test: B `/reload`s mid-race. About 15 seconds later A's race marks B as left and finishes normally.
+133. [ ] Parent Panel → **Duel of Wits settings**: turn **Group, guild & friend duels** off on B; A's challenge is declined with "duels are off". Turn **Friends only** on: only A on B's friends list can challenge.
+134. [ ] Random queue (needs both A and B to allow it in the Parent Panel; default Off): both pick the same subject and length, **Random challenger**, **Find a random challenger**. Within ~20 seconds the race starts by itself. Both only see the other's duel name (like "Clever Gryphon"), never the character name. No new channel appears in any chat tab.
+135. [ ] Random queue with **Allow random challengers: Off** shows "A parent can turn on random challengers...". **Stop searching** works; after 5 minutes alone it stops by itself.
+136. [ ] `/aa duel leave` leaves a race, waiting room or search. Tell me if anything feels too fast, too slow, or confusing for your kids.
+
+## Known limits (v0.10)
+
+- **Duel of Wits hasn't been tried between two real clients yet.** It was tested headless with simulated players on a
+  lossy, out-of-order network and with UI smoke tests. Two accounts are the real test (checklist 119-136).
+- **Both players need the same Duel of Wits protocol** (v0.10.0). Older versions don't answer at all; newer ones say so.
+- **The random queue needs a modern client** (Forever, Retail, Classic Era). It uses a hidden custom channel, which very
+  old clients can't send addon messages on; there it explains that it's unavailable. Random matching only finds players who
+  are searching at the same time on the same realm group.
+- **Friends only** checks your character's friends list, not Battle.net friends.
+- **Anti-cheat is light.** The challenger's game rejects impossible reports (more answers than questions, answering faster
+  than 0.4 s a question, time running ahead of the race). A determined cheater with a modified addon could still win a race;
+  it only changes shards in their own game.
+- **Duels only send what a race needs**: subject, length, age band, duel name numbers, scores and emote numbers. WoW itself
+  always shows the sender's character name to addons, so the addon hides it in random races; it can't make it secret.
+- **21 lines are spoken now** (4 new duel lines). The other duel lines are text only.
+
 ## Known limits (v0.9)
 
 - **Naturalist content is a first pass.** About 260 curated items plus generated food-chain, matter,
@@ -691,14 +777,17 @@ AzerothAcademy/
     MinimapMath.lua         minimap button rim position for round/square/corner minimaps, drag angle
     Flight.lua              In-Flight Lessons rules: takeoff/landing edges, once per flight, combat/instance/cap/mode
     Voice.lua               Fizzwick's recorded voice rules: which line, one at a time, gaps, repeat throttle, on/off
+    DuelProto.lua           Duel of Wits wire format: versioned, escaped messages, chunking, throttle queue
+    Duel.lua                Duel of Wits engine: invites, lobby, seeded question sets, race, scoring, anti-cheat, random queue
   Locales/                  enUS strings, empty stubs for 8 locales, fallback setup
   Adapters/Compat.lua       client detection and every version-sensitive API call
   UI/                       Widgets (+ reveal/pulse/count-up animations), Hub (+ profile/home), Guide (Fizzwick strip,
                             parrot, cameo card, rank-up celebration), Lessons (skill list/problem/reward for any
                             module), Trial (trial intro/result), ParentPanel, Minimap (minimap button), Flight (flight watcher + toast),
-                            Boarding (Murloc Boarding Party: setup, ship deck, result), Journal (Field Journal)
-  Media/Sounds/             21 original sound effects (.ogg) + README.md (events, fallbacks, prompts, voice notes)
-  Media/Sounds/VO/          17 original Fizzwick voice clips (.ogg)
+                            Boarding (Murloc Boarding Party: setup, ship deck, result), Journal (Field Journal),
+                            Duel (Duel of Wits: setup + waiting room, invite pop-up, race, results)
+  Media/Sounds/             23 original sound effects (.ogg) + README.md (events, fallbacks, prompts, voice notes)
+  Media/Sounds/VO/          21 original Fizzwick voice clips (.ogg)
   Media/Art/                Hex's posed art: 13 x 512 full figures + 13 x 256 head crops (TGA), Manifest.lua, README.md
   tools/convert_art.sh      PNG -> 512 TGA + 256 head crops (ImageMagick) + manifest writer
   tools/make_heads.py       face-centered 256 head-and-chest crops (Python, Pillow + numpy)
@@ -709,6 +798,13 @@ AzerothAcademy/
 ```
 
 ## Developer checks
+
+v0.10 adds harness section 23: the wire format (escaping, chunking, throttle), the seeded RNG, deterministic duel
+sets for every subject x band x length on two fresh clients, validation and ranking, and a simulated chat bus with
+2-7 clients covering clean races, 25% message loss with reordering, version mismatch, disconnects (racer and host),
+combat, auto-declines, blocking, the 5-racer cap, typing races, the random queue and the schema 6 -> 7 migration.
+The UI smoke tests host a party race, accept an invite, hit combat, a version mismatch, the parent settings and
+the random queue on all four client runs (the legacy run uses the old global `SendAddonMessage`).
 
 v0.9 adds harness section 22 (Azeroth Naturalist data + generators + Field Journal + schema 6) and a UI smoke
 pass through the Naturalist tile, survey, every skill, a specimen, the journal and an in-flight round.
@@ -795,6 +891,34 @@ originals and face-centered head crops, and wrote a 26-entry manifest.
 For v0.5, `tools/convert_art.sh` was run with ImageMagick 7.1.2 on test PNGs. It produced 512x512 RGBA TGAs, a 1024x256 (4-frame) and a 2048x256 (8-frame) strip, and a correct manifest. Removed files dropped out of the manifest, and a bad `STRIP_FRAMES` was rejected.
 
 ## Changelog
+
+**v0.10.0**
+- **Duel of Wits, multiplayer learning races:** challenge your party/raid, guild or one player; 2-5 racers; any subject
+  (Rune Forger, Scribe's Scrolls, Typing race, Lore Chronicles, Azeroth Naturalist, Lore Quiz) with 5 or 10 questions.
+  Accept/decline pop-up with automatic "no" in combat, in instances, when a parent turned duels off, for non-friends
+  in friends-only mode, and after 25 seconds. 3-2-1 countdown, live race bars, one try per question, +3 s per wrong
+  answer, most correct wins with time as the tiebreak. Typing races: same lines for everyone, WPM + accuracy.
+- **Deterministic questions:** a shared seed plus each racer's own age band builds the set on every client
+  (`Util.NewRNG`/`Util.WithRNG`; every generator now draws through `Util.Random`; Lore/Naturalist no-repeat bags are
+  set aside while a duel set is built).
+- **Protocol:** addon messages (prefix `AzAcadDuel`, protocol 1) through Compat (`C_ChatInfo` or the legacy globals) on
+  PARTY/RAID/GUILD/WHISPER (+ a hidden CHANNEL for the queue). Versioned header with a VER handshake, escaped fields,
+  chunking past 250 bytes, a token-bucket throttle with coalesced progress updates, ACK + retry for the important
+  messages, sequence numbers against stale/out-of-order updates, keepalives and silence timeouts. Host-side sanity
+  checks mark impossible reports as "not counted".
+- **Rewards without farming:** 2 shards per correct answer, +5 finish, +10 win (max 40); 2 bonus minutes for a finished
+  race against a real opponent, max 10 a day from duels and always inside the daily cap. Answers count as practice
+  stats only, never toward the mastery window.
+- **Random challengers (phase 2), OFF by default:** parent-gated in a new PIN-protected **Duel of Wits settings**
+  overlay (duels on/off, friends only, random challengers, duel name, clear blocked list). Matching by subject, length
+  and age band (at most one band apart) on a hidden channel that is joined only while searching. Random opponents see
+  only a preset-word duel name; no free text exists anywhere; Block on every result.
+- **Entry points:** hub button, `/aa duel [name|queue|leave]`, shift/middle-click on the minimap button (+ tooltip line).
+- **Fizzwick:** 5 new events (invite, start, win, done, waiting) with 14 lines, 4 new voice clips (same original voice,
+  ElevenLabs) and 2 new sound effects (`countdown`, `duelwin`); 219 ElevenLabs credits in total.
+- **Saved data (schema 7):** `settings.duel`, `AzerothAcademyDB.duel` (block list, duel minutes per day) and per-character
+  duel stats. Migration from v0.9 fills the defaults and picks a random duel name once.
+- **Tests:** harness section 23 (multi-client simulated bus) and duel UI smoke passes on all four client runs.
 
 **v0.9.0**
 - **Azeroth Naturalist (science), subject #4:** 15 skills across Initiate / Adept / Magister with the usual

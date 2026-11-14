@@ -196,6 +196,10 @@ H.RegisterView("parent", function(parent)
     st.voice.enabled = st.voice.enabled == false
   end)
   v.voiceBtn = voiceBtn
+  -- v0.10: Duel of Wits safety settings live on their own overlay
+  local duelBtn = toggle(1, 5, function() v:ShowDuelSettings() end)
+  duelBtn:SetText(L.PP_DUEL_SETTINGS)
+  v.duelBtn = duelBtn
   v.toggles = toggles
 
   dashMsg:SetPoint("TOPLEFT", bandLabel, "BOTTOMLEFT", 0, -14 - 6 * 27)
@@ -232,6 +236,7 @@ H.RegisterView("parent", function(parent)
   resetBtn:SetPoint("TOP", changePin, "BOTTOM", 0, -6)
   local lockBtn = W.Button(dash, L.PARENT_LOCK, 150, 24, function()
     v.unlocked = false
+    if v.duelPanel then v.duelPanel:Hide() end
     v:Refresh()
   end)
   local rerunBtn = W.Button(dash, L.PARENT_RERUN_TRIAL, 150, 24, function()
@@ -242,6 +247,71 @@ H.RegisterView("parent", function(parent)
   end)
   rerunBtn:SetPoint("TOP", resetBtn, "BOTTOM", 0, -6)
   lockBtn:SetPoint("TOP", rerunBtn, "BOTTOM", 0, -6)
+
+  ----------------------------------------------------------------------
+  -- v0.10 Duel of Wits settings overlay (behind the PIN like everything here)
+  ----------------------------------------------------------------------
+  local duel = C.CreateFrame("Frame", nil, v, nil, true)
+  duel:SetAllPoints(v)
+  duel:SetFrameLevel(v:GetFrameLevel() + 20)
+  duel:EnableMouse(true)
+  C.ApplyBackdrop(duel, 0.03, 0.02, 0.06, 0.98, 0.62, 0.48, 1)
+  local dTitle = W.Text(duel, 15, L.PP_DUEL_SETTINGS, W.GOLD, "LEFT")
+  dTitle:SetPoint("TOPLEFT", 14, -12)
+  local dInfo = W.Text(duel, 11, L.PP_DUEL_INFO, W.WHITE, "LEFT")
+  dInfo:SetPoint("TOPLEFT", dTitle, "BOTTOMLEFT", 0, -8)
+  dInfo:SetWidth(520)
+  local function dset() return ns.Progress.account.settings.duel end
+  local function onoff(b) return b and L.PP_ON or L.PP_OFF end
+  local dButtons = {}
+  local function dtoggle(row, fn)
+    local b = W.Button(duel, "", 300, 24, function()
+      fn()
+      C.Sound("click")
+      v:RefreshDuel()
+    end, 11)
+    b:SetPoint("TOPLEFT", dInfo, "BOTTOMLEFT", 0, -16 - row * 32)
+    dButtons[#dButtons + 1] = b
+    return b
+  end
+  local dEnabled = dtoggle(0, function() dset().enabled = dset().enabled == false end)
+  local dFriends = dtoggle(1, function() dset().friendsOnly = not dset().friendsOnly end)
+  local dRandom = dtoggle(2, function()
+    dset().random = not dset().random
+    if not dset().random and ns.DuelUI then ns.DuelUI.StopQueue() end
+  end)
+  local dAlias = dtoggle(3, function()
+    local al = dset().alias
+    local n = ns.Duel.ALIAS_COUNT
+    -- step through every adjective x creature pair
+    al[2] = al[2] % n + 1
+    if al[2] == 1 then al[1] = al[1] % n + 1 end
+  end)
+  local dClear = dtoggle(4, function() ns.Util.Wipe(ns.Progress.account.duel.blocked) end)
+  local dNote = W.Text(duel, 10, L.PP_DUEL_RANDOM_NOTE, W.GRAY, "LEFT")
+  dNote:SetPoint("TOPLEFT", dInfo, "BOTTOMLEFT", 0, -16 - 5 * 32)
+  dNote:SetWidth(520)
+  local dClose = W.Button(duel, L.CLOSE, 100, 24, function() duel:Hide() end)
+  dClose:SetPoint("BOTTOMRIGHT", -12, 12)
+  duel:Hide()
+  v.duelPanel, v.duelButtons = duel, { enabled = dEnabled, friends = dFriends, random = dRandom, alias = dAlias, clear = dClear }
+
+  function v:RefreshDuel()
+    local st = dset()
+    local blocked = 0
+    for _ in pairs(ns.Progress.account.duel.blocked) do blocked = blocked + 1 end
+    dEnabled:SetText(string.format(L.PP_DUEL_ENABLED, onoff(st.enabled ~= false)))
+    dFriends:SetText(string.format(L.PP_DUEL_FRIENDS, onoff(st.friendsOnly)))
+    dRandom:SetText(string.format(L.PP_DUEL_RANDOM, onoff(st.random)))
+    dAlias:SetText(string.format(L.PP_DUEL_ALIAS, ns.Duel.AliasText(st.alias[1], st.alias[2])))
+    dClear:SetText(string.format(L.PP_DUEL_CLEAR, blocked))
+  end
+
+  function v:ShowDuelSettings()
+    if not self.unlocked then return end
+    self:RefreshDuel()
+    duel:Show()
+  end
 
   ----------------------------------------------------------------------
   -- Export overlay (multi-line, select-all copy)
@@ -393,6 +463,7 @@ H.RegisterView("parent", function(parent)
     minimapBtn:SetText(string.format(L.PARENT_MINIMAP, not (type(mm) == "table" and mm.hide) and L.ON or L.OFF))
     if ns.FlightUI then flightBtn:SetText(string.format(L.PARENT_FLIGHT, ns.FlightUI.ModeName())) end
     voiceBtn:SetText(string.format(L.PARENT_VOICE, ns.Voice.Enabled({ voice = P.account.settings.voice }) and L.ON or L.OFF))
+    duelBtn:SetText(L.PP_DUEL_SETTINGS)
   end
 
   local function submitGate()
@@ -426,6 +497,7 @@ H.RegisterView("parent", function(parent)
 
   function v:OnShowView()
     self.changingPin = false
+    duel:Hide()
     self:Refresh()
   end
 
@@ -433,6 +505,7 @@ H.RegisterView("parent", function(parent)
     -- Closing the window always re-locks the panel.
     self.unlocked = false
     self.changingPin = false
+    duel:Hide()
     pin1:ClearFocus(); pin2:ClearFocus(); exBox:ClearFocus()
   end
   return v

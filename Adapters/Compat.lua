@@ -330,3 +330,107 @@ function C.Print(msg)
     print(line)
   end
 end
+
+------------------------------------------------------------------------
+-- v0.10 Duel of Wits: addon messages, group/guild/friends, hidden queue channel
+------------------------------------------------------------------------
+-- Realm as it appears in CHAT_MSG_ADDON senders ("Name-RealmName", no spaces).
+function C.Realm()
+  if GetNormalizedRealmName then
+    local ok, r = pcall(GetNormalizedRealmName)
+    if ok and r and r ~= "" then return r end
+  end
+  if GetRealmName then
+    local ok, r = pcall(GetRealmName)
+    if ok and r then return (r:gsub("[%s%-]", "")) end
+  end
+  return ""
+end
+
+function C.ShortName()
+  local ok, name = pcall(UnitName, "player")
+  return ok and name or nil
+end
+
+-- true on clients with the modern C_ChatInfo API (needed for the random queue,
+-- which talks on a custom channel; 3.3.5-era clients can't send addon messages there).
+function C.HasModernComms()
+  return (C_ChatInfo and C_ChatInfo.SendAddonMessage) and true or false
+end
+
+function C.RegisterAddonPrefix(prefix)
+  if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then
+    return pcall(C_ChatInfo.RegisterAddonMessagePrefix, prefix)
+  end
+  if RegisterAddonMessagePrefix then return pcall(RegisterAddonMessagePrefix, prefix) end
+  return true -- very old clients deliver every prefix
+end
+
+C.lastAddonMessage = nil -- { prefix, msg, channel, target } for tests
+function C.SendAddonMessage(prefix, msg, channel, target)
+  local f = (C_ChatInfo and C_ChatInfo.SendAddonMessage) or SendAddonMessage
+  if not f then return false end
+  C.lastAddonMessage = { prefix, msg, channel, target }
+  local ok, res = pcall(f, prefix, msg, channel, target)
+  return ok and (res == nil or res == true or res == 0)
+end
+
+function C.GroupChannel()
+  if IsInRaid and IsInRaid() then return "RAID" end
+  if IsInGroup and IsInGroup() then return "PARTY" end
+  if GetNumRaidMembers and (GetNumRaidMembers() or 0) > 0 then return "RAID" end
+  if GetNumPartyMembers and (GetNumPartyMembers() or 0) > 0 then return "PARTY" end
+  return nil
+end
+
+function C.InGuild()
+  return (IsInGuild and IsInGuild()) and true or false
+end
+
+-- Character friends list only (not Battle.net friends).
+function C.IsFriend(name)
+  name = tostring(name or "")
+  local short = name:match("^([^%-]+)") or name
+  if C_FriendList and C_FriendList.GetFriendInfo then
+    for _, n in ipairs({ name, short }) do
+      local ok, info = pcall(C_FriendList.GetFriendInfo, n)
+      if ok and info then return true end
+    end
+    return false
+  end
+  if GetNumFriends and GetFriendInfo then
+    local okn, count = pcall(GetNumFriends)
+    for i = 1, (okn and count or 0) do
+      local n = GetFriendInfo(i)
+      if n and (n == short or n == name) then return true end
+    end
+  end
+  return false
+end
+
+C.QUEUE_CHANNEL = "AzerothAcademyQ"
+
+function C.ChannelIndex(name)
+  if not GetChannelName then return nil end
+  local ok, id = pcall(GetChannelName, name)
+  if ok and type(id) == "number" and id > 0 then return id end
+  return nil
+end
+
+-- Join quietly and keep the channel out of every chat window: kids never see it.
+function C.JoinHiddenChannel(name)
+  if not JoinTemporaryChannel then return nil end
+  pcall(JoinTemporaryChannel, name)
+  local remove = ChatFrame_RemoveChannel or (ChatFrameUtil and ChatFrameUtil.RemoveChannel)
+  if remove then
+    for i = 1, (NUM_CHAT_WINDOWS or 10) do
+      local cf = _G["ChatFrame" .. i]
+      if cf then pcall(remove, cf, name) end
+    end
+  end
+  return C.ChannelIndex(name)
+end
+
+function C.LeaveHiddenChannel(name)
+  if LeaveChannelByName then pcall(LeaveChannelByName, name) end
+end

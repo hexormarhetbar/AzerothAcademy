@@ -21,6 +21,8 @@ G.EVENTS = {
   "FLIGHTSTART", "FLIGHTDONE", "FLIGHTLAND",
   -- v0.9: Azeroth Naturalist
   "NATSTART", "NATCORRECT", "NATWRONG", "NATSPECIMEN", "NATJOURNAL", "NATFLIGHT",
+  -- v0.10: Duel of Wits
+  "DUELINVITE", "DUELSTART", "DUELWIN", "DUELDONE", "DUELWAIT",
 }
 
 -- Who can appear and how the UI should try to show them. Model IDs are tried in

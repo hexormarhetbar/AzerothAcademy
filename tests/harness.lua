@@ -2209,7 +2209,7 @@ do
   tns.Env.time = function() return NOW end
   local LP, LT, LR = tns.Progress, tns.Trial, tns.Review
   local acct, char = LP.Bind({}, {})
-  ok(acct.version == 6 and char.version == 6 and type(acct.journal.entries) == "table", "schema 6 with a journal")
+  ok(acct.version == LP.SCHEMA and char.version == LP.SCHEMA and type(acct.journal.entries) == "table", "schema 6+ with a journal")
   ok(select(1, J.Count()) == 0 and select(2, J.Count()) == 45, "empty journal: 0 / 45")
   local collected = 0
   for _, band in ipairs({ "initiate", "adept", "magister" }) do
@@ -2304,13 +2304,475 @@ do
     nat_matter = { tiers = { { mastered = true, masteredAt = NOW - 100, attempts = 10, recent = {} }, {}, {} } } }, placement = {}, exams = {} } } }
   local oldAcct = { version = 5, settings = { dailyCap = 45 } }
   LP.Bind(oldAcct, oldChar)
-  ok(oldAcct.version == 6 and oldChar.version == 6 and LP.upgradedFrom == 5, "v0.8 -> v0.9 bump")
+  ok(oldAcct.version == LP.SCHEMA and oldChar.version == LP.SCHEMA and LP.upgradedFrom == 5, "v0.8 -> v0.9 (-> current) bump")
   ok(type(oldAcct.journal) == "table" and J.Has("nat_matter", 1) and not J.Has("nat_matter", 2), "migration syncs mastered tiers into the journal")
   ok(oldAcct.settings.dailyCap == 45 and oldChar.shards == 12, "migration keeps everything else")
   ok(J.Entry("nat_matter", 1).at == NOW - 100, "synced page keeps its mastery date")
   -- report mentions nothing broken for naturalist
   local okRep, rep = pcall(tns.Report.Build, { moduleId = "naturalist" })
   ok(okRep and rep:find("Field Journal: 1 / 45", 1, true), "progress report shows the journal: " .. tostring(rep):sub(-200))
+end
+
+-------------------------------------------------------------------------
+-- 23. v0.10: Duel of Wits - protocol, deterministic sets, multi-client bus
+-------------------------------------------------------------------------
+do
+  local DP0 = ns.DuelProto
+  -- protocol encode/decode/escape
+  local m = DP0.Encode("INV", "id~1", "a|b", "100%", "", 5)
+  local v, t, f = DP0.Decode(m)
+  ok(v == DP0.VERSION and t == "INV" and f[1] == "id~1" and f[2] == "a|b" and f[3] == "100%" and f[4] == "" and f[5] == "5", "duel proto round-trips escaped fields")
+  ok(not m:find("|", 1, true) and #DP0.PREFIX <= 16, "no raw pipes on the wire; prefix fits")
+  ok(DP0.Decode("hello") == nil and DP0.Decode("AA1~bad type~x") == nil and DP0.Decode(nil) == nil, "garbage ignored")
+  -- chunking
+  local long = DP0.Encode("RES", string.rep("x", 700), string.rep("y", 300))
+  local pieces = DP0.Split(long)
+  ok(#pieces >= 5, "long messages split into chunks")
+  local allSmall = true
+  for _, p in ipairs(pieces) do if #p > 255 then allSmall = false end end
+  ok(allSmall, "every chunk fits in one addon message")
+  local asm = DP0.NewAssembler()
+  local got
+  for i = #pieces, 1, -1 do got = asm:Feed(pieces[i], "Bob", 0) or got end
+  ok(got == long, "chunks reassemble in reverse order")
+  local asm2 = DP0.NewAssembler()
+  ok(asm2:Feed(pieces[1], "Bob", 0) == nil, "partial message waits")
+  asm2:Expire(100)
+  ok(next(asm2.pending) == nil, "stale partials expire")
+  -- throttle queue
+  local q, sent = DP0.NewQueue(3, 1), {}
+  for i = 1, 6 do q:Push("m" .. i, "PARTY") end
+  q:Flush(0, function(msg) sent[#sent + 1] = msg end)
+  ok(#sent == 3 and q:Size() == 3, "token bucket bursts then holds")
+  q:Flush(2, function(msg) sent[#sent + 1] = msg end)
+  ok(#sent == 5, "refills at its rate")
+  q:Push("p1", "WHISPER", "A", "prg"); q:Push("p2", "WHISPER", "A", "prg")
+  ok(q:Size() == 2, "progress updates coalesce")
+  for _ = 1, 50 do q:Push("x", "PARTY") end
+  local burst = 0
+  q:Flush(2.5, function() burst = burst + 1 end)
+  ok(burst <= 3, "never more than the bucket at once")
+
+  -- RNG
+  local r1, r2 = Util.NewRNG(42), Util.NewRNG(42)
+  local same, inRange = true, true
+  for _ = 1, 500 do
+    local a, b = r1(1, 6), r2(1, 6)
+    if a ~= b then same = false end
+    if a < 1 or a > 6 then inRange = false end
+  end
+  ok(same and inRange, "seeded RNG repeatable and in range")
+  local fl = r1()
+  ok(fl >= 0 and fl < 1, "float form in [0,1)")
+  ok(Util.WithRNG(Util.NewRNG(7), function() return Util.Random(1, 1000) end) == Util.WithRNG(Util.NewRNG(7), function() return Util.Random(1, 1000) end), "WithRNG routes Util.Random")
+  ok(Util.rng == nil, "WithRNG restores the default source")
+  ok(not pcall(Util.WithRNG, Util.NewRNG(1), function() error("x") end) and Util.rng == nil, "WithRNG restores after an error")
+
+  -- deterministic sets: two fresh clients, every subject x band x length
+  local A, B = newNS(), newNS()
+  A.Progress.Bind({}, {}); B.Progress.Bind({}, {})
+  local D0 = A.Duel
+  local function sig(set)
+    local out = {}
+    for _, p in ipairs(set) do
+      local ch = {}
+      for _, c in ipairs(p.choices or {}) do ch[#ch + 1] = tostring(c) end
+      out[#out + 1] = p.nodeId .. "|" .. p.text .. "|" .. tostring(p.answer) .. "|" .. table.concat(ch, ",")
+    end
+    return table.concat(out, "\n")
+  end
+  local setsBuilt, detOk, usableOk = 0, true, true
+  for _, sub in ipairs(D0.Subjects()) do
+    for _, band in ipairs({ "initiate", "adept", "magister" }) do
+      for _, len in ipairs({ 5, 10 }) do
+        for seedI = 1, math.max(2, math.floor(ITER / 100)) do
+          local seed = seedI * 7919 + len
+          -- churn B's random state + bags first: a set must not depend on history
+          for _ = 1, 3 do B.Modules.Generate(B.Modules.Nodes(D0.SUBJECT_BY_ID[sub.id].module, band)[1], 2, 1, "practice") end
+          local sa = D0.BuildSet(sub.id, band, seed, len)
+          local sb = B.Duel.BuildSet(sub.id, band, seed, len)
+          setsBuilt = setsBuilt + 1
+          if not sa or not sb or sig(sa) ~= sig(sb) then
+            detOk = false
+            if failures < 40 then print("non-deterministic set", sub.id, band, len, seed) end
+          else
+            for _, p in ipairs(sa) do
+              if not D0.Usable(p, sub) or hasFormatLeftovers(p.text) then usableOk = false end
+            end
+          end
+        end
+      end
+    end
+  end
+  ok(detOk, "same seed + band => identical duel questions on two clients (" .. setsBuilt .. " sets)")
+  ok(usableOk, "duel questions are all buttons (or typing lines) and fully formatted")
+  ok(sig(D0.BuildSet("runeforger", "adept", 1, 5)) ~= sig(D0.BuildSet("runeforger", "adept", 2, 5)), "different seeds differ")
+  ok(sig(D0.BuildSet("runeforger", "adept", 1, 5)) ~= sig(D0.BuildSet("runeforger", "initiate", 1, 5)), "each band gets its own set")
+  local ty = D0.BuildSet("typing", "initiate", 99, 5)
+  ok(ty and ty[1].mode == "typing", "typing race lines are typed")
+  ok(D0.BuildSet("nope", "adept", 1, 5) == nil, "unknown subject => nil")
+  local nb = A.Lore.bags
+  A.Lore.bags = { marker = true }
+  D0.BuildSet("lore", "adept", 5, 5)
+  ok(A.Lore.bags.marker == true, "solo no-repeat bags restored after a duel set")
+  A.Lore.bags = nb
+
+  -- validation + ranking
+  local V = D0.Validate
+  ok(V({ answered = 3, correct = 2, elapsed = 10 }, nil, 5, 12), "sane report accepted")
+  ok(not V({ answered = 6, correct = 2, elapsed = 10 }, nil, 5, 12), "too many answers rejected")
+  ok(not V({ answered = 3, correct = 4, elapsed = 10 }, nil, 5, 12), "more correct than answered rejected")
+  ok(not V({ answered = 5, correct = 5, elapsed = 0.5 }, nil, 5, 12), "impossibly fast rejected")
+  ok(not V({ answered = 3, correct = 3, elapsed = 60 }, nil, 5, 12), "time beyond the race clock rejected")
+  ok(not V({ answered = 2, correct = 2, elapsed = 9 }, { answered = 3, correct = 3 }, 5, 12), "counts going backwards rejected")
+  local rk = D0.Rank({
+    { name = "a", correct = 4, time = 30, status = "finished" }, { name = "b", correct = 5, time = 50, status = "finished" },
+    { name = "c", correct = 4, time = 20, status = "finished" }, { name = "d", correct = 5, time = 50, status = "left" },
+    { name = "e", correct = 5, time = 10, status = "finished", valid = false } })
+  ok(rk[1].name == "b" and rk[2].name == "c" and rk[3].name == "a" and rk[4].name == "d" and rk[5].name == "e", "rank: correct first, time breaks ties, leavers and invalid last")
+  local tie = D0.Rank({ { name = "x", correct = 3, time = 20, status = "finished" }, { name = "y", correct = 3, time = 20.01, status = "finished" } })
+  ok(tie[1].rank == 1 and tie[2].rank == 1, "exact ties share first place")
+  ok(D0.Score(5, 3, 20) == 26, "each wrong answer adds the penalty")
+
+  ---------------------------------------------------------------------
+  -- simulated chat bus with N clients
+  ---------------------------------------------------------------------
+  local function newBus(cfg)
+    local bus = { t = 0, clients = {}, inflight = {}, rng = Util.NewRNG(cfg.seed or 1), drop = cfg.drop or 0,
+      jitter = cfg.jitter or 0, latency = cfg.latency or 0.05, sentCount = 0, perSecond = {} }
+    local function find(name)
+      for _, c in ipairs(bus.clients) do if c.full:lower() == tostring(name):lower() or c.name:lower() == tostring(name):lower() then return c end end
+    end
+    function bus:Add(name, band, o)
+      o = o or {}
+      local cns = newNS()
+      cns.Progress.Bind({}, {})
+      if band then cns.Progress.SetBand(band) end
+      local c = { name = name, full = name .. "-Realm", ns = cns, events = {}, ctx = { combat = false, instance = false },
+        group = o.group, guild = o.guild, friends = o.friends or {}, inQueueChan = false, skill = o.skill or 1, think = o.think or 2,
+        nextAnswer = nil, offline = false, ver = o.ver }
+      c.st = cns.Progress.account.settings.duel
+      if o.settings then for k, v2 in pairs(o.settings) do c.st[k] = v2 end end
+      c.E = cns.Duel.NewEngine({
+        me = name, realm = "Realm", now = function() return bus.t end, addonVersion = "0.10.0",
+        send = function(msg, channel, target)
+          if o.ver then msg = msg:gsub("^AA%d+", "AA" .. o.ver) end
+          bus:Send(c, msg, channel, target)
+        end,
+        band = function() return cns.Progress.GetBand() end,
+        display = function() return name end,
+        settings = function() return c.st end,
+        context = function() return c.ctx end,
+        isFriend = function(n) return c.friends[cns.Duel.Short(n)] == true end,
+        isBlocked = function(n) return cns.Progress.account.duel.blocked[cns.Duel.Norm(n, "Realm"):lower()] == true end,
+        groupChannel = function() return c.group and "PARTY" or nil end,
+        inGuild = function() return c.guild ~= nil end,
+        queueChannel = function() return c.inQueueChan and 5 or nil end,
+        queueJoin = function() c.inQueueChan = true end,
+        queueLeave = function() c.inQueueChan = false end,
+        notify = function(ev, ...) c.events[#c.events + 1] = { ev, ... } end,
+      })
+      bus.clients[#bus.clients + 1] = c
+      return c
+    end
+    function bus:Send(from, msg, channel, target)
+      if from.offline then return end
+      bus.sentCount = bus.sentCount + 1
+      local sec = math.floor(bus.t)
+      bus.perSecond[from.name .. sec] = (bus.perSecond[from.name .. sec] or 0) + 1
+      if #msg > 255 then bus.oversize = true end
+      local rcpt = {}
+      if channel == "WHISPER" then
+        local c = find(target); if c then rcpt[1] = c end
+      elseif channel == "PARTY" or channel == "RAID" then
+        for _, c in ipairs(bus.clients) do if from.group and c.group == from.group then rcpt[#rcpt + 1] = c end end
+      elseif channel == "GUILD" then
+        for _, c in ipairs(bus.clients) do if from.guild and c.guild == from.guild then rcpt[#rcpt + 1] = c end end
+      elseif channel == "CHANNEL" then
+        for _, c in ipairs(bus.clients) do if c.inQueueChan then rcpt[#rcpt + 1] = c end end
+      end
+      for _, c in ipairs(rcpt) do
+        if bus.rng() >= bus.drop then
+          bus.inflight[#bus.inflight + 1] = { at = bus.t + bus.latency + bus.rng() * bus.jitter, to = c, msg = msg, channel = channel, from = from.full }
+        end
+      end
+    end
+    function bus:Step(dt)
+      bus.t = bus.t + dt
+      local due, keep = {}, {}
+      for _, m2 in ipairs(bus.inflight) do if m2.at <= bus.t then due[#due + 1] = m2 else keep[#keep + 1] = m2 end end
+      bus.inflight = keep
+      table.sort(due, function(a, b) return a.at < b.at end)
+      for _, m2 in ipairs(due) do if not m2.to.offline then m2.to.E:Receive(m2.msg, m2.channel, m2.from) end end
+      for _, c in ipairs(bus.clients) do
+        if not c.offline then
+          c.E:Update()
+          -- auto-racer
+          local p = c.E:Current()
+          if p then
+            c.nextAnswer = c.nextAnswer or (bus.t + c.think)
+            if bus.t >= c.nextAnswer then
+              local right = bus.rng() < c.skill
+              local given = p.answer
+              if not right then given = (p.mode == "typing") and "zzzz qqqq" or "__wrong__" end
+              c.E:Answer(given)
+              c.nextAnswer = bus.t + c.think
+            end
+          end
+        end
+      end
+    end
+    function bus:Run(sec, dt) dt = dt or 0.1; for _ = 1, math.floor(sec / dt + 0.5) do bus:Step(dt) end end
+    function bus:Has(c, ev)
+      for _, e in ipairs(c.events) do if e[1] == ev then return e end end
+    end
+    return bus
+  end
+  local function state(c) return c.E.duel and c.E.duel.state end
+
+  -- (a) clean 2-player party race
+  local bus = newBus({ seed = 3 })
+  local a1 = bus:Add("Anya", "adept", { group = 1, skill = 1, think = 2 })
+  local b1 = bus:Add("Bram", "initiate", { group = 1, skill = 0.5, think = 3 })
+  local d = a1.E:Host("runeforger", 5, "PARTY")
+  ok(d and state(a1) == "lobby", "host opens a lobby")
+  bus:Run(0.5)
+  ok(b1.E.invite and bus:Has(b1, "invite"), "party member gets the invite popup")
+  b1.E:Accept()
+  bus:Run(1)
+  ok(a1.E:Joined() == 2, "host sees the accepted racer")
+  ok(a1.E:Start(), "host starts with 2 racers")
+  bus:Run(0.5)
+  ok(state(b1) == "countdown" or state(b1) == "race", "racer got the start + countdown")
+  ok(a1.E.duel.seed == b1.E.duel.seed, "shared seed")
+  bus:Run(60)
+  ok(state(a1) == "done" and state(b1) == "done", "both reach results")
+  local ra, rb = a1.E.duel.ranked, b1.E.duel.ranked
+  ok(ra[1].name == rb[1].name and ra[1].name == "Anya-Realm", "both agree on the winner (the faster, all-correct racer)")
+  ok(a1.E.duel.reward.win and a1.ns.Progress.char.duel.wins == 1 and b1.ns.Progress.char.duel.played == 1, "win/played stats")
+  ok(a1.E.duel.reward.shardsGot > 0 and a1.ns.Progress.char.shards == a1.E.duel.reward.shardsGot, "shards awarded")
+  ok(a1.E.duel.reward.minutesGot == 2, "duel bonus minutes for a real race")
+  local anyMastered, attempts = false, 0
+  for _, mod in pairs(a1.ns.Progress.char.modules) do
+    for _, rec in pairs(mod.nodes) do
+      for tt = 1, 3 do
+        local tr = rec.tiers and rec.tiers[tt]
+        if tr then
+          attempts = attempts + (tr.attempts or 0)
+          if tr.mastered or #tr.recent > 0 then anyMastered = true end
+        end
+      end
+    end
+  end
+  ok(attempts == 5 and not anyMastered, "duel answers count as practice but never touch the mastery window")
+  ok(not bus.oversize, "no oversized addon messages")
+  local maxRate = 0
+  for _, n in pairs(bus.perSecond) do if n > maxRate then maxRate = n end end
+  ok(maxRate <= 10, "sends per client per second stay under the throttle (" .. maxRate .. ")")
+  ok(a1.E:Emote(1) and not a1.E:Emote(2), "emote sent, second one rate-limited")
+  bus:Run(1)
+  local emo = bus:Has(b1, "emote")
+  ok(emo and emo[4] == 1 and emo[3] == "Anya", "emote arrives as a preset id with the display name")
+
+  -- reward cap: many duels in one day never exceed 10 duel minutes / daily cap
+  local P2 = a1.ns.Progress
+  local total = 2
+  for _ = 1, 10 do total = total + P2.AwardDuelMinutes(2, 10) end
+  ok(total == 10 and P2.account.duel.minutes == 10, "duel minutes capped at 10 per day")
+  P2.account.duel.minutes = 0
+  P2.account.minutes.earned = P2.account.settings.dailyCap - 1
+  ok(P2.AwardDuelMinutes(2, 10) == 1 and select(1, P2.GetTodayMinutes()) == P2.account.settings.dailyCap, "duel minutes respect the shared daily cap")
+
+  -- (b) lossy, reordering network, 4 racers in a guild
+  local lossOk, agreeOk, runs = true, true, math.max(3, math.floor(ITER / 80))
+  for run = 1, runs do
+    local nb2 = newBus({ seed = 100 + run, drop = 0.25, jitter = 1.5, latency = 0.1 })
+    local cs = {
+      nb2:Add("Hoster", "magister", { guild = 1, skill = 0.9, think = 2 }),
+      nb2:Add("Rin", "adept", { guild = 1, skill = 0.8, think = 2.5 }),
+      nb2:Add("Tal", "initiate", { guild = 1, skill = 0.7, think = 3 }),
+      nb2:Add("Mox", "adept", { guild = 1, skill = 0.6, think = 1.5 }),
+    }
+    cs[1].E:Host("naturalist", 5, "GUILD")
+    for _ = 1, 40 do
+      nb2:Step(0.1)
+      for i = 2, 4 do if cs[i].E.invite then cs[i].E:Accept() end end
+    end
+    if cs[1].E:Joined() < 2 then nb2:Run(10) end
+    cs[1].E:Start()
+    nb2:Run(120)
+    for _, c in ipairs(cs) do
+      if c.E.duel and c.E.duel.state ~= "done" then lossOk = false end
+    end
+    local w = cs[1].E.duel and cs[1].E.duel.ranked and cs[1].E.duel.ranked[1].name
+    for i = 2, 4 do
+      local dd = cs[i].E.duel
+      if dd and dd.ranked and not dd.partial and dd.ranked[1].name ~= w then agreeOk = false end
+    end
+  end
+  ok(lossOk, "25% loss + reordering: every racer still reaches results")
+  ok(agreeOk, "everyone who got the host's results agrees on the winner")
+
+  -- (c) version mismatch fails gracefully
+  local vb = newBus({ seed = 9 })
+  local va = vb:Add("Newer", "adept", { group = 2 })
+  local vc = vb:Add("Older", "adept", { group = 2 })
+  vc.ns.DuelProto.VERSION = 0 -- pretend this client runs an older protocol
+  va.E:Host("scribe", 5, "WHISPER", "Older")
+  vb:Run(2)
+  ok(not vc.E.invite and vb:Has(vc, "version"), "old client tells its player about the version gap")
+  ok(vb:Has(va, "version") and va.E.duel == nil, "host learns the version gap and the 1:1 duel closes")
+
+  -- (d) disconnect mid-race: racer vanishes, host finishes and ranks them last
+  local db = newBus({ seed = 11 })
+  local h = db:Add("Host", "adept", { group = 3, think = 2 })
+  local g = db:Add("Ghost", "adept", { group = 3, think = 2 })
+  h.E:Host("lore", 5, "PARTY"); db:Run(0.5); g.E:Accept(); db:Run(1); h.E:Start(); db:Run(6)
+  g.offline = true
+  db:Run(40)
+  ok(state(h) == "done" and h.E.duel.ranked[1].name == "Host-Realm", "host finishes after a racer disconnects")
+  local gr
+  for _, r in ipairs(h.E.duel.ranked) do if r.name == "Ghost-Realm" then gr = r end end
+  ok(gr and gr.status == "left", "silent racer marked as left")
+  -- host disconnects: racer finishes locally
+  local hb = newBus({ seed = 12 })
+  local h2 = hb:Add("Host", "adept", { group = 4, think = 2 })
+  local r2 = hb:Add("Racer", "adept", { group = 4, think = 2 })
+  h2.E:Host("runeforger", 5, "PARTY"); hb:Run(0.5); r2.E:Accept(); hb:Run(1); h2.E:Start(); hb:Run(5)
+  h2.offline = true
+  hb:Run(60)
+  ok(state(r2) == "done" and r2.E.duel.partial and hb:Has(r2, "hostLost"), "racer scores locally when the host vanishes")
+  ok(r2.E.duel.reward.minutesGot == 0, "no bonus minutes without a real finished opponent")
+
+  -- (e) combat interruption
+  local cb = newBus({ seed = 13 })
+  local c1 = cb:Add("One", "adept", { group = 5, think = 2 })
+  local c2 = cb:Add("Two", "adept", { group = 5, think = 2 })
+  local c3 = cb:Add("Three", "adept", { group = 5, think = 2 })
+  c1.E:Host("runeforger", 5, "PARTY"); cb:Run(0.5); c2.E:Accept(); c3.E:Accept(); cb:Run(1); c1.E:Start(); cb:Run(6)
+  c2.ctx.combat = true; c2.E:OnCombat()
+  ok(c2.E.duel == nil and cb:Has(c2, "left"), "combat makes the racer leave the race")
+  cb:Run(40)
+  ok(state(c1) == "done" and state(c3) == "done", "the others keep racing to results")
+  local two
+  for _, r in ipairs(c1.E.duel.ranked) do if r.name == "Two-Realm" then two = r end end
+  ok(two and two.status == "left" and c1.E.duel.ranked[3] == two, "the racer who left is ranked last")
+  -- invites while busy / in combat / instance / parent off are auto-declined
+  local ib = newBus({ seed = 14 })
+  local i1 = ib:Add("Inv", "adept", { group = 6 })
+  local i2 = ib:Add("Fighting", "adept", { group = 6 })
+  i2.ctx.combat = true
+  i1.E:Host("runeforger", 5, "WHISPER", "Fighting"); ib:Run(1)
+  ok(not i2.E.invite and ib:Has(i2, "autoDecline") and i1.E.duel == nil, "combat auto-declines")
+  i2.ctx.combat = false; i2.ctx.instance = true
+  i1.E:Host("runeforger", 5, "WHISPER", "Fighting"); ib:Run(1)
+  ok(not i2.E.invite and i1.E.duel == nil, "instance auto-declines")
+  i2.ctx.instance = false; i2.st.enabled = false
+  i1.E:Host("runeforger", 5, "WHISPER", "Fighting"); ib:Run(1)
+  ok(not i2.E.invite and i1.E.duel == nil, "parent switch auto-declines")
+  i2.st.enabled = true; i2.st.friendsOnly = true
+  i1.E:Host("runeforger", 5, "WHISPER", "Fighting"); ib:Run(1)
+  ok(not i2.E.invite, "friends-only declines strangers")
+  i2.friends.Inv = true
+  i1.E:Host("runeforger", 5, "WHISPER", "Fighting"); ib:Run(1)
+  ok(i2.E.invite ~= nil, "friends-only lets friends in")
+  ib:Run(30)
+  ok(not i2.E.invite and i1.E.duel == nil, "unanswered invite times out and the lobby closes")
+  i2.ns.Progress.account.duel.blocked["inv-realm"] = true
+  i1.E:Host("runeforger", 5, "WHISPER", "Fighting"); ib:Run(1)
+  ok(not i2.E.invite, "blocked players can't invite")
+  local hostOnlyErr = select(2, i1.E:Host("runeforger", 5, "WHISPER", "Inv"))
+  ok(hostOnlyErr == "self" or hostOnlyErr == "busy", "can't duel yourself")
+  local _, ng = newBus({}):Add("Solo", "adept").E:Host("runeforger", 5, "PARTY")
+  ok(ng == "nogroup", "party duel needs a group")
+  -- anti-cheat: a forged instant finish is not counted
+  local xb = newBus({ seed = 15 })
+  local x1 = xb:Add("Fair", "adept", { group = 7, think = 2 })
+  local x2 = xb:Add("Cheat", "adept", { group = 7, think = 99 })
+  x1.E:Host("runeforger", 5, "PARTY"); xb:Run(0.5); x2.E:Accept(); xb:Run(1); x1.E:Start(); xb:Run(4)
+  x1.E:Receive(x2.ns.DuelProto.Encode("FIN", x1.E.duel.id, 99, 5, 5, 300, 0, 0), "WHISPER", "Cheat-Realm")
+  xb:Run(20)
+  local cheat
+  for _, r in ipairs(x1.E.duel.ranked or {}) do if r.name == "Cheat-Realm" then cheat = r end end
+  ok(cheat and cheat.valid == false and x1.E.duel.ranked[1].name == "Fair-Realm", "impossible finish marked invalid and ranked last")
+  -- racers 2..5 cap
+  local fb = newBus({ seed = 16 })
+  local fh = fb:Add("Big", "adept", { group = 8 })
+  local fr = {}
+  for i = 1, 6 do fr[i] = fb:Add("R" .. i, "adept", { group = 8 }) end
+  fh.E:Host("runeforger", 5, "PARTY"); fb:Run(0.5)
+  for i = 1, 6 do fr[i].E:Accept() end
+  fb:Run(10) -- the host's replies queue behind the throttle
+  ok(fh.E:Joined() == 5, "a race holds at most 5 racers")
+  local turned = 0
+  for i = 1, 6 do if not fr[i].E.duel then turned = turned + 1 end end
+  ok(turned == 2, "late joiners are told it's full (" .. turned .. ")")
+
+  -- typing race: same passage for everyone at the youngest band
+  local tb = newBus({ seed = 17 })
+  local t1 = tb:Add("Typer", "magister", { group = 9, think = 4 })
+  local t2 = tb:Add("Tiny", "initiate", { group = 9, think = 6 })
+  t1.E:Host("typing", 5, "PARTY"); tb:Run(0.5); t2.E:Accept(); tb:Run(1); t1.E:Start(); tb:Run(0.5)
+  ok(sig(t1.E.duel.set) == sig(t2.E.duel.set) and t1.E.duel.myBand == "initiate", "typing races share one passage at the youngest band")
+  tb:Run(80)
+  ok(state(t1) == "done" and (t1.E.duel.ranked[1].wpm or 0) > 0, "typing results carry WPM")
+
+  -- (f) random queue: parent-gated, alias only, band proximity
+  local qb = newBus({ seed = 18 })
+  local q1 = qb:Add("Qa", "adept", { think = 2 })
+  local q2 = qb:Add("Qb", "magister", { think = 2 })
+  local q3 = qb:Add("Qc", "initiate", { think = 2 })
+  ok(q1.st.random == false, "random challengers default OFF")
+  ok(not q1.E:QueueJoin("runeforger", 5), "queue refuses while the parent toggle is off")
+  q1.st.random, q2.st.random, q3.st.random = true, true, true
+  q2.st.friendsOnly = true
+  ok(not q2.E:QueueJoin("runeforger", 5), "friends-only also blocks the random queue")
+  q2.st.friendsOnly = false
+  ok(q1.E:QueueJoin("runeforger", 5) and q1.inQueueChan, "queue joins the hidden channel")
+  ok(q3.E:QueueJoin("scribe", 5), "other subject queues separately")
+  qb:Run(20)
+  ok(q1.E.duel == nil and q3.E.duel == nil, "different subjects never match")
+  q2.E:QueueJoin("runeforger", 5)
+  qb:Run(25)
+  ok(q1.E.duel and q2.E.duel and q1.E.duel.id == q2.E.duel.id, "matching beacons start a duel")
+  ok(not q1.inQueueChan and not q2.inQueueChan, "both leave the hidden channel once matched")
+  local noNames = true
+  for _, c in ipairs({ q1, q2 }) do
+    for _, r in ipairs(c.E:Rows()) do if not r.isMe and (r.display:find("Q", 1, true) == 1) then noNames = false end end
+  end
+  ok(noNames, "random duels show aliases, never character names")
+  qb:Run(60)
+  ok(state(q1) == "done" and state(q2) == "done", "random duel completes")
+  q3.E:QueueLeave()
+  local qb2 = newBus({ seed = 19 })
+  local f1 = qb2:Add("Far1", "initiate"); local f2 = qb2:Add("Far2", "magister")
+  f1.st.random, f2.st.random = true, true
+  f1.E:QueueJoin("runeforger", 5); f2.E:QueueJoin("runeforger", 5)
+  qb2:Run(30)
+  ok(f1.E.duel == nil and f2.E.duel == nil, "bands two apart are not matched")
+  qb2:Run(300)
+  ok(f1.E.queue == nil and not f1.inQueueChan and qb2:Has(f1, "queue"), "queue gives up after 5 minutes and leaves the channel")
+  -- queue beacon carries no personal data
+  local beacon = f1.ns.DuelProto.Encode("Q", "runeforger", 5, "initiate", "000000001")
+  ok(select(3, f1.ns.DuelProto.Decode(beacon))[5] == nil, "beacon = subject, length, band, nonce only")
+
+  -- (g) schema 7 migration
+  local MP7 = newNS()
+  local oldA = { version = 6, settings = { dailyCap = 50 }, journal = { entries = {} } }
+  local oldC = { version = 6, profile = { band = "adept" }, shards = 7 }
+  MP7.Progress.Bind(oldA, oldC)
+  ok(oldA.version == 7 and oldC.version == 7 and MP7.Progress.upgradedFrom == 6, "v0.9 -> v0.10 schema bump")
+  ok(oldA.settings.duel.enabled == true and oldA.settings.duel.random == false and oldA.settings.duel.friendsOnly == false, "duel defaults: on, random off, friends-only off")
+  ok(oldA.settings.duel.aliasPicked and oldA.settings.duel.alias[1] >= 1 and oldA.settings.duel.alias[1] <= 12, "a random duel alias is picked once")
+  ok(type(oldA.duel.blocked) == "table" and oldC.duel.played == 0 and oldA.settings.dailyCap == 50 and oldC.shards == 7, "migration keeps everything else")
+  local alias = { oldA.settings.duel.alias[1], oldA.settings.duel.alias[2] }
+  MP7.Progress.Bind(oldA, oldC)
+  ok(oldA.settings.duel.alias[1] == alias[1] and oldA.settings.duel.alias[2] == alias[2], "alias stays put on later logins")
+  ok(not MP7.Duel.AliasText(3, 10):find("nil") and MP7.Duel.AliasText(3, 10) == "Swift Dragonhawk", "alias text from preset words")
+  for i = 1, MP7.Duel.ALIAS_COUNT do
+    ok(MP7.L["DUEL_ADJ_" .. i] and MP7.L["DUEL_CRE_" .. i], "alias word " .. i)
+  end
+  for _, k in ipairs(MP7.Duel.EMOTES) do ok(type(MP7.L[k]) == "string", "emote text " .. k) end
 end
 
 -------------------------------------------------------------------------

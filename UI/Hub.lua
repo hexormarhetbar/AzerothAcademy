@@ -289,6 +289,12 @@ H.RegisterView("home", function(parent)
   drill:SetPoint("BOTTOM", 0, 48)
   local parentBtn = W.Button(stats, L.PARENT_PANEL, 170, 26, function() H.ShowView("parent") end)
   parentBtn:SetPoint("BOTTOM", 0, 14)
+  -- v0.10: Duel of Wits (multiplayer learning races)
+  local duelBtn = W.Button(stats, "|cffffd100" .. L.DUEL_BTN .. "|r", 170, 26, function()
+    if ns.DuelUI then ns.DuelUI.Open() end
+  end)
+  duelBtn:SetPoint("BOTTOM", 0, 116)
+  v.duelBtn = duelBtn
 
   -- Right side: module grid
   local header = W.Header(v, L.CHOOSE_LESSON, 15, 330)

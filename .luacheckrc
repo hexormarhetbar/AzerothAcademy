@@ -19,4 +19,10 @@ read_globals = {
   "DEFAULT_CHAT_FRAME", "WOW_PROJECT_ID", "WOW_PROJECT_CAMELOT",
   "PlaySoundFile", "StopSound", "UnitFactionGroup",
   "Minimap", "GameTooltip", "GetCursorPosition", "GetMinimapShape", "LibStub", "IsInInstance",
+  -- v0.10 Duel of Wits comms
+  "C_ChatInfo", "SendAddonMessage", "RegisterAddonMessagePrefix", "GetNormalizedRealmName",
+  "IsInRaid", "IsInGroup", "GetNumRaidMembers", "GetNumPartyMembers", "IsInGuild",
+  "C_FriendList", "GetNumFriends", "GetFriendInfo", "GetChannelName", "JoinTemporaryChannel",
+  "LeaveChannelByName", "ChatFrame_RemoveChannel", "ChatFrameUtil", "NUM_CHAT_WINDOWS", "_G",
+  "IsShiftKeyDown",
 }

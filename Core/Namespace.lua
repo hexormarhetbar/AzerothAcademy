@@ -5,13 +5,55 @@
 local ADDON, ns = ...
 
 ns.ADDON = ADDON or "AzerothAcademy"
-ns.VERSION = "0.9.0"
+ns.VERSION = "0.10.0"
 ns.Env = ns.Env or {}
 
 local Util = {}
 ns.Util = Util
 
-local random, floor, abs = math.random, math.floor, math.abs
+local mrandom, floor, abs = math.random, math.floor, math.abs
+
+-- v0.10 Duel of Wits: every generator draws through this one function, so a
+-- duel can swap in a seeded generator (Util.WithRNG) and two players' clients
+-- build the exact same question set. Outside a duel it is plain math.random.
+local function random(a, b)
+  local g = Util.rng
+  if g then return g(a, b) end
+  if b then return mrandom(a, b) elseif a then return mrandom(a) end
+  return mrandom()
+end
+Util.Random = random
+
+-- Park-Miller "minimal standard" generator. Same seed = same numbers on every
+-- client and every Lua build (WoW's math.randomseed is not dependable).
+function Util.NewRNG(seed)
+  local s = floor(abs(tonumber(seed) or 1)) % 2147483646 + 1
+  return function(a, b)
+    s = (s * 16807) % 2147483647
+    local r = (s - 1) / 2147483646 -- [0, 1)
+    if not a then return r end
+    if not b then a, b = 1, a end
+    return a + floor(r * (b - a + 1))
+  end
+end
+
+-- Run fn with Util.Random routed to rng; always restores the previous source.
+function Util.WithRNG(rng, fn, ...)
+  local prev = Util.rng
+  Util.rng = rng
+  local res = { pcall(fn, ...) }
+  Util.rng = prev
+  if not res[1] then error(res[2], 0) end
+  return unpack(res, 2)
+end
+
+-- Numeric string hash (djb2, 31-bit) for building seeds from text.
+function Util.HashNum(s)
+  local h = 5381
+  s = tostring(s)
+  for i = 1, #s do h = (h * 33 + s:byte(i)) % 2147483647 end
+  return h
+end
 
 function Util.Clamp(v, lo, hi)
   if v < lo then return lo elseif v > hi then return hi end

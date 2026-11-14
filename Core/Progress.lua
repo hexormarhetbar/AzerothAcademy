@@ -25,7 +25,7 @@ for _, b in ipairs(P.BANDS) do P.BAND_BY_ID[b.id] = b end
 
 P.LIMITS = { minutesPerMasteryMax = 60, dailyCapMax = 240 }
 
-P.SCHEMA = 6
+P.SCHEMA = 7
 
 local ACCOUNT_DEFAULTS = {
   version = P.SCHEMA,
@@ -42,12 +42,19 @@ local ACCOUNT_DEFAULTS = {
     flight = { mode = "toast" },
     -- v0.8: Fizzwick's recorded voice (volume + mute follow `sound`). No schema change.
     voice = { enabled = true },
+    -- v0.10 (schema 7): Duel of Wits. Group / guild / friend duels are on by
+    -- default; random challengers are OFF until a parent turns them on.
+    -- alias = { adjective index, creature index } into ns.Duel.ALIAS_A / ALIAS_B.
+    duel = { enabled = true, friendsOnly = false, random = false, alias = { 1, 1 } },
   },
   minutes = { day = "", earned = 0 },
   ui = {},
   -- v0.9 (schema 6): Azeroth Naturalist Field Journal, account-wide so every
   -- character's mastered specimens land in one book. entries["nodeId:tier"] = { at = time }
   journal = { entries = {} },
+  -- v0.10 (schema 7): duel safety + anti-farming. blocked[normalized name] = true.
+  -- minutes/day track duel bonus minutes, which still count against the daily cap.
+  duel = { blocked = {}, day = "", minutes = 0 },
 }
 
 local CHAR_DEFAULTS = {
@@ -56,6 +63,7 @@ local CHAR_DEFAULTS = {
   shards = 0,
   modules = {},
   stats = { rounds = 0, problems = 0, firstCorrect = 0, time = 0 },
+  duel = { played = 0, wins = 0, finished = 0 },
 }
 
 local MODULE_DEFAULTS = { nodes = {}, placement = {}, exams = {} }
@@ -122,6 +130,17 @@ local function migrate(account, char)
     -- v0.9 (schema 6): the Field Journal (account.journal, filled by ApplyDefaults).
     -- Nothing per character moves; Bind syncs mastered Naturalist tiers into it.
     char.version = 6
+  end
+  if (char.version or 1) < 7 then
+    -- v0.10 (schema 7): Duel of Wits. Settings, block list and duel stats are
+    -- filled in by ApplyDefaults; nothing existing moves.
+    char.version = 7
+  end
+  local dset = type(account.settings) == "table" and account.settings.duel
+  if type(dset) == "table" and not dset.aliasPicked and type(dset.alias) == "table" then
+    -- every account (new or upgraded) starts with its own random duel alias
+    dset.alias[1], dset.alias[2] = Util.Random(1, 12), Util.Random(1, 12)
+    dset.aliasPicked = true
   end
   if startVersion < P.SCHEMA then P.upgradedFrom = startVersion end
   if (account.version or 1) < P.SCHEMA then account.version = P.SCHEMA end
@@ -280,6 +299,18 @@ function P.GetNodeRec(nodeId)
     Util.ApplyDefaults(tr, { attempts = 0, correct = 0, time = 0, recent = {}, mastered = false, fading = false })
   end
   return rec
+end
+
+-- v0.10: duel bonus minutes. At most `per` for one duel, at most `dayMax` per
+-- day from duels, and never past the parent's daily cap (shared with mastery).
+function P.AwardDuelMinutes(per, dayMax)
+  local earned, cap = P.GetTodayMinutes()
+  local d, day = P.account.duel, Util.DayKey()
+  if d.day ~= day then d.day, d.minutes = day, 0 end
+  local grant = math.max(0, math.min(per or 0, (dayMax or 0) - d.minutes, cap - earned))
+  d.minutes = d.minutes + grant
+  P.account.minutes.earned = earned + grant
+  return grant
 end
 
 function P.GetTierRec(nodeId, tier)
