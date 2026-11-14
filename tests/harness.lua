@@ -1558,7 +1558,7 @@ do
   local A = tns.Art
   local all = { fizzwick_strip = { frames = 4 } }
   for _, n in ipairs(A.AllNames()) do all[n] = true end
-  ok(#A.POSES == 11 and #A.AllNames() == 30, "11 poses + 2 host portraits, 30 art files (full + head crops)")
+  ok(#A.POSES == 11 and #A.AllNames() == 50, "11 Fizzwick poses + 2 Sprocket states + 2 hosts x 6 poses: 50 art files (full + head crops)")
   ok(A.FizzwickFor("CORRECT", {}) == nil and A.FizzwickFor("CORRECT", nil) == nil and A.Sprocket("curious", {}) == nil, "no manifest = use the model")
   local expect = { GREET = "greet", ROUNDSTART = "talking", EXAMSTART = "talking", HINT = "teaching", EXPLAIN = "teaching",
     COMBO = "excited", OVERCHARGE = "excited", RANKUP = "celebrating", EXAMPASS = "celebrating", MASTERED = "proud",
@@ -1586,24 +1586,34 @@ do
   local st = A.Strip(all)
   ok(st and st.frames == 4 and #st.coords == 4 and st.coords[2][1] == 0.25 and st.coords[4][2] == 1, "strip frames")
   ok(A.Strip({ fizzwick_strip = { frames = 3 } }) == nil and A.Strip({ fizzwick_strip = true }) == nil, "bad strips ignored")
-  ok(A.Count(all) == 31 and A.Count({}) == 0, "art count")
-  -- v1.0 host portrait slots (art pending Hex: placeholders until then)
-  ok(#A.HOST_ORDER == 2 and A.HOSTS.zixi and A.HOSTS.quill and not A.HOSTS.tidehunter, "two host slots: Zixi, Quill (Tidehunter stays on the model)")
+  ok(A.Count(all) == 51 and A.Count({}) == 0, "art count")
+  -- host portraits (slots v0.15, Hex's approved art v1.0.0-rc)
+  ok(#A.HOST_ORDER == 2 and A.HOSTS.zixi and A.HOSTS.quill and not A.HOSTS.tidehunter, "two hosts: Zixi, Quill (Tidehunter stays on the model)")
   ok(A.HostFor("lore") == "zixi" and A.HostFor("lorequiz") == "zixi" and A.HostFor("scribe") == "quill"
     and A.HostFor("runeforger") == nil and A.HostFor(nil) == nil, "skill lists know their host")
+  ok(A.HOSTS.zixi.signature == "storytelling" and A.HOSTS.quill.signature == "writing", "signature poses")
   for _, id in ipairs(A.HOST_ORDER) do
     local h = A.HOSTS[id]
-    ok(A.Host(id, {}) == nil and A.Host(id, nil, nil, true) == nil, id .. ": no art -> placeholder")
+    ok(#A.HostPoses(id) == 6, id .. ": 6 poses")
+    ok(A.Host(id, "placement", {}) == nil and A.Host(id, "exam", nil, nil, true) == nil, id .. ": no art -> placeholder")
     ok(h.cast and type(h.cast.icon) == "string" and h.cast.icon:find("^Interface\\Icons\\") and tns.L[h.nameKey]
       and tns.L[h.cast.nameKey], id .. ": placeholder is an in-game icon with a name")
-    ok(A.Host(id, all, nil, true) == A.DIR .. id .. "_portrait_head" and A.Host(id, all) == A.DIR .. id .. "_portrait",
-      id .. ": head crop for small slots, full figure otherwise")
-    ok(A.Host(id, { [id .. "_portrait"] = true }, nil, true) == A.DIR .. id .. "_portrait"
-      and A.Host(id, { [id .. "_portrait_head"] = true }) == A.DIR .. id .. "_portrait_head", id .. ": either size stands in for the other")
-    ok(A.Host(id, all, { [id .. "_portrait"] = true, [id .. "_portrait_head"] = true }, true) == nil, id .. ": refused files -> placeholder")
+    local usedPose = {}
+    for moment in pairs(A.HOST_MOMENT) do
+      local path, name, pose = A.Host(id, moment, all, nil, true)
+      usedPose[pose or "?"] = true
+      ok(path == A.DIR .. id .. "_" .. A.HostPose(id, moment) .. "_head" and name:find("_head$"), id .. " " .. moment .. ": head crop in small slots")
+      ok(A.Host(id, moment, all) == A.DIR .. id .. "_" .. A.HostPose(id, moment), id .. " " .. moment .. ": full figure in big slots")
+    end
+    for _, p in ipairs(A.HostPoses(id)) do ok(usedPose[p], id .. ": pose " .. p .. " is used by some moment") end
+    ok(select(3, A.Host(id, "passed", { [id .. "_greet"] = true })) == "greet", id .. ": missing pose falls back to greet")
+    ok(A.Host(id, "passed", { [id .. "_proud"] = true }, nil, true) == A.DIR .. id .. "_proud", id .. ": no head crop -> full figure")
+    ok(A.Host(id, "skilllist", all) == A.DIR .. id .. "_" .. h.signature, id .. ": skill list shows the signature pose")
+    ok(A.Host(id, "placed", all, { [id .. "_proud_head"] = true, [id .. "_proud"] = true, [id .. "_greet_head"] = true, [id .. "_greet"] = true }, true) == nil,
+      id .. ": refused files -> placeholder")
   end
-  ok(A.Host("fizzwick", all) == nil, "unknown host -> nil")
-  ok(A.Host("tidehunter", { tidehunter_portrait = true, tidehunter_portrait_head = true }) == nil, "no Tidehunter art slot (in-game model by design)")
+  ok(A.Host("fizzwick", "greet", all) == nil, "unknown host -> nil")
+  ok(A.Host("tidehunter", "greet", { tidehunter_greet = true, tidehunter_portrait = true }) == nil, "no Tidehunter art slot (in-game model by design)")
   for ev in pairs(A.EVENT_POSE) do
     local found = (ev == "IDLE" or ev == "EXPLAIN" or ev == "BEST")
     for _, e in ipairs(tns.Guide.EVENTS) do if e == ev then found = true end end
@@ -1626,11 +1636,9 @@ do
   setfenv(chunk, { })
   chunk("AzerothAcademy", mns)
   local manifest = mns.ArtManifest or {}
-  ok(A.Count(manifest) == 26, "shipped manifest lists all 26 posed files")
+  ok(A.Count(manifest) == 50, "shipped manifest lists all 50 posed files (26 Fizzwick/Sprocket + 24 host)")
   for _, n in ipairs(A.AllNames()) do
-    if n:find("_portrait") then
-      ok(manifest[n] == nil and slurp("Media/Art/" .. n .. ".tga", "rb") == "", "host art pending Hex (not shipped): " .. n)
-    else
+    do
     ok(manifest[n] == true, "manifest lists " .. n)
     local h = slurp("Media/Art/" .. n .. ".tga", "rb")
     local size = n:find("_head$") and 256 or 512
@@ -1653,14 +1661,15 @@ do
   ok(script:find("-flip -orient BottomLeft", 1, true) and script:find("make_heads.py", 1, true) and script:find("_head", 1, true)
     and script:find("Manifest.lua", 1, true), "script writes bottom-left TGAs, head crops and the manifest")
   for _, id in ipairs(A.HOST_ORDER) do
-    ok(readme:find(id .. "_portrait.tga", 1, true) and readme:find(id .. "_portrait_head.tga", 1, true)
-      and readme:find(id .. "_portrait.png", 1, true), "README documents the " .. id .. " slot (paths + source PNG)")
+    for _, p in ipairs(A.HostPoses(id)) do
+      ok(readme:find(id .. "_" .. p, 1, true) and script:find(p, 1, true), "README + script document " .. id .. "_" .. p)
+    end
   end
-  ok(script:find("for h in zixi quill;", 1, true) and not script:find("rm -f", 1, true),
-    "script converts host portraits and never deletes shipped art")
-  ok(readme:find("512x512", 1, true) and readme:find("256x256", 1, true) and readme:find("art pending Hex", 1, true), "host sizes documented, art pending")
-  ok(readme:find("no art slot, by Hex's decision", 1, true) and not readme:find("tidehunter_portrait", 1, true), "README: Tidehunter stays on the model")
-  ok(slurp("tools/make_heads.py"):find("_portrait", 1, true), "head-crop tool handles host portraits")
+  ok(script:find("zixi_$p", 1, true) and script:find("quill_$p", 1, true) and not script:find("rm -f", 1, true),
+    "script converts host poses and never deletes shipped art")
+  ok(not readme:find("pending", 1, true) and not readme:find("placeholder only", 1, true), "art README: no 'art pending' notes left")
+  ok(readme:find("no art slot, by Hex's decision", 1, true) and not readme:find("tidehunter_", 1, true), "README: Tidehunter stays on the model")
+  ok(slurp("tools/make_heads.py"):find("zixi_", 1, true), "head-crop tool handles host portraits")
 end
 
 -- Per-skill icons (v0.5.1)

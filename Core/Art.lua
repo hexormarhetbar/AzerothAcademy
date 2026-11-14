@@ -61,18 +61,45 @@ A.SUBJECT_POSE = {
   mechanics = "teaching", -- drawing tactics on the Training Ring chalkboard
 }
 
--- v0.15 host portraits: Zixi and Quill get the same two sizes as Fizzwick:
---   <id>_portrait.tga (512x512 full figure) and <id>_portrait_head.tga (256x256 crop).
--- Until Hex's approved art is dropped in, a tasteful placeholder is drawn from the game at
--- runtime: the host's subject icon in a framed slot. The Murloc Tidehunter has no art slot
--- by Hex's decision: it always uses the in-game murloc model (UI/Boarding.lua).
+-- Host portraits (slots v0.15, Hex's approved art since v1.0.0-rc): Chronicler Zixi (Lore
+-- Chronicles, Lore Quiz) and Archivist Quill (Scribe's Scrolls). Same two sizes as Fizzwick:
+--   <id>_<pose>.tga (512x512 full figure) and <id>_<pose>_head.tga (256x256 head crop).
+-- Each host has five shared poses plus a signature one (Zixi storytelling, Quill writing).
+-- Missing files fall back pose -> greet -> a placeholder from the game (the subject icon).
+-- The Murloc Tidehunter has no art slot by Hex's decision: it always uses the in-game
+-- murloc model (UI/Boarding.lua).
 A.HOST_ORDER = { "zixi", "quill" }
+A.HOST_POSES = { "greet", "talking", "thinking", "encouraging", "proud" }
 A.HOSTS = {
-  zixi = { nameKey = "HOST_ZIXI", modules = { lore = true, lorequiz = true },
+  zixi = { nameKey = "HOST_ZIXI", modules = { lore = true, lorequiz = true }, signature = "storytelling",
     cast = { nameKey = "HOST_ZIXI", icon = "Interface\\Icons\\INV_Misc_Book_09" } },
-  quill = { nameKey = "HOST_QUILL", modules = { scribe = true },
+  quill = { nameKey = "HOST_QUILL", modules = { scribe = true }, signature = "writing",
     cast = { nameKey = "HOST_QUILL", icon = "Interface\\Icons\\INV_Scroll_03" } },
 }
+-- Moments where a host appears -> pose ("signature" = the host's own pose).
+A.HOST_MOMENT = {
+  skilllist = "signature",   -- the small slot on the skill list: at work in the Story Vault / Archive
+  placement = "greet",       -- placement trial intro: meeting the host
+  exam = "talking",          -- Mastery Exam intro: explaining the exam
+  placed = "proud",          -- placement trial finished: the right shelf is found
+  passed = "proud",          -- Mastery Exam passed
+  tryagain = "encouraging",  -- Mastery Exam not passed yet
+  unfinished = "thinking",   -- a trial left before the end
+}
+function A.HostPoses(id)
+  local h = A.HOSTS[id or ""]
+  if not h then return {} end
+  local out = {}
+  for _, p in ipairs(A.HOST_POSES) do out[#out + 1] = p end
+  out[#out + 1] = h.signature
+  return out
+end
+function A.HostPose(id, moment)
+  local h = A.HOSTS[id or ""]
+  local p = A.HOST_MOMENT[moment or ""] or moment or "greet"
+  if p == "signature" then p = h and h.signature or "greet" end
+  return p
+end
 
 local function has(manifest, name, missing)
   return type(manifest) == "table" and manifest[name] and not (missing and missing[name]) and true or false
@@ -127,13 +154,21 @@ function A.HostFor(moduleId)
   return nil
 end
 
--- Host portrait: path, name or nil (= use the placeholder cast A.HOSTS[id].cast).
-function A.Host(id, manifest, missing, small)
+-- Host portrait for a moment or pose: path, name, pose or nil (= the placeholder cast).
+-- Order: pose (head crop first when small) -> greet -> the other size.
+function A.Host(id, moment, manifest, missing, small)
   if not A.HOSTS[id or ""] then return nil end
-  local base = id .. "_portrait"
-  if small and has(manifest, base .. "_head", missing) then return A.DIR .. base .. "_head", base .. "_head" end
-  if has(manifest, base, missing) then return A.DIR .. base, base end
-  if not small and has(manifest, base .. "_head", missing) then return A.DIR .. base .. "_head", base .. "_head" end
+  local pose = A.HostPose(id, moment)
+  local tries = {}
+  for _, p in ipairs({ pose, "greet" }) do
+    local base = id .. "_" .. p
+    if small then tries[#tries + 1] = { base .. "_head", p } end
+    tries[#tries + 1] = { base, p }
+    if not small then tries[#tries + 1] = { base .. "_head", p } end
+  end
+  for _, t in ipairs(tries) do
+    if has(manifest, t[1], missing) then return A.DIR .. t[1], t[1], t[2] end
+  end
   return nil
 end
 
@@ -153,7 +188,9 @@ function A.AllNames()
   local out = {}
   for _, p in ipairs(A.POSES) do out[#out + 1] = "fizzwick_" .. p; out[#out + 1] = "fizzwick_" .. p .. "_head" end
   for _, s in ipairs(A.SPROCKET) do out[#out + 1] = "sprocket_" .. s; out[#out + 1] = "sprocket_" .. s .. "_head" end
-  for _, h in ipairs(A.HOST_ORDER) do out[#out + 1] = h .. "_portrait"; out[#out + 1] = h .. "_portrait_head" end
+  for _, h in ipairs(A.HOST_ORDER) do
+    for _, p in ipairs(A.HostPoses(h)) do out[#out + 1] = h .. "_" .. p; out[#out + 1] = h .. "_" .. p .. "_head" end
+  end
   return out
 end
 

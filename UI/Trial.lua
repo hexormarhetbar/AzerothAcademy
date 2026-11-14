@@ -16,6 +16,10 @@ H.RegisterView("trial", function(parent)
   local v = CreateFrame("Frame", nil, parent)
   local icon = W.FramedIcon(v, 56, "Interface\\Icons\\INV_Hammer_20")
   icon:SetPoint("TOP", 0, -20)
+  -- v1.0.0-rc: subjects with a host (Zixi, Quill) show the host instead of the subject icon
+  local host = ns.GuideUI and ns.GuideUI.Portrait(v, 72, 72, nil, true)
+  if host then host:SetPoint("CENTER", icon, "CENTER", 0, -4); host:Hide() end
+  v.host = host
   local title = W.Text(v, 22, "", W.GOLD, "CENTER")
   title:SetPoint("TOP", icon, "BOTTOM", 0, -16)
   local lore = W.Text(v, 13, "", W.ARCANE, "CENTER")
@@ -57,6 +61,14 @@ H.RegisterView("trial", function(parent)
     end
     local nodes = ns.Modules.Nodes(module.id, band)
     if module.icon then icon:SetTexture(module.icon) end
+    local hostId = ns.Art.HostFor(module.id)
+    if host and hostId then
+      ns.GuideUI.ShowHost(host, hostId, self.kind == "exam" and "exam" or "placement", true)
+      host:Show(); icon:Hide()
+    else
+      if host then host:Hide() end
+      icon:Show()
+    end
     details:SetText(string.format(L.TRIAL_DETAILS, #nodes * ns.Trial.PER_SKILL, ns.Trial.PER_SKILL))
     if self.kind == "exam" then
       title:SetText(L[module.examKey or "TRIAL_EXAM"])
@@ -112,6 +124,20 @@ H.RegisterView("trialResult", function(parent)
   if ns.GuideUI then
     v.hero = ns.GuideUI.Hero(v, 130) -- v0.5.1 posed art, hidden without art
     v.hero:SetPoint("TOPLEFT", -6, -40)
+    -- v1.0.0-rc: the subject's host stands on the other side (full figure, art only)
+    v.hostHero = ns.GuideUI.Portrait(v, 130, 130, nil, true)
+    v.hostHero:SetPoint("TOPRIGHT", 6, -40)
+    v.hostHero:Hide()
+  end
+  local function showHostHero(moduleId, moment)
+    local hh, hostId = v.hostHero, ns.Art.HostFor(moduleId)
+    if not hh then return end
+    if hostId and ns.GuideUI.ShowHost(hh, hostId, moment, false) == "art" then
+      hh:Show()
+      if not W.ReducedMotion() then W.Reveal(hh.art, 0.5) end
+    else
+      hh:Hide()
+    end
   end
   local cont = W.Button(v, L.CONTINUE, 160, 32, function() H.ShowView("forge") end, 14)
   cont:SetPoint("BOTTOM", -85, 8)
@@ -132,6 +158,7 @@ H.RegisterView("trialResult", function(parent)
       title:SetText(L[r.kind == "exam" and (module.examKey or "TRIAL_EXAM") or (module.placementKey or "TRIAL_PLACEMENT")])
       score:SetText("")
       note:SetText(L.TRIAL_UNFINISHED)
+      showHostHero(module.id, "unfinished")
       return
     end
     score:SetText(string.format(L.TRIAL_RESULT_SCORE, r.correct, r.total))
@@ -139,6 +166,8 @@ H.RegisterView("trialResult", function(parent)
       v.heroPose = (r.kind == "exam") and (r.passed and "celebrating" or "encouraging") or "proud"
       ns.GuideUI.ShowHero(v.hero, v.heroPose)
     end
+    v.hostMoment = (r.kind == "exam") and (r.passed and "passed" or "tryagain") or "placed"
+    showHostHero(module.id, v.hostMoment)
     local base = r.kind == "exam" and ns.Trial.Comparison(r.moduleId, r.band).placement
     for i, nodeId in ipairs(r.skills or {}) do
       if lines[i] then

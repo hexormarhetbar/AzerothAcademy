@@ -2,7 +2,7 @@
 """Azeroth Academy - make 256x256 head-and-chest crops from full-figure pose PNGs.
 
 Usage: python3 tools/make_heads.py SOURCE_PNG_DIR [OUT_DIR] [--png]
-  SOURCE_PNG_DIR  folder with fizzwick_<pose>.png / sprocket_<state>.png / <host>_portrait.png
+  SOURCE_PNG_DIR  folder with fizzwick_<pose>.png / sprocket_<state>.png / zixi_<pose>.png / quill_<pose>.png
                   (512x512, transparent)
   OUT_DIR         default Media/Art; writes <name>_head.tga (32-bit, uncompressed, alpha)
   --png           also write <name>_head.png previews
@@ -73,9 +73,11 @@ def main():
     out = args[1] if len(args) > 1 else "Media/Art"
     os.makedirs(out, exist_ok=True)
     for f in sorted(os.listdir(src)):
-        if not f.endswith(".png") or not (f.startswith("fizzwick_") or f.startswith("sprocket_") or f[:-4].endswith("_portrait")) or f.endswith("_head.png"):
+        if not f.endswith(".png") or not f.startswith(("fizzwick_", "sprocket_", "zixi_", "quill_")) or f.endswith("_head.png"):
             continue
         name = f[:-4]
+        if os.path.exists(os.path.join(src, name + "_head.png")):
+            continue  # a supplied head crop is converted by convert_art.sh instead
         im = Image.open(os.path.join(src, f)).convert("RGBA")
         box = head_box(im, name)
         crop = im.crop(box).resize((256, 256), Image.LANCZOS)

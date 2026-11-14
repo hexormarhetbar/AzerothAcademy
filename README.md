@@ -46,10 +46,9 @@ card to the **Tactics Deck**. Every hub tile is now a real subject.
 New in v0.14: **Lore Chronicles grows**: 34 new passages, stories and prompts across all three bands, including
 **cameo stories** about Thrall and King Magni Bronzebeard (the same number for each, in every band), which Fizzwick
 introduces when they come up.
-New in v0.15: **portrait slots for the hosts**: Chronicler Zixi and Archivist Quill each get a portrait slot (512x512
-full figure + 256x256 head crop) that `tools/convert_art.sh` fills. **The real art is pending Hex's approval**; until
-then each slot shows a tasteful placeholder loaded from the game (the host's subject icon in a gold frame). The Murloc
-Tidehunter stays on the in-game murloc model by design (no custom murloc art).
+New in v0.15 / v1.0.0-rc: **host portraits**: Chronicler Zixi (Lore Chronicles, Lore Quiz) and Archivist Quill
+(Scribe's Scrolls) now appear in Hex's approved original art, 6 poses each (skill list, trial intros and trial
+results). The Murloc Tidehunter stays on the in-game murloc model by design (no custom murloc art).
 New in v1.0.0-rc: **ten languages** (deDE, frFR, esES/esMX, ptBR, itIT, ruRU, koKR, zhCN, zhTW). The interface,
 Fizzwick's lines, the parent report and question templates follow the client language. They are **machine translations
 that need native-speaker review**; the curated question banks and Fizzwick's voice stay English. See "Languages".
@@ -491,10 +490,12 @@ Flight paths are perfect lesson time, so Fizzwick speaks up a couple of seconds 
   - A file the client refuses is skipped automatically.
   - The large portraits stay hidden if there's no art, so the screens look like v0.5.
 - **Reduced motion.** The poses are static. Reduced motion skips the fade-in on large portraits (and an optional talk strip, which isn't shipped).
-- **Host portraits (v0.15, art pending Hex).** `zixi_portrait` and `quill_portrait` (each a 512x512 TGA plus a
-  256x256 `_head` crop) are optional slots. Zixi shows at the top right of the Lore Chronicles and Lore Quiz skill
-  lists, Quill on the Scribe's Scrolls skill list (hover for the name). Until the files exist, a placeholder from the
-  game is shown. The Tidehunter has no slot: it always uses the in-game murloc model.
+- **Host portraits (slots v0.15, art v1.0.0-rc).** Zixi and Quill each have 6 poses (512x512 + 256x256 head crop):
+  `greet`, `talking`, `thinking`, `encouraging`, `proud`, plus a signature pose (Zixi `storytelling`, Quill
+  `writing`). The signature pose sits at the top right of their skill list (hover for the name); `greet` / `talking`
+  replace the subject icon on the placement / exam intro; `proud` / `encouraging` / `thinking` stand opposite Fizzwick
+  on the trial results. Missing files fall back to `greet`, then a placeholder from the game. The Tidehunter has no
+  slot: it always uses the in-game murloc model. Details in `Media/Art/README.md`.
 - **Replacing art.** `tools/convert_art.sh` (ImageMagick) and `tools/make_heads.py` (Python, Pillow and numpy) rebuild the TGAs, the head crops, and `Media/Art/Manifest.lua` from PNGs. See `Media/Art/README.md`.
 - **Per-skill icons.** All 50 skills (Rune Forger, Scribe's Scrolls, Lore Chronicles, Lore Quiz) now show their own in-game icon on the skill list.
   - Each icon is loaded from the client by path (`Core/SkillIcons.lua`).
@@ -857,7 +858,7 @@ Azeroth Academy v0.10.0** (two accounts, or a friend), both with an age band pic
 175. [ ] Open **Lore Chronicles**: a small gold-framed book icon sits at the top right under Back; hovering shows "Chronicler Zixi Inkspark". The lore text wraps before it.
 176. [ ] Open **Scribe's Scrolls**: the same slot shows a scroll and "Archivist Quill". The Rune Forger and the other subjects show no slot.
 177. [ ] Murloc Boarding Party: the Tidehunter still appears as the in-game murloc model.
-178. [ ] (When you have the art) Put `zixi_portrait.png` and `quill_portrait.png` in `Media/Art/src/`, run `sh tools/convert_art.sh`, restart the game: the placeholders become your portraits, and Fizzwick's poses are untouched.
+178. [ ] Zixi and Quill now show Hex's art: Lore Chronicles / Scribe's Scrolls skill list (storytelling / writing), the placement trial intro (greet), the exam intro (talking), and trial results (proud after a placement or a passed exam, encouraging after a missed exam) on the right while Fizzwick stands on the left. Check nothing overlaps the score lines.
 
 **Languages (v1.0.0-rc)**
 
@@ -879,8 +880,7 @@ Azeroth Academy v0.10.0** (two accounts, or a friend), both with an age band pic
 
 ## Known limits (v0.15)
 
-- **Host portrait art is pending Hex.** The slots, sizes, script and fallbacks are ready; only placeholders ship.
-- The 512x512 full-figure host slots are reserved for later screens; today only the head crops are shown.
+- (Resolved in v1.0.0-rc: Hex's host art now ships, and the full figures appear on trial results.)
 
 ## Known limits (v0.14)
 
@@ -1050,8 +1050,8 @@ AzerothAcademy/
                             Duel (Duel of Wits: setup + waiting room, invite pop-up, race, results)
   Media/Sounds/             24 original sound effects (.ogg) + README.md (events, fallbacks, prompts, voice notes)
   Media/Sounds/VO/          23 original Fizzwick voice clips (.ogg)
-  Media/Art/                Hex's posed art: 13 x 512 full figures + 13 x 256 head crops (TGA), Manifest.lua, README.md
-                            (v0.15: slots for zixi/quill _portrait + _portrait_head, art pending Hex)
+  Media/Art/                Hex's posed art: Fizzwick/Sprocket 13 x 512 full figures + 13 x 256 head crops (TGA), Manifest.lua, README.md
+                            + Zixi and Quill: 2 x 6 poses x (512 + 256 head crop) since v1.0.0-rc
   tools/convert_art.sh      PNG -> 512 TGA + 256 head crops (ImageMagick) + manifest writer
   tools/make_heads.py       face-centered 256 head-and-chest crops (Python, Pillow + numpy)
   tools/master_audio.py     master a generated clip: mono 44.1 kHz, trim, ~-16 LUFS, Ogg Vorbis q4 (ffmpeg + numpy)
@@ -1167,7 +1167,10 @@ For v0.5, `tools/convert_art.sh` was run with ImageMagick 7.1.2 on test PNGs. It
 - **Tests:** harness section 27: key coverage, per-locale validity (placeholders, color codes), coverage of at least 85%
   per locale, load gating, fallback, fonts, README notes, and every generator, the report and Fizzwick's lines run
   in all ten locales with no format leftovers or duplicate choices. UI smoke runs on deDE, ruRU, koKR and zhCN clients too.
-- **Portrait slots:** the Tidehunter keeps the in-game murloc model (Hex's decision); only Zixi and Quill have slots.
+- **Host art:** Hex's approved portraits for Zixi and Quill (2 hosts x 6 poses x 2 sizes = 24 TGAs, 512x512 + 256x256
+  32-bit uncompressed, bottom-left origin). `Art.HOST_MOMENT` maps moments to poses: skill list (signature pose),
+  placement/exam intros (greet/talking, replacing the subject icon), trial results (proud/encouraging/thinking,
+  full figure opposite Fizzwick). The Tidehunter keeps the in-game murloc model (Hex's decision).
 - Fizzwick's voice stays English (no new audio).
 
 **v0.15.0**
@@ -1175,7 +1178,7 @@ For v0.5, `tools/convert_art.sh` was run with ImageMagick 7.1.2 on test PNGs. It
   full figure -> placeholder) and `GuideUI.ShowHost`. A 34x34 framed slot with a name tooltip on the Lore Chronicles,
   Lore Quiz and Scribe's Scrolls skill lists. The Murloc Tidehunter keeps the in-game murloc model (Hex's decision; v1.0
   removed its briefly added slot).
-- **Placeholders:** in-game icons/models loaded at runtime (no art files ship). **Real art is pending Hex.**
+- **Placeholders:** in-game icons loaded at runtime until the art shipped (it did in v1.0.0-rc).
 - **`tools/convert_art.sh`:** converts `<host>_portrait.png` too, and now keeps existing TGAs that have no source PNG
   (so adding the host art never deletes Fizzwick's poses). `tools/make_heads.py` crops host portraits as well.
 - **Tests:** harness checks the slots, fallbacks, README sizes/paths and the script; the UI smoke checks the placeholder,

@@ -169,16 +169,17 @@ function GU.ShowPose(holder, pose, small, allowModel)
   return holder.mode
 end
 
--- v1.0: a host portrait (Zixi, Quill). Art when shipped, else the placeholder.
-function GU.ShowHost(holder, id, small)
+-- A host portrait (Zixi, Quill) for a moment (Art.HOST_MOMENT) or pose. Art, else the placeholder.
+function GU.ShowHost(holder, id, moment, small)
   local host = holder and ns.Art.HOSTS[id or ""]
   if not host then return nil end
-  for _ = 1, 3 do
-    local path, name = ns.Art.Host(id, manifest(), GU.missingArt, small)
+  for _ = 1, 5 do
+    local path, name, pose = ns.Art.Host(id, moment, manifest(), GU.missingArt, small)
     if not path then break end
-    if holder.mode == "art" and holder.artName == name then return "art" end
-    if holder:ShowArt(path, name) then holder.host = id; return "art" end
+    if holder.mode == "art" and holder.artName == name then holder.pose = pose; return "art" end
+    if holder:ShowArt(path, name) then holder.host, holder.pose = id, pose; return "art" end
   end
+  holder.pose = nil
   holder.host = id
   if (holder.mode ~= "model" and holder.mode ~= "icon") or holder.cast ~= host.cast then holder:ShowCast(host.cast) end
   return holder.mode

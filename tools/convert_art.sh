@@ -8,8 +8,11 @@
 #                        celebrating proud encouraging tinkering surprised
 #   sprocket_squawk.png  sprocket_curious.png
 #   fizzwick_strip.png   (optional talk animation: 2, 4 or 8 frames side by side)
-#   zixi_portrait.png  quill_portrait.png   (host portraits: Chronicler Zixi, Archivist Quill.
-#                        The Murloc Tidehunter has no slot: it stays on the in-game model.)
+#   zixi_<pose>.png   for poses: greet talking thinking encouraging proud storytelling
+#   quill_<pose>.png  for poses: greet talking thinking encouraging proud writing
+#                        (host portraits: Chronicler Zixi, Archivist Quill. A supplied
+#                        <name>_head.png is used as the head crop as-is. The Murloc Tidehunter
+#                        has no slot: it stays on the in-game model.)
 # Output, in Media/Art/:
 #   <name>.tga       512x512 32-bit uncompressed TGA, alpha kept, bottom-left origin
 #   <name>_head.tga  256x256 head-and-chest crop for small portrait slots. Made with
@@ -28,7 +31,9 @@ POSES="greet talking thinking researching teaching excited celebrating proud enc
 NAMES=""
 for p in $POSES; do NAMES="$NAMES fizzwick_$p"; done
 NAMES="$NAMES sprocket_squawk sprocket_curious"
-for h in zixi quill; do NAMES="$NAMES ${h}_portrait"; done
+HOSTPOSES="greet talking thinking encouraging proud"
+for p in $HOSTPOSES storytelling; do NAMES="$NAMES zixi_$p"; done
+for p in $HOSTPOSES writing; do NAMES="$NAMES quill_$p"; done
 
 if command -v magick >/dev/null 2>&1; then IM="magick"
 elif command -v convert >/dev/null 2>&1; then IM="convert"
@@ -52,14 +57,14 @@ for name in $NAMES; do
   if [ -f "$SRC/$name.png" ]; then
     square "$SRC/$name.png" 512 "$OUT/$name.tga"
     echo "converted $name"
-    if [ "$HEADS_PY" = 0 ]; then
-      if [ -f "$SRC/${name}_head.png" ]; then
-        square "$SRC/${name}_head.png" 256 "$OUT/${name}_head.tga"
-      else
-        TGA_OUT="$OUT/${name}_head.tga"
-        tga "$SRC/$name.png" -resize 512x512 -background none -gravity center -extent 512x512 \
-          -gravity north -crop 256x256+0+0 +repage
-      fi
+    if [ -f "$SRC/${name}_head.png" ]; then
+      # a hand-made head crop always wins (the host art ships with its own crops)
+      square "$SRC/${name}_head.png" 256 "$OUT/${name}_head.tga"
+      echo "  head crop (supplied) ${name}_head"
+    elif [ "$HEADS_PY" = 0 ]; then
+      TGA_OUT="$OUT/${name}_head.tga"
+      tga "$SRC/$name.png" -resize 512x512 -background none -gravity center -extent 512x512 \
+        -gravity north -crop 256x256+0+0 +repage
       echo "  head crop (simple) ${name}_head"
     fi
   fi

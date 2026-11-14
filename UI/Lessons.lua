@@ -194,7 +194,7 @@ H.RegisterView("forge", function(parent)
     local hostId = ns.Art.HostFor(module.id)
     if hostId and host.portrait then
       host.nameKey = ns.Art.HOSTS[hostId].nameKey
-      ns.GuideUI.ShowHost(host.portrait, hostId, true)
+      ns.GuideUI.ShowHost(host.portrait, hostId, "skilllist", true)
       host:Show()
       lore:SetWidth(500); help:SetWidth(500)
     else

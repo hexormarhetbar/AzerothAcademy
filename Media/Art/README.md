@@ -1,6 +1,7 @@
-# Fizzwick and Sprocket portraits
+# Portraits: Fizzwick, Sprocket, Zixi and Quill
 
-Since v0.5.1 the addon ships Hex's approved original posed art for Fizzwick and Sprocket.
+Since v0.5.1 the addon ships Hex's approved original posed art for Fizzwick and Sprocket, and
+since v1.0.0-rc for the hosts Zixi and Quill.
 All of it is original, made for this project. No Blizzard art is extracted or included;
 skill icons and the fallback goblin model are loaded from the game at runtime.
 
@@ -30,24 +31,31 @@ Each pose comes in two sizes:
 | `sprocket_squawk` | Sprocket delivering a hint |
 | `fizzwick_strip` | Optional talk animation (2, 4 or 8 frames of 256x256). Not shipped |
 
-### Host portraits (slots since v1.0, art pending Hex)
+### Host portraits: Zixi and Quill (v1.0.0-rc)
 
-Two more characters have portrait slots. The files use the same two sizes as Fizzwick's poses.
-**No host art ships yet.** Until it does, each slot shows a placeholder loaded from the game at
-runtime: the host's subject icon in a small gold frame.
+Since v1.0.0-rc the addon also ships Hex's approved original art for the two subject hosts:
+**Chronicler Zixi Inkspark** (Lore Chronicles and the Lore Quiz) and **Archivist Quill**
+(Scribe's Scrolls). Each pose comes in the same two sizes as Fizzwick's: `<name>.tga` at 512x512
+(full figure) and `<name>_head.tga` at 256x256 (head crop, made by hand with the art).
+
+| Pose file | When the host shows it |
+|-----------|------------------------|
+| `zixi_storytelling` / `quill_writing` | Signature pose: the small slot at the top right of their skill list (34x34, hover for the name) |
+| `zixi_greet` / `quill_greet` | Placement trial intro (72x72, replaces the subject icon). Also the fallback for every other pose |
+| `zixi_talking` / `quill_talking` | Mastery Exam intro |
+| `zixi_proud` / `quill_proud` | Trial results: placement finished, or exam passed (full figure, right side; Fizzwick stands on the left) |
+| `zixi_encouraging` / `quill_encouraging` | Trial results: exam not passed yet |
+| `zixi_thinking` / `quill_thinking` | Trial results: a trial left before the end |
+
+The moment-to-pose map is `Art.HOST_MOMENT` in `Core/Art.lua`. If a file is missing the host shows
+`greet`, then a placeholder loaded from the game (the subject icon in a small gold frame); the large
+result slot just stays hidden.
 
 **The Murloc Tidehunter has no art slot, by Hex's decision.** It always uses the in-game murloc
 model (display 1995, falling back to the murloc icon). Don't add custom murloc art.
 
-| File | Size | Who | Where it shows |
-|------|------|-----|----------------|
-| `zixi_portrait.tga` | 512x512 | Chronicler Zixi Inkspark (Lore Chronicles, Lore Quiz) | Full-figure slot (reserved) |
-| `zixi_portrait_head.tga` | 256x256 | Zixi | Top right of the Lore Chronicles and Lore Quiz skill lists (shown at 34x34) |
-| `quill_portrait.tga` | 512x512 | Archivist Quill (Scribe's Scrolls) | Full-figure slot (reserved) |
-| `quill_portrait_head.tga` | 256x256 | Quill | Top right of the Scribe's Scrolls skill list (34x34) |
-
-Source PNGs go in `Media/Art/src/` as `zixi_portrait.png` and `quill_portrait.png`. `tools/convert_art.sh` turns them into both sizes and adds them to the
-manifest, exactly like the poses. Fallback: head crop, then full figure, then the placeholder.
+To replace host art, put `zixi_<pose>.png` / `quill_<pose>.png` (and optionally
+`<name>_head.png` crops, which are used as-is) in `Media/Art/src/` and run `tools/convert_art.sh`.
 
 Format: 32-bit uncompressed TGA with alpha, bottom-left origin, power-of-two sizes.
 

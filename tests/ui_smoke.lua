@@ -900,7 +900,7 @@ if GU.lastEvent ~= "GREET" or (strip.text.__text or "") == "" then fail("Fizzwic
 runTimers(); runTimers()
 local face = strip.face
 local SHIPPED_ART = ns.ArtManifest
-if ns.Art.Count(SHIPPED_ART) ~= 26 then fail("v0.5.1 manifest should list 26 posed files, got " .. ns.Art.Count(SHIPPED_ART)) end
+if ns.Art.Count(SHIPPED_ART) ~= 50 then fail("manifest should list 50 posed files (v0.5.1 + v1.0 hosts), got " .. ns.Art.Count(SHIPPED_ART)) end
 GU.Say("GREET")
 if not (face.mode == "art" and face.art:GetTexture() == ns.Art.DIR .. "fizzwick_greet_head" and face.art:IsShown()) then
   fail("hub open should show the greet head crop, got " .. tostring(face.art:GetTexture()))
@@ -2014,35 +2014,53 @@ step("v0.14 lore cameo stories", function()
   hub:Hide()
 end)
 
-step("v1.0 host portrait slots", function()
+step("v1.0 host portraits (Hex's art for Zixi and Quill)", function()
   local RF, Art = ns.RuneForger, ns.Art
-  local fv = ns.Hub.GetView("forge")
+  local fv
   local saved = ns.ArtManifest
   for _, case in ipairs({ { "lore", "zixi" }, { "scribe", "quill" }, { "runeforger" } }) do
     RF.OpenModule(case[1])
     fv = ns.Hub.GetView("forge")
     if ns.Hub.current ~= "forge" then fail(case[1] .. ": skill list should open, got " .. tostring(ns.Hub.current)) end
-    do
-      if case[2] then
-        local p = fv.host.portrait
-        if not fv.host:IsShown() then fail(case[1] .. ": host slot shows") end
-        if not (p.mode == "icon" and p.icon:GetTexture() == Art.HOSTS[case[2]].cast.icon) then
-          fail(case[1] .. ": placeholder icon until Hex's art arrives, got " .. tostring(p.mode))
-        end
-        if fv.host.nameKey ~= Art.HOSTS[case[2]].nameKey then fail(case[1] .. ": host tooltip name") end
-      elseif fv.host:IsShown() then
-        fail("subjects without a host hide the slot")
+    if case[2] then
+      local p = fv.host.portrait
+      local want = Art.DIR .. case[2] .. "_" .. Art.HOSTS[case[2]].signature .. "_head"
+      if not fv.host:IsShown() then fail(case[1] .. ": host slot shows") end
+      if not (p.mode == "art" and p.art:GetTexture() == want) then
+        fail(case[1] .. ": skill list shows the signature head crop " .. want .. ", got " .. tostring(p.mode) .. " " .. tostring(p.art:GetTexture()))
       end
+      if fv.host.nameKey ~= Art.HOSTS[case[2]].nameKey then fail(case[1] .. ": host tooltip name") end
+    elseif fv.host:IsShown() then
+      fail("subjects without a host hide the slot")
     end
   end
-  -- once art ships, the same slot shows it (head crop in the small slot)
-  ns.ArtManifest = setmetatable({ zixi_portrait = true, zixi_portrait_head = true }, { __index = saved })
+  -- trial intro: the host replaces the subject icon (greet for placement, talking for the exam)
+  RF.OpenModule("lore")
+  ns.Hub.ShowView("trial", "placement")
+  local tv = ns.Hub.GetView("trial")
+  if not (tv.host and tv.host:IsShown() and tv.host.art:GetTexture() == Art.DIR .. "zixi_greet_head") then fail("placement intro shows Zixi greeting") end
+  ns.Hub.ShowView("trial", "exam")
+  if not (tv.host.art:GetTexture() == Art.DIR .. "zixi_talking_head") then fail("exam intro shows Zixi talking") end
+  RF.OpenModule("runeforger")
+  ns.Hub.ShowView("trial", "placement")
+  if tv.host:IsShown() then fail("Rune Forger trial intro keeps its subject icon") end
+  -- trial results: full figure opposite Fizzwick
+  local rv = ns.Hub.GetView("trialResult")
+  local band = ns.Progress.GetBand()
+  ns.Hub.ShowView("trialResult", { moduleId = "scribe", kind = "exam", completed = true, passed = false, correct = 3, total = 10,
+    band = band, skills = {}, perSkill = {}, shards = 0 })
+  if not (rv.hostHero and rv.hostHero:IsShown() and rv.hostHero.art:GetTexture() == Art.DIR .. "quill_encouraging") then fail("missed exam: Quill encourages (full figure)") end
+  ns.Hub.ShowView("trialResult", { moduleId = "scribe", kind = "placement", completed = true, correct = 8, total = 10,
+    band = band, skills = {}, perSkill = {}, shards = 5 })
+  if not (rv.hostHero:IsShown() and rv.hostHero.art:GetTexture() == Art.DIR .. "quill_proud") then fail("placement done: Quill is proud") end
+  ns.Hub.ShowView("trialResult", { moduleId = "runeforger", kind = "placement", completed = true, correct = 8, total = 10,
+    band = band, skills = {}, perSkill = {}, shards = 5 })
+  if rv.hostHero:IsShown() then fail("no host figure on Rune Forger results") end
+  -- without art files the small slot falls back to the placeholder icon
+  ns.ArtManifest = {}
   RF.OpenModule("lore")
   fv = ns.Hub.GetView("forge")
-  do
-    local p = fv.host.portrait
-    if not (p.mode == "art" and p.art:GetTexture() == Art.DIR .. "zixi_portrait_head") then fail("Zixi's art replaces the placeholder") end
-  end
+  if not (fv.host.portrait.mode == "icon" and fv.host.portrait.icon:GetTexture() == Art.HOSTS.zixi.cast.icon) then fail("no art: placeholder icon") end
   ns.ArtManifest = saved
   ns.Hub.ShowView("home")
 end)
