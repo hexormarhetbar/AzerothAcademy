@@ -1,4 +1,4 @@
-# Azeroth Academy v1.0.0-rc (release candidate)
+# Azeroth Academy v1.1.0
 
 A free learning addon for kids ages 5 to 13. Lessons are framed as Academy quests in Azeroth.
 This build has the **Main Hub** and two subjects: **Rune Forger** (math) and, new in v0.3,
@@ -52,6 +52,13 @@ results). The Murloc Tidehunter stays on the in-game murloc model by design (no 
 New in v1.0.0-rc: **ten languages** (deDE, frFR, esES/esMX, ptBR, itIT, ruRU, koKR, zhCN, zhTW). The interface,
 Fizzwick's lines, the parent report and question templates follow the client language. They are **machine translations
 that need native-speaker review**; the curated question banks and Fizzwick's voice stay English. See "Languages".
+New in v1.1.0: **an in-game language picker** (Settings → Language, the globe on the home screen, or `/aa lang`),
+switched live without a reload, with bundled open-source fonts so Japanese, Korean and Chinese show on any client.
+Also new: **World Tongues**, a real language course at the **Steamwheedle Tongues Exchange** in Gadgetzan. Japanese
+comes first (hiragana, katakana, greetings, numbers 1-100, colors, family, food, "X wa Y desu" sentences and 60
+beginner kanji), plus a small Spanish starter. The **Parent Panel is now Settings** and its **PIN is optional** (off
+until a parent sets one). Parents can **pick which areas show** on the hub, and Duel of Wits has **language duels**:
+kana race, word race and a co-op phrasebook.
 Progress stays on your computer. The only thing the addon ever sends is Duel of Wits race data, inside the game, to
 the players you race (see "Duel of Wits").
 
@@ -82,24 +89,41 @@ moves to a new patch and the addon shows as "out of date", type
 `/dump select(4, GetBuildInfo())` in game and put that number into the `## Interface:` line.
 Or tick **Load out of date AddOns** on the AddOns screen.
 
-## Languages (v1.0.0-rc)
+## Languages (v1.0.0-rc; in-game picker since v1.1.0)
 
-The addon follows your game client's language automatically. There is no setting to change.
+By default the addon follows your game client's language (**Auto**). Since v1.1.0 you can pick any shipped
+language in game, and the window redraws in it right away. No `/reload` is needed.
+
+**The language picker (v1.1.0)**
+- Open it from **Settings → Language**, from the small **globe** in the top-right corner of the home screen's stats
+  box, or with `/aa lang`.
+- The choices are **Auto (game language: …)** (the default) and the ten shipped languages, each written in its own
+  language and its own font: English, Deutsch, Français, Español, Português (Brasil), Italiano, Русский, 한국어,
+  简体中文 and 繁體中文. A `*` marks a language that uses a bundled font on your client (see Fonts below).
+- `/aa lang <code|auto>` does the same from chat. Codes are case-insensitive and two letters are enough: `/aa lang de`,
+  `/aa lang kokr`, `/aa lang zhtw`, `/aa lang esmx` (shares the Spanish table), `/aa lang auto`. `/aa lang` with no
+  code prints the current language and the list of codes.
+- **Live switch.** Every translation is in memory, so `ns.L` changes in place. The hub window, Fizzwick's strip, the
+  cameo and celebration cards, the resume pop-up and the flight pop-up are rebuilt in the new language, and the window
+  reopens where you were. Settings stays unlocked across the switch. A **Reload UI** button is there in case some
+  other window (for example an open duel invite) still shows the old language.
+- The choice is **saved per account** (`AzerothAcademyDB.settings.language`), so all your characters share it. It is
+  not behind the PIN: reading in your own language is never a parent-only choice.
 
 | Locale | Language | Status |
 |---|---|---|
 | enUS / enGB | English | Source text, complete |
 <!-- locales:start -->
-| deDE | German | Machine translation (Argos), 1515 of 1572 strings (96%). **Needs native-speaker review** |
-| frFR | French | Machine translation (NLLB-200), 1555 of 1572 strings (99%). **Needs native-speaker review** |
-| esES | Spanish (Spain) | Machine translation (Argos), 1478 of 1572 strings (94%). **Needs native-speaker review** |
-| esMX | Spanish (Latin America, same table as esES) | Machine translation (Argos), 1478 of 1572 strings (94%). **Needs native-speaker review** |
-| ptBR | Portuguese (Brazil) | Machine translation (NLLB-200), 1552 of 1572 strings (99%). **Needs native-speaker review** |
-| itIT | Italian | Machine translation (Argos), 1517 of 1572 strings (97%). **Needs native-speaker review** |
-| ruRU | Russian | Machine translation (Argos), 1487 of 1572 strings (95%). **Needs native-speaker review** |
-| koKR | Korean | Machine translation (NLLB-200), 1537 of 1572 strings (98%). **Needs native-speaker review** |
-| zhCN | Simplified Chinese | Machine translation (NLLB-200), 1513 of 1572 strings (96%). **Needs native-speaker review** |
-| zhTW | Traditional Chinese | Machine translation (NLLB-200 + OpenCC), 1513 of 1572 strings (96%). **Needs native-speaker review** |
+| deDE | German | Machine translation (Argos), 1621 of 1679 strings (97%). **Needs native-speaker review** |
+| frFR | French | Machine translation (NLLB-200), 1658 of 1679 strings (99%). **Needs native-speaker review** |
+| esES | Spanish (Spain) | Machine translation (Argos), 1582 of 1679 strings (94%). **Needs native-speaker review** |
+| esMX | Spanish (Latin America, same table as esES) | Machine translation (Argos), 1582 of 1679 strings (94%). **Needs native-speaker review** |
+| ptBR | Portuguese (Brazil) | Machine translation (NLLB-200), 1657 of 1679 strings (99%). **Needs native-speaker review** |
+| itIT | Italian | Machine translation (Argos), 1622 of 1679 strings (97%). **Needs native-speaker review** |
+| ruRU | Russian | Machine translation (Argos), 1593 of 1679 strings (95%). **Needs native-speaker review** |
+| koKR | Korean | Machine translation (NLLB-200), 1642 of 1679 strings (98%). **Needs native-speaker review** |
+| zhCN | Simplified Chinese | Machine translation (NLLB-200), 1614 of 1679 strings (96%). **Needs native-speaker review** |
+| zhTW | Traditional Chinese | Machine translation (NLLB-200 + OpenCC), 1614 of 1679 strings (96%). **Needs native-speaker review** |
 <!-- locales:end -->
 
 - **These translations are machine-made and need native-speaker review before a final release.**
@@ -116,12 +140,91 @@ The addon follows your game client's language automatically. There is no setting
   items), and the words a kid has to type. Spelling and typing practice is English practice by design.
 - **Fizzwick's voice stays English** in every language. The recorded clips are English only, and the text bubble
   shows the translated line.
-- **Fonts:** the addon always uses the client's default font (`STANDARD_TEXT_FONT`), so Korean, Chinese and Russian
-  clients get their own glyph fonts. If that global is missing it falls back to `2002.TTF` (koKR), `ARKai_T.ttf`
-  (zhCN), `bLEI00D.ttf` (zhTW) or `FRIZQT___CYR.TTF` (ruRU).
+- **Fonts (researched for v1.1.0).** WoW clients only ship the fonts for their own region. An English or European
+  client (enUS, enGB, deDE, frFR, esES, esMX, ptBR, itIT) has Latin and Cyrillic fonts (`FRIZQT__.TTF`,
+  `FRIZQT___CYR.TTF`, `ARIALN.TTF`, `skurri.ttf`, `MORPHEUS.ttf`) but **no Korean or Chinese font**. `2002.TTF` comes only
+  with koKR clients, `ARKai_T.ttf` / `ARHei.ttf` only with zhCN, and `bLEI00D.ttf` / `bHEI00M.ttf` only with zhTW. That is why
+  LibSharedMedia only registers them on those clients. **No client has a Japanese font** (there is no jaJP client), and
+  the Chinese fonts are missing many Japanese kana. An addon can load its **own** `.ttf` from its folder with
+  `FontString:SetFont("Interface\\AddOns\\<addon>\\…")`, on WoW Forever / Classic as on Retail, so Azeroth Academy
+  ships its own.
+- **What ships:** four subsets of Google's **Noto Sans** (SIL Open Font License 1.1), renamed as the license requires
+  for modified versions. They are cut down to exactly the characters the addon draws, at one weight:
+
+  | File | Based on | Used for | Size |
+  |---|---|---|---|
+  | `Media/Fonts/AzAcadSans-JP.ttf` | Noto Sans JP | World Tongues (kana, 60 kanji), plus every Latin and Cyrillic locale and the picker | ~175 KB |
+  | `Media/Fonts/AzAcadSans-KR.ttf` | Noto Sans KR | Korean UI on non-Korean clients (+ World Tongues kana and kanji) | ~280 KB |
+  | `Media/Fonts/AzAcadSans-SC.ttf` | Noto Sans SC | Simplified Chinese UI on non-Chinese clients (+ kana and kanji) | ~460 KB |
+  | `Media/Fonts/AzAcadSans-TC.ttf` | Noto Sans TC | Traditional Chinese UI on non-Chinese clients (+ kana and kanji) | ~510 KB |
+
+  That is **about 1.4 MB** in total (a full Noto CJK font is 5-17 MB each). The license is in `Media/Fonts/OFL.txt`,
+  and `tools/build_fonts.py` rebuilds the subsets from the Google Fonts sources whenever the text changes. The harness
+  checks that every character the addon can draw with a font is in that font (`Media/Fonts/coverage.txt`).
+- **Which font draws what:** if the language you picked is the client's own language, the addon uses the client's font
+  (`STANDARD_TEXT_FONT`, with fallbacks to `2002.TTF`, `ARKai_T.ttf`, `bLEI00D.ttf` or `FRIZQT___CYR.TTF`). It only
+  switches to a bundled font when it has to: Korean or Chinese on a client that lacks those fonts, and always for World
+  Tongues questions, the study page and language-duel questions, so kana and kanji never show as boxes.
+- **Chat lines** (messages the addon prints in the chat frame) use the game's chat font, which an addon should not
+  replace. On a client without CJK fonts, Korean or Chinese chat lines may show boxes. The window itself is fine.
+  `/aa lang` warns about this when you pick a bundled-font language.
 - esMX uses the same Spanish table as esES.
 - To regenerate after English text changes: `python3 tools/translate_locales.py [locale ...]` (dev tool; it only
   translates new or changed strings).
+
+## World Tongues: the Steamwheedle Tongues Exchange (v1.1.0)
+
+Goblins trade with every land, so the Steamwheedle Tongues Exchange in Gadgetzan (right next to Fizzwick's Academy)
+teaches real languages. It is one hub tile, **World Tongues**, with `/aa tongues` (also `/aa languages`, `/aa japanese`,
+`/aa nihongo`, `/aa spanish`, `/aa espanol`). It uses the same rounds, Spark/Rune/Glyph tiers, 9-of-10 mastery, spaced
+review, placement trial and mastery exam as every other subject. All content is data in `Core/TonguesData.lua` and the
+question builders are in `Core/TonguesGen.lua`, so adding a course or a lesson means adding data.
+
+**Who it's for.** The courses are not tied to an age band: everyone can open all lessons, and the study page shows a
+suggested order (Initiate → Adept → Magister). The band only changes how you answer. **Initiate** always gets three
+big buttons. **Adept** types the romaji on Glyph. **Magister** types from Rune on. A grown-up learner (Hex) should pick
+the Magister band: the Magister track (kanji and the trader's phrasebook) is the adult track.
+
+**Japanese course (15 lessons; 371 items):**
+
+| # | Lesson | Suggested | Items | What's in it |
+|---|---|---|---|---|
+| 1 | Hiragana | Initiate | 46 | あ a … ん n, the modern 46 in gojūon order (no ゐ/ゑ) |
+| 2 | Hiragana Sound Marks | Initiate | 25 | dakuten and handakuten: が ga … ぽ po (ぢ ji and づ zu included, never asked in a way that has two right answers) |
+| 3 | Katakana | Initiate | 46 | ア a … ン n |
+| 4 | Greetings | Initiate | 12 | こんにちは konnichiwa, おはようございます ohayou gozaimasu, ありがとうございます arigatou gozaimasu, すみません sumimasen… |
+| 5 | Numbers 1-100 | Initiate | 100 | いち ichi … ひゃく hyaku, built by rule (よん yon, なな nana, きゅう kyuu, にじゅうさん nijuusan…) |
+| 6 | Katakana Sound Marks | Adept | 25 | ガ ga … ポ po |
+| 7 | Colors | Adept | 10 | あか aka, あお ao, きいろ kiiro, みどり midori, しろ shiro, くろ kuro, むらさき murasaki, ちゃいろ chairo, ピンク pinku, オレンジ orenji |
+| 8 | Family | Adept | 10 | はは haha, ちち chichi, あに ani, あね ane, おとうと otouto, いもうと imouto, そふ sofu, そぼ sobo, かぞく kazoku, きょうだい kyoudai (the humble "my …" forms are labeled as such) |
+| 9 | Food and Drink | Adept | 12 | みず mizu, おちゃ ocha, ごはん gohan, パン pan, さかな sakana, にく niku, やさい yasai, くだもの kudamono, りんご ringo, たまご tamago, ぎゅうにゅう gyuunyuu, おにぎり onigiri |
+| 10 | X wa Y desu | Adept | 8 + generated | わたしはがくせいです watashi wa gakusei desu; new sentences are built from わたし/これ/それ/あれ and 10 nouns. Questions: fill in the noun, pick the particle は (not を/の/が), or read the whole sentence |
+| 11 | Kanji: Numbers | Magister | 12 | 一 二 三 四 五 六 七 八 九 十 百 千 |
+| 12 | Kanji: Days and Time | Magister | 10 + 7 | 日 月 火 水 木 金 土 曜 年 時, plus the seven weekdays にちようび nichiyoubi … どようび doyoubi |
+| 13 | Kanji: Nature | Magister | 12 | 山 川 田 石 雨 空 花 草 森 林 海 天 |
+| 14 | Kanji: People and Places | Magister | 26 | 人 口 目 耳 手 足 子 女 男 父 母 大 小 中 上 下 左 右 本 学 校 生 先 名 円 白 |
+| 15 | Trader's Phrasebook | Magister | 10 | わかりません wakarimasen, これはなんですか kore wa nan desu ka, いくらですか ikura desu ka, いただきます itadakimasu… |
+
+That is 92 hiragana + katakana with sound marks (46 + 25 each), **60 beginner kanji**, 100 numbers, 44 words, 8 model
+sentences and 10 phrases. Each kanji teaches one common reading (for example 日 hi, 大 dai, 生 sei) and its meaning.
+
+**Spanish starter (3 lessons; 20 items):** Spanish Greetings (8: hola, adiós, gracias, por favor…), Spanish Colors
+(6: rojo, azul, verde, amarillo…), Spanish Phrases (6: ¿Cómo estás?, No entiendo, ¿Cuánto cuesta?…). Switch courses
+with the course button on the study page, or in **Settings → Areas to Show**.
+
+**Question types:** kana → romaji, romaji → kana, meaning → word, word → meaning, matching (three pairs, pick the
+right set), number ↔ word, fill-in-the-blank sentences and particles. There is no audio, by design: no recorded or
+cloned voices.
+
+**Romaji** is Hepburn, written with doubled vowels instead of macrons (`ohayou`, `kyuu`, `gakusei`) so it can be typed on
+any keyboard, and with は read *wa* and を read *o* when they are particles. When you type, case, spaces and
+punctuation don't matter, macrons are accepted (`arigatō` = `arigatou`), the short spelling of a long vowel is
+accepted (`arigato`, `kyu`), and so is the Japanese itself if you type it with an IME. The harness checks every
+kana word, sentence and dialogue line: its romaji must be the Hepburn reading of its kana.
+
+**Study the Lessons** (the blue link on the skill list) opens a phrasebook page for each lesson, 8 entries per page,
+with the kana chart, words and meanings, notes, and a **Practice** button. The skill list pages through lessons 5 at a
+time.
 
 ## Install
 
@@ -158,7 +261,9 @@ The addon follows your game client's language automatically. There is no setting
 | `/aa review` | Start a Review Time round (if any reviews are due) |
 | `/aa trial` | Open the placement trial for the current subject and band |
 | `/aa exam` | Open the mastery exam screen for the current subject (it says how many skills are still needed) |
-| `/aa parent` | Open the Parent Panel |
+| `/aa settings` | Open Settings (v1.1.0; was the Parent Panel; `/aa options` and `/aa parent` work too) |
+| `/aa lang [code\|auto]` | Pick the language, live: `/aa lang de`, `/aa lang ko`, `/aa lang auto`; no code prints the current one (v1.1.0; `/aa language` works too) |
+| `/aa tongues` | Open World Tongues (v1.1.0; `/aa languages`, `/aa japanese`, `/aa nihongo` open Japanese, `/aa spanish`, `/aa espanol` open Spanish) |
 | `/aa status` | Print rank, shards, today's minutes, and the detected client and interface |
 | `/aa minimap` | Hide or show the minimap button (v0.6.1) |
 | `/aa flight [off\|toast\|auto]` | In-Flight Lessons: off, ask first with a pop-up (default), or open a quick round automatically (v0.7) |
@@ -211,9 +316,26 @@ or shift/middle-click on the minimap button.
   **Block** button per racer, and **New duel**.
 - **Combat** during a race makes you leave it (the others keep racing). If someone disconnects, the race finishes
   without them; if the challenger disconnects, your game scores the race itself.
-- **Both players need v0.10.0.** A different version says so in chat and the duel doesn't start.
+- **Both players need v0.10.0 or newer.** A different version says so in chat and the duel doesn't start. Since v1.1.0, v1.0 and v1.1 can race on the classic subjects; language duels need v1.1 on both sides.
 
-**Safety (Parent Panel → Duel of Wits settings):**
+**Language duels (v1.1.0).** Three World Tongues subjects join Duel of Wits:
+- **Kana race:** everyone races on the same Japanese kana (hiragana, katakana and their sound marks).
+- **Word race (own course):** each racer races on **their own** World Tongues course (Japanese or Spanish, set on the
+  study page or in Areas to Show) and at **their own level** (the band picks the difficulty: Initiate levels 1-2,
+  Adept 2-3, Magister 3-5). A Spanish learner can race a Japanese learner fairly. Pick **Kana race** to race on a
+  shared course instead.
+- **Phrasebook (co-op), exactly 2 players:** the two players take turns filling in the lines of one dialogue (meeting
+  someone, buying at the market with これをください kore o kudasai, dinner). Player A fills one line, player B the
+  reply. Every answer is a **preset choice**: there is no free text. The result is a team score ("Team phrasebook:
+  5 of 6 lines filled in together!") with no winner and no win bonus.
+- The parent duel controls apply as always: with duels off (or Friends only) invites are declined, and a language
+  duel for a hidden area is declined too.
+- **Protocol version 2.** Language duels use version 2 of the `AzAcadDuel` messages. Classic subjects are still sent
+  as version 1, so **v1.1 and v1.0 players can still race on the classic subjects**. A v1.0 client that gets a
+  language-duel invite answers "different version" and the duel doesn't start; a v1.1 client never accepts a language
+  duel sent as version 1.
+
+**Safety (Settings → Duel of Wits settings):**
 - **Group, guild & friend duels: On** (default). Off = every invite is declined.
 - **Friends only: Off** (default). On = only players on your character's friends list can challenge you, and
   random challengers are off too.
@@ -578,9 +700,28 @@ description only: it is not a clone or imitation of any actor or game character.
   (Parent Panel **Sound channel**). **Sound OFF** mutes it too. Turn just the voice off with
   the Parent Panel **Fizzwick's voice** button or `/aa voice off`. It's on by default.
 
-## Parent Panel
+## Settings (the Parent Panel, merged in v1.1.0)
 
-The first visit asks you to create a 4–6 digit PIN. After that, the PIN unlocks:
+Since v1.1.0 the Parent Panel and the app settings are **one Settings screen** (older sections of this README still say
+"Parent Panel"; it is the same screen). Open it with the **Settings** button on
+the home screen, `/aa settings` (`/aa options` and the old `/aa parent` work too).
+
+- **The PIN is optional and off by default.** Without a PIN, Settings opens straight away. A parent can press
+  **Set a parent PIN** (4–6 digits) at any time. Once a PIN is set, it guards exactly what the Parent Panel guarded
+  before (everything below, plus Areas to Show), and **Remove PIN** turns it off again. **Lock** only works while a
+  PIN is set.
+- **Upgrading from v1.0 keeps your PIN.** If a PIN was set before, it still locks Settings after the upgrade.
+- **Language** opens the language picker (not behind the PIN).
+- **Areas to Show** (new in v1.1.0): one switch per area: Rune Forger, Scribe's Scrolls, Lore Chronicles (with the
+  Lore Quiz), Azeroth Naturalist, Gnomish Engineering, Librarian Quests, Mechanics Academy and World Tongues (both
+  courses). All are on by default. A hidden area disappears from the hub, its slash command says it's hidden, its
+  reviews stop coming up, and it is not offered as a duel subject (an invite for it is declined). **Nothing is
+  deleted**: switch it back on and all progress is there. The last area can't be hidden. The same screen has the
+  **World Tongues course** switch (Japanese / Spanish) used by the study page and the word duel.
+- The stats table now pages through skills ("Page 1/3" button) for subjects with more than five skills on a page.
+
+Everything else is as before:
+
 - **Subject: <name>** button (new in v0.3): switches the progress table, Start buttons, and Re-run Trial
   between Rune Forger and Scribe's Scrolls.
 - First-try accuracy, attempts, recent results out of 10, and time spent, for each skill and tier.
@@ -869,6 +1010,53 @@ Azeroth Academy v0.10.0** (two accounts, or a friend), both with an age band pic
 183. [ ] Long German or French labels fit their buttons (tell me which ones overflow).
 184. [ ] Ask a native speaker to skim one subject in their language and send corrections.
 
+**v1.1.0: language picker, Settings, areas, World Tongues, language duels**
+
+185. [ ] `/aa lang` prints the current language and the codes. `/aa lang de` switches the open window to German right away, with no reload; `/aa lang auto` returns to the game's language.
+186. [ ] The globe in the top-right corner of the home stats box opens the picker. Every language button shows its own name in its own script, with no boxes (한국어, 简体中文, 繁體中文, Русский).
+187. [ ] On an English client, pick 한국어, then 简体中文, then 繁體中文: the whole window shows Korean/Chinese letters (bundled fonts), not boxes. Tell me which screens look cramped.
+188. [ ] Log out and in (or `/reload`): the picked language is still in use, on another character of the same account too.
+189. [ ] Switching language with the Settings screen unlocked keeps it unlocked; Fizzwick's strip and the hub tiles redraw in the new language.
+190. [ ] The **Reload UI** button on the picker works (out of combat).
+191. [ ] Fresh install (or a v1.0 install that never had a PIN): **Settings** opens with no PIN. **Set a parent PIN** sets one; after that Settings asks for it.
+192. [ ] Upgrading from v1.0 with a PIN set: the old PIN still locks Settings. **Remove PIN** (when unlocked) turns it off.
+193. [ ] **Areas to Show**: switch off Lore Chronicles. The Lore tile and the Lore Quiz leave the hub, `/aa lore` says it's hidden, and Lore is gone from the duel subjects. Switch it back on: progress is all there.
+194. [ ] Try to switch every area off: the last one stays on with a message.
+195. [ ] With a PIN set and Settings locked, Areas to Show can't be opened.
+196. [ ] **World Tongues** tile: the placement trial is offered (skip or take it). The skill list shows 5 lessons per page with `<` / `>` buttons.
+197. [ ] **Study the Lessons** shows the hiragana chart with romaji, 8 per page, then words with meanings. Kana and kanji are sharp and readable at every size.
+198. [ ] Play a Hiragana Spark round as an Initiate: three big kana/romaji buttons, the right one flashes, a miss explains "あ = a".
+199. [ ] As a Magister, type romaji on a Rune round: `arigato`, `arigatō` and `ARIGATOU` are all accepted; a wrong reading is not.
+200. [ ] Matching questions ("あ = a · い = i · う = u") fit on their buttons. Tell me if any are cut off.
+201. [ ] "X wa Y desu" round: fill-in-the-blank and particle questions read naturally, with exactly one right answer.
+202. [ ] Kanji rounds (Magister track): kanji → reading, kanji → meaning and back. Check 日 / 火 (both "hi") never give two right buttons.
+203. [ ] Numbers 1-100: spot-check 4 (yon), 7 (nana), 9 (kyuu), 14, 40, 99, 100 (hyaku).
+204. [ ] Switch the course to Spanish (study page or Areas to Show) and play a Spanish Greetings round. `adios` without the accent is accepted.
+205. [ ] **Kana race** duel with a friend who also has v1.1: both see the same kana, with readable kana in the race window.
+206. [ ] **Word race**: one player on Japanese, one on Spanish. Each gets their own course; the result still ranks fairly.
+207. [ ] **Phrasebook (co-op)** with exactly 2 players: lines alternate between you, all answers are buttons, the result says "Team phrasebook: N of M lines". With 3 players it refuses to start.
+208. [ ] A friend on v1.0: a classic Rune Forger duel still works between you; a language duel tells them the version differs.
+209. [ ] With duels turned off in Settings, a language-duel invite is declined.
+210. [ ] Ask a Japanese speaker to skim the Japanese course (readings and meanings) and send corrections.
+
+## Known limits (v1.1.0)
+
+- **Nothing in v1.1.0 has run in a real game client yet.** It was tested headlessly (harness + mock-UI smoke tests on
+  Forever, Retail, Classic Era, legacy fallbacks and four translated clients). Fonts in particular need a look in game.
+- **Translations are still machine-made** (now 14,603 strings) and need native-speaker review. **World Tongues meanings,
+  notes and course names are English** in every UI language.
+- **Chat lines** printed by the addon may show boxes for Korean/Chinese on clients without those fonts (the window is fine).
+- The **duel invite pop-up** and other windows outside the hub are not redrawn by a live language switch; they pick up the
+  new language the next time they are created, or after **Reload UI**.
+- In a Chinese UI, World Tongues kanji are drawn with the Simplified or Traditional Chinese font, so a few kanji show the
+  Chinese glyph shape (for example 曜, 時) rather than the Japanese one. Japanese on every other UI uses the Japanese font.
+- Each kanji teaches **one** reading (日 hi, not also nichi/jitsu); other readings appear in words like にちようび.
+- Romaji uses doubled vowels (ou, uu) instead of macrons on screen; typed macrons are accepted.
+- The co-op phrasebook needs **exactly 2** players; kana/word races take 2 to 5.
+- Loading every locale for live switching costs about 1 MB more memory than v1.0 (which loaded only the client's).
+  The bundled fonts add about 1.4 MB to the download; a font only loads when it is used.
+- No audio in World Tongues (no recorded or cloned voices), so there is no listening practice.
+
 ## Known limits (v1.0.0-rc)
 
 - **Translations are machine-made** (Argos Translate / NLLB-200 plus ~55 hand-translated labels) and need
@@ -1040,14 +1228,19 @@ AzerothAcademy/
     Voice.lua               Fizzwick's recorded voice rules: which line, one at a time, gaps, repeat throttle, on/off
     DuelProto.lua           Duel of Wits wire format: versioned, escaped messages, chunking, throttle queue
     Duel.lua                Duel of Wits engine: invites, lobby, seeded question sets, race, scoring, anti-cheat, random queue
-  Locales/                  enUS strings, empty stubs for 8 locales, fallback setup
+                            (v1.1: kana race, own-course word race, co-op phrasebook)
+    TonguesData.lua         World Tongues data (v1.1): kana tables, words, numbers 1-100, 60 kanji, dialogues, Spanish starter
+    TonguesGen.lua          World Tongues question builders, romaji checker, phrasebook sets; registers tongues_ja / tongues_es
+  Locales/                  enUS + 9 translated tables; Init.lua: fallback, live switching (SetLocale), picker list
   Adapters/Compat.lua       client detection and every version-sensitive API call
   UI/                       Widgets (+ reveal/pulse/count-up animations), Hub (+ profile/home), Guide (Fizzwick strip,
                             parrot, cameo card, rank-up celebration), Lessons (skill list/problem/reward for any
                             module), Trial (trial intro/result), ParentPanel, Minimap (minimap button), Flight (flight watcher + toast),
                             Boarding (Murloc Boarding Party: setup, ship deck, result), Journal (Field Journal and
                             Blueprint Binder), Widgets.Grid (Gnomish command grid),
-                            Duel (Duel of Wits: setup + waiting room, invite pop-up, race, results)
+                            Duel (Duel of Wits: setup + waiting room, invite pop-up, race, results),
+                            Language (v1.1 picker), Areas (v1.1 Areas to Show), Tongues (v1.1 World Tongues study page)
+  Media/Fonts/              v1.1: AzAcadSans-JP/KR/SC/TC.ttf (Noto Sans subsets, SIL OFL 1.1), OFL.txt, coverage.txt, README.md
   Media/Sounds/             24 original sound effects (.ogg) + README.md (events, fallbacks, prompts, voice notes)
   Media/Sounds/VO/          23 original Fizzwick voice clips (.ogg)
   Media/Art/                Hex's posed art: Fizzwick/Sprocket 13 x 512 full figures + 13 x 256 head crops (TGA), Manifest.lua, README.md
@@ -1055,6 +1248,7 @@ AzerothAcademy/
   tools/convert_art.sh      PNG -> 512 TGA + 256 head crops (ImageMagick) + manifest writer
   tools/make_heads.py       face-centered 256 head-and-chest crops (Python, Pillow + numpy)
   tools/master_audio.py     master a generated clip: mono 44.1 kHz, trim, ~-16 LUFS, Ogg Vorbis q4 (ffmpeg + numpy)
+  tools/build_fonts.py      rebuild the bundled font subsets from the Noto Sans sources (fontTools)
   tools/pack.py             build the release zip (leaves out tests/, .luacheckrc, git files, raw audio)
   Main.lua                  events, slash commands, combat hide/resume
   README.md, DESIGN.md
@@ -1155,9 +1349,29 @@ For v0.5, `tools/convert_art.sh` was run with ImageMagick 7.1.2 on test PNGs. It
 
 ## Changelog
 
+**v1.1.0**
+- **In-game language picker:** `Locales/Init.lua` keeps every locale in memory (`ns.WantLocale` always true;
+  `Env.onlyClientLocale` restores v1.0's gating) and `ns.SetLocale` swaps the table behind the single `ns.L` proxy.
+  `UI/Language.lua` (view + `/aa lang`), `H.RebuildForLocale` (drops cached views and rebuilds the hub, Guide strip,
+  cameo/celebration, resume and flight pop-ups via `H.OnRebuild` hooks), saved as `settings.language` ("auto" default).
+- **Bundled fonts:** `Media/Fonts/AzAcadSans-JP/KR/SC/TC.ttf`, Noto Sans subsets (SIL OFL 1.1, ~1.4 MB), built by
+  `tools/build_fonts.py`; `C.FontFor`, `C.CourseFont`, `C.SetUIFont`, `W.SetFontFace`.
+- **Settings** replaces the Parent Panel: optional PIN (`P.ClearPin`), Language, Areas to Show (`settings.areas`,
+  `Modules.IsShown` / `Visible` / `Areas`, `P.SetAreaShown`), paged stats.
+- **World Tongues** (`Core/TonguesData.lua`, `Core/TonguesGen.lua`, `UI/Tongues.lua`): Japanese (15 lessons) and a
+  Spanish starter (3), two unbanded modules sharing the `tongues` area; placement trials and exams for unbanded courses
+  (`Trial` stores them under "everyone"). Skill lists page 5 at a time.
+- **Language duels:** kana race, word race (own course), co-op phrasebook; `AzAcadDuel` protocol 2 with
+  `MIN_VERSION` 1 (classic subjects still sent as v1).
+- **Schema 8:** `settings.language`, `settings.areas`, `settings.tongues`; the migration keeps an existing PIN.
+- **Tests:** harness v1.1 section (language switching, schema 8, areas, exact kana tables, a Hepburn
+  transliterator that checks every kana word, numbers, 60 unique kanji, unambiguous buttons, answer checking, font
+  coverage) and duel tests (protocol compatibility, kana/word/phrasebook); UI smoke drives `/aa lang`, the picker,
+  Settings without/with a PIN, Areas to Show, the World Tongues study page and rounds.
+
 **v1.0.0-rc**
 - **Ten locales:** `Locales/deDE, frFR, esES (+esMX), ptBR, itIT, ruRU, koKR, zhCN, zhTW .lua`, machine-translated
-  (<!-- total -->13667<!-- /total --> strings total) and marked for native-speaker review. Each file only loads on its own client
+  (<!-- total -->14603<!-- /total --> strings total) and marked for native-speaker review. Each file only loads on its own client
   (`ns.WantLocale`), so only one table is in memory. `Locales/Others.lua` (empty stubs) is gone.
 - **Externalized strings:** the parent report (`RPT_*`), Boarding report lines and the profile band blurbs now go through
   `L`. A static scan finds no code key missing from enUS.
@@ -1433,4 +1647,4 @@ For v0.5, `tools/convert_art.sh` was run with ImageMagick 7.1.2 on test PNGs. It
 
 ## License
 
-Azeroth Academy is released under the [MIT License](LICENSE). You are free to use, modify, and share it, as long as you keep the copyright notice and credit: "Azeroth Academy by HexorMarhetbar". Original art, sounds, and Professor Fizzwick's voice are part of the project and covered by the same license. World of Warcraft is a trademark of Blizzard Entertainment; this addon is fan-made and not affiliated with Blizzard.
+Azeroth Academy is released under the [MIT License](LICENSE). You are free to use, modify, and share it, as long as you keep the copyright notice and credit: "Azeroth Academy by HexorMarhetbar". Original art, sounds, and Professor Fizzwick's voice are part of the project and covered by the same license. The bundled fonts in `Media/Fonts` are not MIT: they are modified subsets of **Noto Sans JP, KR, SC and TC**, Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source', licensed under the **SIL Open Font License 1.1** (`Media/Fonts/OFL.txt`), and renamed "AzAcad Sans" as that license requires. World of Warcraft is a trademark of Blizzard Entertainment; this addon is fan-made and not affiliated with Blizzard.

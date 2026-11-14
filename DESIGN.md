@@ -535,11 +535,11 @@ or whispers each racer (one-player and random duels).
 - **Tactics Deck:** `Journal.RegisterBook{ moduleId = "mechanics", prefix = "TACTICS", newEvent = "MECHCARD",
   openEvent = "MECHDECK", sound = "drill" }`. The hub's coming-soon list no longer has entries that are not real modules.
 
-## Data model (schema 7)
+## Data model (schema 8)
 
 ```lua
 AzerothAcademyDB = {            -- account-wide: parent settings + daily minutes + Field Journal
-  version  = 7,
+  version  = 8,
   settings = { minutesPerMastery = 10, dailyCap = 60, unlockAllTiers = false, reviews = true,
                sound = { enabled = true, channel = "SFX", level = "all"|"important", custom = true },   -- v0.4
                reducedMotion = false, cameos = true,                                                -- v0.4
@@ -547,15 +547,18 @@ AzerothAcademyDB = {            -- account-wide: parent settings + daily minutes
                flight = { mode = "off"|"toast"|"auto" },                                            -- v0.7
                voice = { enabled = true },                                                          -- v0.8
                duel = { enabled = true, friendsOnly = false, random = false,                        -- v0.10
-                        alias = { adj, creature }, aliasPicked = true } },
+                        alias = { adj, creature }, aliasPicked = true },
+               language = "auto"|"deDE"|...,                                                      -- v1.1 picker
+               areas = { [areaId] = false },   -- v1.1: only hidden areas are stored (nil = shown)
+               tongues = { course = "ja"|"es" } },                                                -- v1.1
   minutes  = { day = "YYYY-MM-DD", earned = 0 },   -- shared so alts can't double the cap
-  pin      = { salt = "123456", hash = "..." },    -- soft lock only
+  pin      = { salt = "123456", hash = "..." },    -- soft lock only; optional since v1.1 (nil = no PIN), kept by the v8 migration
   ui       = { point, relPoint, x, y },
   journal  = { entries = { ["nodeId:tier"] = { at = ts } } },                                       -- v0.9
   duel     = { blocked = { ["name-realm"] = true }, day = "YYYY-MM-DD", minutes = 0 },              -- v0.10
 }
 AzerothAcademyCharDB = {        -- per character: the kid's learning progress
-  version = 7,
+  version = 8,
   profile = { band = "initiate"|"adept"|"magister", created = ts },
   shards  = 0,
   stats   = { rounds, problems, firstCorrect, time },
@@ -647,3 +650,27 @@ UI position, shards, and stats are untouched. The report notes "carried over fro
 - `C.FONT` = `STANDARD_TEXT_FONT` (the client's localized font), falling back to `C.LOCALE_FONTS[locale]`.
 - Voice lines (`Core/Voice.lua`) are keyed by English line keys and play the same English clips in every locale.
 
+
+## v1.1.0: language picker, areas, World Tongues, language duels
+
+- **Live locale.** Every `Locales/<code>.lua` now loads (`ns.WantLocale` returns true unless `Env.onlyClientLocale`).
+  `ns.L` is one proxy table whose `__index` reads the current table (`cur`) → enUS → the key. `ns.SetLocale(code)`
+  swaps `cur`; `ns.ResolveLocale("auto")` = the client's locale. Modules cache `local L = ns.L`, which keeps working
+  because the proxy itself never changes. UI frames, however, bake text in when they are built, so
+  `H.RebuildForLocale(view)` throws the hub frame and every cached view away, runs the `H.OnRebuild` hooks (Guide strip,
+  cameo, celebration, flight toast) and opens the window again on `view`.
+- **Fonts.** `C.FONT` follows the chosen locale: the client's font when it covers it, else `C.BUNDLED_FONTS[script]`.
+  `C.CourseFont()` is the bundled font for World Tongues text (it must cover the UI locale's script plus kana/kanji).
+  Fonts are subset by `tools/build_fonts.py` to exactly the characters in the locale and course files.
+- **Areas.** Each module has an `area` (default: its own id; `lorequiz` → `lore`, `tongues_*` → `tongues`).
+  `Modules.Visible()` drops hidden areas; Review, Duel subjects and invites, hub tiles and slash commands all go through it.
+- **World Tongues.** Two unbanded modules (`tongues_ja` visible, `tongues_es` hidden behind the course switch) built from
+  `TonguesData.courses`. Node ids `wt_<course>_<lesson>`, string keys `WT_NODE_<COURSE>_<LESSON>`. `WT.InputMode` maps
+  (band, tier) to buttons or typed romaji. `WT.Check` normalizes macrons, case, spacing and punctuation, accepts short
+  long-vowel spellings and the native text. `Unique()`/`Distractors()` keep entries with the same reading or meaning
+  out of one question, so a button question always has exactly one right answer. Placement/exam for unbanded modules
+  are stored under the band "everyone" (`bandFor()` in `Core/Trial.lua`).
+- **Duel protocol 2.** `DP.VERSION = 2`, `DP.MIN_VERSION = 1`. A message is encoded with the lowest version its subject
+  needs (`D.ProtoFor`): classic subjects stay version 1 for v1.0 peers. A language INV arriving as version 1 is refused.
+  Co-op phrasebook: roles come from the racer order in STA, so both sides agree; `D.TeamUp` turns the ranking into one
+  team result with no win bonus.
