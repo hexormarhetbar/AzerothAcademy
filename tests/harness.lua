@@ -3393,7 +3393,7 @@ do
       ok(#bad == 0, loc .. " strings valid: " .. table.concat(bad, ", "):sub(1, 400))
       local cov = n / translatable
       localeStats[loc] = { n = n, cov = cov }
-      ok(cov >= 0.85, string.format("%s covers %d of %d translatable strings (%.0f%%)", loc, n, translatable, cov * 100))
+      ok(cov >= 0.90, string.format("%s covers %d of %d translatable strings (%.0f%%)", loc, n, translatable, cov * 100))
     end
   end
   ok(all.LocaleData.esMX == all.LocaleData.esES, "esMX shares the Spanish table")

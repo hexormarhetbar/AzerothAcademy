@@ -91,15 +91,15 @@ The addon follows your game client's language automatically. There is no setting
 | enUS / enGB | English | Source text, complete |
 <!-- locales:start -->
 | deDE | German | Machine translation (Argos), 1515 of 1572 strings (96%). **Needs native-speaker review** |
-| frFR | French | Machine translation (NLLB-200), 1405 of 1572 strings (89%). **Needs native-speaker review** |
+| frFR | French | Machine translation (NLLB-200), 1555 of 1572 strings (99%). **Needs native-speaker review** |
 | esES | Spanish (Spain) | Machine translation (Argos), 1478 of 1572 strings (94%). **Needs native-speaker review** |
 | esMX | Spanish (Latin America, same table as esES) | Machine translation (Argos), 1478 of 1572 strings (94%). **Needs native-speaker review** |
 | ptBR | Portuguese (Brazil) | Machine translation (NLLB-200), 1552 of 1572 strings (99%). **Needs native-speaker review** |
 | itIT | Italian | Machine translation (Argos), 1517 of 1572 strings (97%). **Needs native-speaker review** |
 | ruRU | Russian | Machine translation (Argos), 1487 of 1572 strings (95%). **Needs native-speaker review** |
-| koKR | Korean | Machine translation (NLLB-200), 1350 of 1572 strings (86%). **Needs native-speaker review** |
-| zhCN | Simplified Chinese | Machine translation (NLLB-200), 1364 of 1572 strings (87%). **Needs native-speaker review** |
-| zhTW | Traditional Chinese | Machine translation (NLLB-200 + OpenCC), 1364 of 1572 strings (87%). **Needs native-speaker review** |
+| koKR | Korean | Machine translation (NLLB-200), 1537 of 1572 strings (98%). **Needs native-speaker review** |
+| zhCN | Simplified Chinese | Machine translation (NLLB-200), 1513 of 1572 strings (96%). **Needs native-speaker review** |
+| zhTW | Traditional Chinese | Machine translation (NLLB-200 + OpenCC), 1513 of 1572 strings (96%). **Needs native-speaker review** |
 <!-- locales:end -->
 
 - **These translations are machine-made and need native-speaker review before a final release.**
@@ -1157,14 +1157,15 @@ For v0.5, `tools/convert_art.sh` was run with ImageMagick 7.1.2 on test PNGs. It
 
 **v1.0.0-rc**
 - **Ten locales:** `Locales/deDE, frFR, esES (+esMX), ptBR, itIT, ruRU, koKR, zhCN, zhTW .lua`, machine-translated
-  (<!-- total -->13032<!-- /total --> strings total) and marked for native-speaker review. Each file only loads on its own client
+  (<!-- total -->13667<!-- /total --> strings total) and marked for native-speaker review. Each file only loads on its own client
   (`ns.WantLocale`), so only one table is in memory. `Locales/Others.lua` (empty stubs) is gone.
 - **Externalized strings:** the parent report (`RPT_*`), Boarding report lines and the profile band blurbs now go through
   `L`. A static scan finds no code key missing from enUS.
 - **Fonts:** `C.FONT` is the client's default font, with koKR/zhCN/zhTW/ruRU fallbacks in `C.LOCALE_FONTS`.
 - **Tools:** `tools/translate_locales.py` (offline, cached, protects placeholders/colors/names/commands, drops any
-  string that loses them) and `tools/locale_overrides.tsv` (hand-translated short labels).
-- **Tests:** harness section 27: key coverage, per-locale validity (placeholders, color codes), coverage of at least 85%
+  string that loses them) and `tools/locale_overrides.tsv` (hand-translated short labels); `tools/fill_readme_locales.sh` refreshes the
+  language table above.
+- **Tests:** harness section 27: key coverage, per-locale validity (placeholders, color codes), coverage of at least 90%
   per locale, load gating, fallback, fonts, README notes, and every generator, the report and Fizzwick's lines run
   in all ten locales with no format leftovers or duplicate choices. UI smoke runs on deDE, ruRU, koKR and zhCN clients too.
 - **Host art:** Hex's approved portraits for Zixi and Quill (2 hosts x 6 poses x 2 sizes = 24 TGAs, 512x512 + 256x256

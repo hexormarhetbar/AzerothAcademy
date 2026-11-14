@@ -44,11 +44,13 @@ class NLLB:
         import torch
         out = []
         with torch.no_grad():
-            for i in range(0, len(items), 24):
-                chunk = items[i:i + 24]
+            bs = int(os.environ.get("AA_BATCH", "24"))
+            for i in range(0, len(items), bs):
+                chunk = items[i:i + bs]
                 b = self.tok(chunk, return_tensors="pt", padding=True)
                 g = self.model.generate(**b, forced_bos_token_id=self.tok.convert_tokens_to_ids(self.lang),
-                                        max_new_tokens=160, num_beams=2)
+                                        max_new_tokens=int(os.environ.get("AA_MAXTOK", "160")), num_beams=2,
+                                        no_repeat_ngram_size=4)
                 out += self.tok.batch_decode(g, skip_special_tokens=True)
                 print(self.lang, i + len(chunk), "/", len(items), flush=True)
         return out
@@ -57,11 +59,12 @@ class NLLB:
         spath = os.path.join(CACHE, "nllb-%s-sentences.json" % self.lang)
         done = json.load(open(spath, encoding="utf-8")) if os.path.exists(spath) else {}
         sents = sorted({x for s in strings for x in self.sentences(s)} - set(done), key=len)
-        for i in range(0, len(sents), 96):
-            chunk = sents[i:i + 96]
+        step = int(os.environ.get("AA_SAVE_EVERY", "96"))
+        for i in range(0, len(sents), step):
+            chunk = sents[i:i + step]
             done.update(zip(chunk, self.batch(chunk)))
             json.dump(done, open(spath, "w", encoding="utf-8"), ensure_ascii=False)
-            print(self.lang, "sentences", min(i + 96, len(sents)), "/", len(sents), flush=True)
+            print(self.lang, "sentences", min(i + step, len(sents)), "/", len(sents), flush=True)
         joiner = "" if self.lang.startswith("zho") else " "
         return {s: joiner.join(done[x] for x in self.sentences(s)) for s in strings}
 # Kept in English on purpose: names, the addon title, and keys whose text must match game data.
