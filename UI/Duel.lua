@@ -290,24 +290,30 @@ H.RegisterView("duel", function(parent)
   local subjLabel = W.Text(setup, 12, L.DUEL_SUBJECT, W.GOLD, "LEFT")
   subjLabel:SetPoint("TOPLEFT", 4, -44)
   v.subjectButtons = {}
-  for i, s in ipairs(D().Subjects()) do
-    local b = W.Button(setup, "", 176, 22, function()
+  -- v0.11: up to 4 subjects per row; everything below moves down with the rows
+  local subjects = D().Subjects()
+  local perRow = #subjects > 6 and 4 or 3
+  local bw = perRow == 4 and 134 or 176
+  local rows = math.ceil(#subjects / perRow)
+  local shift = math.max(0, rows * 23 - 50)
+  for i, s in ipairs(subjects) do
+    local b = W.Button(setup, "", bw, 21, function()
       DU.sel.subject = s.id
       v:Refresh()
-    end, 11)
-    b:SetPoint("TOPLEFT", subjLabel, "BOTTOMLEFT", -2 + ((i - 1) % 3) * 182, -4 - math.floor((i - 1) / 3) * 25)
+    end, perRow == 4 and 10 or 11)
+    b:SetPoint("TOPLEFT", subjLabel, "BOTTOMLEFT", -2 + ((i - 1) % perRow) * (bw + 4), -4 - math.floor((i - 1) / perRow) * 23)
     b.subject = s.id
     v.subjectButtons[#v.subjectButtons + 1] = b
   end
   local lenLabel = W.Text(setup, 12, L.DUEL_WHO, W.GOLD, "LEFT")
-  lenLabel:SetPoint("TOPLEFT", 4, -144)
+  lenLabel:SetPoint("TOPLEFT", 4, -144 - shift)
   v.lengthButtons = {}
   for i, n in ipairs(D().LENGTHS) do
     local b = W.Button(setup, "", 120, 22, function()
       DU.sel.length = n
       v:Refresh()
     end, 11)
-    b:SetPoint("TOPLEFT", setup, "TOPLEFT", 2 + (i - 1) * 126, -114)
+    b:SetPoint("TOPLEFT", setup, "TOPLEFT", 2 + (i - 1) * 126, -114 - shift)
     b.length = n
     v.lengthButtons[i] = b
   end
@@ -355,7 +361,7 @@ H.RegisterView("duel", function(parent)
     local okS, why = DU.engine:Start()
     if not okS then v.status:SetText(errText(why)) end
   end, 13)
-  start:SetPoint("TOPRIGHT", setup, "TOPRIGHT", 0, -252)
+  start:SetPoint("TOPRIGHT", setup, "TOPRIGHT", 0, -252 - shift)
   v.start = start
   local cancel = W.Button(setup, L.DUEL_CANCEL, 150, 24, function()
     DU.engine:Close()
@@ -481,6 +487,10 @@ H.RegisterView("duel", function(parent)
   local qtext = W.Text(card, 16, "", W.WHITE, "CENTER")
   qtext:SetWidth(520)
   v.qtext = qtext
+  -- v0.11: Gnomish Engineering grid puzzles
+  local grid = W.Grid(card, 6, 18)
+  grid:SetPoint("TOPLEFT", card, "TOPLEFT", 10, -24)
+  v.grid = grid
   local big = W.Text(race, 48, "", W.GOLD, "CENTER")
   big:SetPoint("CENTER", card, "CENTER", 0, 0)
   v.big = big
@@ -538,6 +548,9 @@ H.RegisterView("duel", function(parent)
     for _, b in ipairs(self.choices) do b:Hide() end
     self.typeBox:Hide(); self.typeGo:Hide()
     for _, t in ipairs(self.icons) do t:Hide() end
+    self.grid:Hide()
+    self.qtext:SetWidth(520)
+    self.qtext:SetJustifyH("CENTER")
     if not p then
       self.qhead:SetText("")
       self.qtext:SetText(d and d.state == "race" and L.DUEL_WAITING or "")
@@ -552,7 +565,15 @@ H.RegisterView("duel", function(parent)
       if i <= count then t:SetTexture(p.icons.texture); t:Show() end
     end
     self.qtext:ClearAllPoints()
-    self.qtext:SetPoint("TOP", card, "TOP", 0, count > 0 and -(24 + (count > 10 and 52 or 26) + 4) or -28)
+    if p.grid then
+      self.grid:Draw(p.grid)
+      local gw = self.grid:GetWidth()
+      self.qtext:SetWidth(520 - gw - 10)
+      self.qtext:SetPoint("TOPLEFT", card, "TOPLEFT", 10 + gw + 14, -28)
+    else
+      self.qtext:SetPoint("TOP", card, "TOP", 0, count > 0 and -(24 + (count > 10 and 52 or 26) + 4) or -28)
+    end
+    if p.code then self.qtext:SetJustifyH("LEFT") end
     if p.mode == "typing" then
       self.qtext:SetText(L.DUEL_TYPE_PROMPT .. "\n|cffffd100" .. tostring(p.typingTarget or p.answer) .. "|r")
       self.typeBox:Show(); self.typeGo:Show()

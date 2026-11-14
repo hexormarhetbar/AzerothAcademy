@@ -2776,10 +2776,322 @@ do
 end
 
 -------------------------------------------------------------------------
+-- Shared suite for curated+generated subjects with a collection book (v0.11+)
+-- cfg = { id, nameKey, prefix (book), data = D, lists = LISTS, items = book items table,
+--         keys = { host locale keys }, events = { guide events }, maxText, maxChoice,
+--         numeric = true (numbers allowed), noTyped = { nodeIds without typed answers } }
+-------------------------------------------------------------------------
+local subjectStats = {}
+local sidedWords = { "Stormwind", "Orgrimmar", "Ironforge", "Darnassus", "Undercity", "Thunder Bluff", "Alliance", "Horde" }
+local function subjectSuite(cfg)
+  local tns = newNS()
+  local Mods, J, NL, NA = tns.Modules, tns.Journal, tns.L, tns.Naturalist
+  local id = cfg.id
+  local stats = { gen = 0, items = {} }
+  subjectStats[id] = stats
+  local function neutral(s, tag)
+    if cfg.allowSides then return end
+    for _, w in ipairs(sidedWords) do ok(not tostring(s):find(w, 1, true), tag .. " stays faction-neutral (" .. w .. ")") end
+  end
+  local m = Mods.Get(id)
+  ok(m and m.nameKey == cfg.nameKey and m.check and m.textAnswers, id .. " module registered")
+  ok(m.game and m.game.view == "journal" and NL[m.game.key] ~= m.game.key and NL[m.game.tileKey] ~= m.game.tileKey and NL[m.game.tipKey] ~= m.game.tipKey, id .. ": book link on the skill list")
+  ok(tns.SoundEvents.EVENTS[m.startSound], id .. " start sound exists")
+  local book = J.Book(id)
+  ok(book and book.prefix == cfg.prefix and type(book.items) == "table", id .. " registered its book")
+  cfg.items = book.items
+  for _, suffix in ipairs({ "TITLE", "COUNT", "UNKNOWN", "HOWTO", "FOUND", "FADING", "ZONE", "PICK", "NEW", "OPEN", "STATUS", "FADED" }) do
+    local key = cfg.prefix .. "_" .. suffix
+    ok(NL[key] ~= key and J.Str(id, suffix) == NL[key], id .. " book string " .. key)
+  end
+  ok(tns.Guide and book.openEvent and book.newEvent, id .. " book events")
+  for _, k in ipairs(cfg.keys) do
+    ok(type(NL[k]) == "string" and NL[k] ~= k and NL[k] ~= "", "locale " .. k)
+    neutral(NL[k], k)
+  end
+  for _, ev in ipairs(cfg.events) do
+    local found = false
+    for _, e in ipairs(tns.Guide.EVENTS) do if e == ev then found = true end end
+    ok(found and tns.Art.EVENT_POSE[ev], "guide event + pose: " .. ev)
+    local n = 0
+    while NL["FZ_" .. ev .. "_" .. (n + 1)] ~= "FZ_" .. ev .. "_" .. (n + 1) do n = n + 1 end
+    ok(n >= 2, ev .. " has 2+ lines")
+  end
+  for _, map in pairs(m.guideEvents or {}) do ok(tns.Art.EVENT_POSE[map[1]], "module guide event mapping: " .. map[1]) end
+  ok(tns.Duel.SUBJECT_BY_ID[id] and tns.Duel.SUBJECT_BY_ID[id].module == id, id .. " is a duel subject")
+
+  -- bands, nodes, icons, book items
+  local names = {}
+  for _, band in ipairs(Mods.BAND_ORDER) do
+    local nodes = Mods.Nodes(id, band)
+    ok(#nodes == 5, id .. " " .. band .. " has 5 skills")
+    for _, nodeId in ipairs(nodes) do
+      local _, node = Mods.FindNode(nodeId)
+      ok(NL[node.key] ~= node.key and NL[node.key .. "_DESC"] ~= node.key .. "_DESC" and #NL[node.key .. "_DESC"] <= 48, "node name + short description: " .. nodeId)
+      ok(tns.SkillIcons[nodeId] ~= nil, "skill icon: " .. nodeId)
+      local list = cfg.items[nodeId]
+      ok(type(list) == "table" and #list == 3, "3 book items: " .. nodeId)
+      for t = 1, 3 do
+        local it = list and list[t]
+        if ok(it, nodeId .. " item T" .. t) then
+          ok(not names[it.name], "unique item name " .. tostring(it.name)); names[it.name] = true
+          ok(type(it.name) == "string" and #it.name <= 32, "item name fits: " .. tostring(it.name))
+          ok(type(it.zone) == "string" and it.zone ~= "" and #it.zone <= 48, "item subtitle: " .. it.name)
+          ok(type(it.icon) == "string" and it.icon:find("^Interface\\Icons\\") ~= nil, "item uses an in-game icon: " .. it.name)
+          ok(type(it.note) == "string" and #it.note >= 30 and #it.note <= 200, "item note length: " .. it.name)
+          ok(it.nodeId == nodeId and it.tier == t and it.moduleId == id, "item knows its page: " .. it.name)
+          ok(J.Specimen(nodeId, t) == it, "journal finds the item: " .. it.name)
+          neutral(it.name .. it.zone .. it.note, "item " .. it.name)
+        end
+      end
+    end
+  end
+
+  -- curated entries
+  for nodeId, lists in pairs(cfg.lists) do
+    local _, node = Mods.FindNode(nodeId)
+    ok(node, "curated list belongs to a real node: " .. nodeId)
+    for _, list in ipairs(lists) do
+      local seen, c = {}, { 0, 0, 0 }
+      for i, e in ipairs(list) do
+        local tag = nodeId .. " " .. i
+        ok(e.lv == 1 or e.lv == 2 or e.lv == 3, tag .. " lv 1-3")
+        if c[e.lv] then c[e.lv] = c[e.lv] + 1 end
+        ok(type(e.q) == "string" and #e.q <= cfg.maxText, tag .. " question")
+        ok(not seen[e.q], tag .. " duplicate question"); seen[e.q] = true
+        ok(type(e.a) == "string" and e.a ~= "" and #e.a <= cfg.maxChoice, tag .. " answer")
+        ok(type(e.why) == "string" and #e.why >= 15, tag .. " explanation")
+        local need = node.band == "initiate" and 2 or 3
+        ok(type(e.d) == "table" and #e.d >= need, tag .. " has " .. need .. "+ distractors")
+        local ds = { [NA.Normalize(e.a)] = true }
+        for _, d in ipairs(e.d or {}) do
+          ok(type(d) == "string" and #d <= cfg.maxChoice, tag .. " distractor length")
+          ok(not ds[NA.Normalize(d)], tag .. " distractor repeats or equals the answer: " .. tostring(d))
+          ds[NA.Normalize(d)] = true
+        end
+        if e.t then
+          ok(node.band ~= "initiate", tag .. " initiate never types")
+          for _, alt in ipairs(e.t) do ok(not ds[NA.Normalize(alt)] or NA.Normalize(alt) == NA.Normalize(e.a), tag .. " typed alt is not a wrong answer: " .. alt) end
+        end
+        neutral(e.q .. e.a .. e.why .. table.concat(e.d or {}, " "), tag)
+      end
+      ok(c[1] > 0 and c[2] > 0 and c[3] > 0, nodeId .. " covers levels 1-3 (" .. c[1] .. "/" .. c[2] .. "/" .. c[3] .. ")")
+      stats.items[node.band] = (stats.items[node.band] or 0) + #list
+    end
+  end
+
+  -- generator sweep: every node x level x tier x purpose
+  tns.Env.time = function() return 1800000000 end
+  tns.Progress.Bind({}, {})
+  for _, band in ipairs(Mods.BAND_ORDER) do
+    for _, nodeId in ipairs(Mods.Nodes(id, band)) do
+      local typedSeen = false
+      for level = 1, 5 do
+        for tier = 1, 3 do
+          for _, purpose in ipairs({ "practice", "trial" }) do
+            for _ = 1, math.max(6, math.floor(ITER / 25)) do
+              local okk, p = pcall(Mods.Generate, nodeId, level, tier, purpose)
+              stats.gen = stats.gen + 1
+              local tag = string.format("[%s L%d T%d %s]", nodeId, level, tier, purpose)
+              if ok(okk and type(p) == "table", tag .. " generator error: " .. tostring(p)) then
+                tag = tag .. " '" .. tostring(p.text):sub(1, 70) .. "'"
+                ok(type(p.text) == "string" and #p.text > 10 and #p.text <= cfg.maxText, tag .. " text length")
+                ok(not hasFormatLeftovers(p.text) and not hasFormatLeftovers(p.hint) and not hasFormatLeftovers(p.explain), tag .. " format leftovers")
+                ok(type(p.hint) == "string" and p.hint ~= "" and type(p.explain) == "string" and p.explain ~= "", tag .. " hint + explanation")
+                ok(type(p.answer) == "string" and p.answer ~= "" or (cfg.numeric and type(p.answer) == "number"), tag .. " answer type")
+                neutral(p.text .. " " .. tostring(p.answer), tag)
+                if p.mode == "choice" then
+                  local n, seenC = 0, {}
+                  for _, c in ipairs(p.choices) do
+                    if tostring(c) == tostring(p.answer) then n = n + 1 end
+                    local k = type(c) == "number" and ("#" .. c) or NA.Normalize(tostring(c))
+                    ok(not seenC[k], tag .. " duplicate choice " .. tostring(c))
+                    seenC[k] = true
+                    ok(#tostring(c) <= cfg.maxChoice, tag .. " choice too long: " .. tostring(c))
+                    ok(Mods.Check(p, c) == (tostring(c) == tostring(p.answer)), tag .. " check of choice " .. tostring(c))
+                  end
+                  ok(n == 1, tag .. " answer appears exactly once")
+                  if band == "initiate" then ok(#p.choices == 3, tag .. " 3 buttons for Initiate")
+                  else ok(#p.choices >= 2 and #p.choices <= 4, tag .. " 2-4 buttons: " .. #p.choices) end
+                else
+                  typedSeen = true
+                  ok(band ~= "initiate", tag .. " initiate never types")
+                  ok(tier >= 2 or purpose == "trial", tag .. " Spark practice is always buttons")
+                  local ans = tostring(p.answer)
+                  ok(Mods.Check(p, ans) and Mods.Check(p, " " .. ans:lower() .. " "), tag .. " typed answer accepted")
+                  ok(not Mods.Check(p, "zzqx") and not Mods.Check(p, ""), tag .. " junk rejected")
+                  for _, d in ipairs(p.distractors or {}) do
+                    if tostring(d) ~= ans then ok(not Mods.Check(p, tostring(d)), tag .. " typed wrong answer rejected: " .. tostring(d)) end
+                  end
+                end
+                if cfg.perProblem then cfg.perProblem(tns, p, tag) end
+              end
+            end
+          end
+        end
+      end
+      if band ~= "initiate" and not (cfg.noTyped or {})[nodeId] then ok(typedSeen, "some typed answers on Rune/Glyph for " .. nodeId) end
+    end
+  end
+
+  -- engine: trial, mastery -> book items, exam, review fade, report
+  local NOW = 1800000000
+  tns.Env.time = function() return NOW end
+  local LP, LT, LR = tns.Progress, tns.Trial, tns.Review
+  LP.Bind({}, {})
+  ok(select(1, J.Count(nil, id)) == 0 and select(2, J.Count(nil, id)) == 45, id .. " empty book: 0 / 45")
+  local collected = 0
+  for _, band in ipairs({ "initiate", "adept", "magister" }) do
+    LP.SetBand(band)
+    ok(LT.NeedsPlacement(id, band), id .. " offers its own trial: " .. band)
+    local res = runTrial(tns, band, "placement", function() return true end, id)
+    ok(res.completed and res.correct == 10, id .. " placement perfect: " .. band)
+    for i, nodeId in ipairs(Mods.Nodes(id, band)) do
+      if i <= 4 then
+        local got
+        for _ = 1, 2 do
+          local s = tns.Session.New(nodeId, 1, 0)
+          local c = 0
+          while true do
+            local p = s:Next(c)
+            if not p then break end
+            c = c + 3
+            local r = s:Submit(p.answer, c)
+            if r and r.specimen then got = r.specimen end
+          end
+          s:Finish()
+        end
+        ok(LP.GetTierRec(nodeId, 1).mastered and got == J.Specimen(nodeId, 1) and J.Status(nodeId, 1) == "collected", id .. " mastery collects the item: " .. nodeId)
+        collected = collected + 1
+      end
+    end
+    ok(LT.ExamStatus(id, band) ~= nil, id .. " exam status: " .. band)
+    local ex = runTrial(tns, band, "exam", function() return true end, id)
+    ok(ex.passed, id .. " exam passes: " .. band)
+  end
+  ok(select(1, J.Count(nil, id)) == collected and collected == 12, id .. " book total " .. collected)
+  ok(select(1, J.Count()) == 0, id .. " pages never land in the Field Journal")
+  NOW = NOW + LR.DAY + 5
+  ok(J.FadedCount(nil, id) > 0, id .. " due reviews fade pages")
+  LP.ResetProfile()
+  ok(select(1, J.Count(nil, id)) == 12, id .. " profile reset keeps the family book")
+  local okRep, rep = pcall(tns.Report.Build, { moduleId = id })
+  ok(okRep and rep:find(string.format(NL[cfg.prefix .. "_STATUS"], 12, 45), 1, true), id .. " report shows its book")
+  local okAll, repAll = pcall(tns.Report.Build, {})
+  ok(okAll and repAll:find(string.format(NL[cfg.prefix .. "_STATUS"], 12, 45), 1, true) and repAll:find("Field Journal: 0 / 45", 1, true), "full report lists every book")
+  -- duel set for this subject at every band
+  for _, band in ipairs({ "initiate", "adept", "magister" }) do
+    local set = tns.Duel.BuildSet(id, band, 4242, 10)
+    ok(type(set) == "table" and #set == 10, id .. " duel set: " .. band)
+    for i, p in ipairs(set or {}) do ok(p.mode == "choice" and #p.choices >= 2 and p.text, id .. " duel q" .. i .. " is buttons") end
+    local again = tns.Duel.BuildSet(id, band, 4242, 10)
+    ok(again and again[10] and again[10].text == set[10].text and tostring(again[10].answer) == tostring(set[10].answer), id .. " duel sets are deterministic: " .. band)
+  end
+  return tns
+end
+
+-------------------------------------------------------------------------
+-- 24. v0.11: Gnomish Engineering - grid engine, generators replayed, Blueprint Binder
+-------------------------------------------------------------------------
+do
+  local gtns = newNS()
+  local GE = gtns.Gnomish
+  -- grid engine unit tests
+  local g = { w = 4, h = 4, bot = { 1, 1, "E" }, walls = { { 2, 2 } } }
+  local r = GE.Run(g, { "R", "R", "D" })
+  ok(r.x == 3 and r.y == 2 and not r.crashed, "absolute moves")
+  r = GE.Run(g, { "D", "R" })
+  ok(r.x == 1 and r.y == 2 and r.crashed, "walls block and flag a crash")
+  r = GE.Run(g, { "U" })
+  ok(r.x == 1 and r.y == 1 and r.crashed, "edges block")
+  r = GE.Run(g, { "F", "TR", "F", "TL", "F" })
+  ok(r.x == 3 and r.y == 1 and r.dir == "E" and r.crashed, "relative moves: forward into the wall at (2,2) is blocked")
+  r = GE.Run({ w = 5, h = 5, bot = { 1, 1, "S" } }, { "F", "TL", "F", "F" })
+  ok(r.x == 3 and r.y == 2 and r.dir == "E" and not r.crashed, "turn left from facing down = facing right")
+  r = GE.Run({ w = 6, h = 6, bot = { 1, 6, "E" } }, { { rep = 3, body = { "R", "U" } }, "R" })
+  ok(r.x == 5 and r.y == 3 and r.steps == 7, "loops flatten")
+  ok(#GE.Flatten({ { rep = 2, body = { { rep = 3, body = { "F" } } } } }) == 6, "nested loops flatten")
+  local path = GE.Shortest({ w = 4, h = 4, bot = { 1, 1 }, walls = { { 2, 1 }, { 2, 2 } } }, 3, 1)
+  ok(path and #path == 6, "BFS finds the way around walls: " .. tostring(path and #path))
+  ok(GE.Shortest({ w = 3, h = 1, bot = { 1, 1 }, walls = { { 2, 1 } } }, 3, 1) == nil, "BFS: unreachable = nil")
+  ok(GE.ProgText({ "U", { rep = 2, body = { "L", "R" } } }) == "Up, Repeat 2: [Left, Right]", "program text")
+  ok(GE.Numbered({ "U", "R" }) == "1. Up   2. Right", "numbered program")
+  local bp = GE.BubblePass({ 4, 2, 3, 1 })
+  ok(table.concat(bp, ",") == "2,3,1,4", "one bubble pass")
+  ok(GE.Check({ answer = 12, mode = "input" }, " 12 ") and not GE.Check({ answer = 12, mode = "input" }, "13"), "typed numbers")
+  ok(GE.Check({ answer = "True", mode = "text", typed = true, alts = { "true", "yes" } }, "yes"), "typed booleans")
+  ok(gtns.Art.SUBJECT_POSE.gnomish == "tinkering", "Fizzwick tinkers in the workshop")
+  -- the coming-soon tile is gone now that the subject exists
+  ok(gtns.Modules.Get("gnomish") and not gtns.Modules.Get("gnomish").hidden, "gnomish has a hub tile")
+
+  local D = gtns.GnomishData
+  subjectSuite({
+    id = "gnomish", nameKey = "MOD_GNOMISH", prefix = "BLUEPRINT", items = D.BLUEPRINTS, lists = GE.LISTS,
+    keys = { "GE_LORE", "GE_TITLE", "GE_TRIAL", "GE_EXAM", "GE_TRIAL_LORE", "GE_EXAM_LORE", "GE_TRIAL_RESULT", "GE_EXAM_PASS", "GE_TRIAL_RIGHT", "GE_TRIAL_WRONG" },
+    events = { "GESTART", "GECORRECT", "GEWRONG", "GEBLUEPRINT", "GEBINDER" },
+    maxText = GE.MAX_TEXT, maxChoice = GE.MAX_CHOICE, numeric = true,
+    noTyped = { ge_loopgrid = true },
+    perProblem = function(tns, p, tag)
+      local G = tns.Gnomish
+      if G.GRID_NODES[p.nodeId] and p.grid then
+        local gr = p.grid
+        ok(gr.w >= 3 and gr.w <= 6 and gr.h >= 3 and gr.h <= 6, tag .. " grid fits the card")
+        ok(G.Free(gr, gr.bot[1], gr.bot[2]), tag .. " bot starts on a free square")
+        if gr.goal then ok(G.Free(gr, gr.goal[1], gr.goal[2]) and not (gr.goal[1] == gr.bot[1] and gr.goal[2] == gr.bot[2]), tag .. " goal on a free square") end
+      end
+      if p.target and p.prog then
+        -- letters: the answer letter sits on the square the program really reaches; letters are unique squares
+        local rr = G.Run(p.grid, p.prog)
+        ok(not rr.crashed and rr.x == p.target[1] and rr.y == p.target[2], tag .. " replayed program reaches the target")
+        local cells = {}
+        for _, mk in ipairs(p.grid.marks) do
+          local k = mk[2] * 100 + mk[1]
+          ok(not cells[k], tag .. " one letter per square"); cells[k] = true
+          ok(G.Free(p.grid, mk[1], mk[2]), tag .. " letters on free squares")
+          if mk[3] == p.answer then ok(mk[1] == rr.x and mk[2] == rr.y, tag .. " answer letter on the end square") end
+          ok(not (mk[1] == p.grid.bot[1] and mk[2] == p.grid.bot[2]), tag .. " no letter under Boltby")
+        end
+        ok(#p.grid.marks == #p.choices, tag .. " one button per letter")
+      end
+      if p.programs then
+        for _, c in ipairs(p.choices or {}) do
+          local prog = p.programs[c]
+          if ok(prog, tag .. " every program choice is replayable: " .. tostring(c)) then
+            ok(G.Reaches(p.grid, prog, p.grid.goal[1], p.grid.goal[2]) == (c == p.answer), tag .. " only the answer reaches the gear: " .. c)
+          end
+        end
+      end
+      if p.buggy then
+        ok(not G.Reaches(p.grid, p.buggy, p.grid.goal[1], p.grid.goal[2]), tag .. " the buggy program misses the gear")
+        local fixes = 0
+        for i = 1, #p.buggy do
+          for _, mv in ipairs(G.MOVES) do
+            local t = { unpack(p.buggy) }
+            t[i] = mv
+            if mv ~= p.buggy[i] and G.Reaches(p.grid, t, p.grid.goal[1], p.grid.goal[2]) then
+              ok(i == p.bugAt, tag .. " only the bug step can be fixed")
+              fixes = fixes + 1
+            end
+          end
+        end
+        ok(fixes >= 1, tag .. " the bug step has a fix")
+      end
+    end,
+  })
+end
+
+-------------------------------------------------------------------------
 print(string.format("Generated %d problems: %d Rune Forger nodes x 5 levels x 3 tiers (%d per node) + 15 Scribe nodes x 5 levels x 3 tiers x 2 purposes.", genCount,
   (function() local n = 0 for _ in pairs(perNode) do n = n + 1 end return n end)(), ITER * 15))
 print(string.format("Lore Chronicles + Lore Quiz: %d generated problems checked.", loreGenCount))
 print(string.format("Azeroth Naturalist: %d generated problems checked; question bank: Initiate %d, Adept %d, Magister %d items (curated + generator data).",
   natGenCount, natItems.initiate or 0, natItems.adept or 0, natItems.magister or 0))
+for _, id in ipairs({ "gnomish", "librarian", "mechanics" }) do
+  local st = subjectStats[id]
+  if st then
+    print(string.format("%s: %d generated problems checked; curated items: Initiate %d, Adept %d, Magister %d.", id, st.gen,
+      st.items.initiate or 0, st.items.adept or 0, st.items.magister or 0))
+  end
+end
 print(string.format("%d checks, %d failures", checks, failures))
 os.exit(failures == 0 and 0 or 1)

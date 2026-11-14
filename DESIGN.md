@@ -1,4 +1,4 @@
-# Azeroth Academy: Architecture (v0.10)
+# Azeroth Academy: Architecture (v0.11)
 
 ## Goals that shape the code
 1. **WoW Forever first, Retail second.** Forever (1.60.1, interface 16001) is a Mainline-family
@@ -464,6 +464,29 @@ or whispers each racer (one-player and random duels).
 - **Matching** is limited to the same subject and length and an age band at most one step away.
 - **Block** on every result row: blocked players' invites get a neutral "busy", their emotes and queue beacons are
   ignored. Nothing is reported anywhere; the list lives in the account SavedVariables and can be cleared by a parent.
+
+## Gnomish Engineering and collection books (v0.11)
+
+- **Module `gnomish`** (Core/GnomishData.lua + Core/GnomishGen.lua) follows the Naturalist pattern: curated entries
+  (`{lv, q, a, d, why, t}`, shuffle bags via `Naturalist.Draw`) mixed with procedural generators. Node ids `ge_*`.
+- **Grid engine (pure):** `GE.Step/Run/Flatten/Reaches/Shortest/Mutations/Mark`. A grid is `{w, h, bot={x,y,dir},
+  goal, walls, marks}` with y = 1 at the top. Commands: `U/D/L/R` (absolute), `F/TL/TR` (relative), loops
+  `{rep=n, body={...}}`. A blocked move leaves Boltby in place and flags `crashed`; generators only keep puzzles whose
+  answer never crashes.
+- **Uniqueness rules:** stop-puzzles letter the true end square plus decoys produced by one-mistake mutations (dropped,
+  swapped or extra step, swapped turns); program/loop choices are kept only if they do NOT reach the gear (replayed with
+  `GE.Reaches`; `p.programs` keeps them for tests); debugging puzzles are rejected unless exactly one step can be changed
+  to reach the gear. The harness replays all of this for every generated grid puzzle.
+- **Answers:** letters A-D (kept in order), program text, numbers (Modules builds number choices on Spark; typed on
+  Rune/Glyph), True/False with yes/no alternatives. `GE.Check` = numeric compare, else `Naturalist.Check`.
+- **Display:** `p.grid` → `W.Grid` (max 6 x 6, icons for Boltby/gear/rocks, letters as text), question text beside it;
+  `p.code` → left-aligned smaller text. Duel races draw the same grid.
+- **Collection books (`Core/Journal.lua`):** `Journal.RegisterBook{ moduleId, items, prefix, openEvent, newEvent, sound }`.
+  Items are keyed node → tier and stamped with `nodeId/tier/moduleId`; entries live in `AzerothAcademyDB.journal.entries`
+  keyed `"nodeId:tier"` (node ids are unique, so books share the table and no schema change was needed).
+  `Count/All/FadedCount` take a module id (default `naturalist`, which keeps the v0.9 API), `Sync` covers every book,
+  `Str(moduleId, suffix)` reads `L[prefix_SUFFIX]` with the `JOURNAL_*` strings as fallback. The "journal" view takes
+  `{ moduleId }` or `{ nodeId, tier }` and otherwise opens the current subject's book.
 
 ## Data model (schema 7)
 

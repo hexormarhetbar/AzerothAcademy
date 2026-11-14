@@ -50,6 +50,7 @@ that file again until the next `/reload`. You can replace any file with your own
 | `specimen.ogg` | A new specimen is collected for the Field Journal (v0.9) | 0.7-1.2 s | IG_QUEST_LIST_COMPLETE (878) |
 | `countdown.ogg` | Each beat of the Duel of Wits 3-2-1 countdown (v0.10) | 0.5-0.8 s | RAID_WARNING (8959) |
 | `duelwin.ogg` | You win a Duel of Wits race (v0.10) | 1.2-2.0 s | UI_EPICLOOT_TOAST (31578), LEVELUPSOUND (888) |
+| `gears.ogg` | A Gnomish Engineering round starts, or a new blueprint is collected (v0.11) | 0.6-1.2 s | PUT_DOWN_GEMS (1204), then IG_ABILITY_OPEN (834) |
 
 ## Sound-effect briefs
 
@@ -77,6 +78,7 @@ original sound and none imitated any game's audio.
 - **cannon.ogg:** "Friendly cartoon ship cannon volley, three soft booms in quick succession with a puff of smoke and a cheerful whistle, no explosion debris."
 - **gurgle.ogg:** "Original silly fish-creature gurgle, wet bubbly warble rising in pitch, comic and cute, not a copy of any game creature."
 - **flight.ogg:** "Friendly little airship bell and propeller whirr, a bright two-note 'ding-ding' inviting you to a lesson, cartoon goblin gadget."
+- **gears.ogg:** "Small clockwork gears whirring and clicking into place, ending with a tiny cheerful bell ding, cartoon gadget workshop, short and friendly."
 - **page.ogg:** "A single soft paper page turning in an old leather field notebook, short and crisp, gentle, no music."
 - **specimen.ogg:** "Cheerful nature discovery chime: a bright magical sparkle with a tiny leafy rustle and a happy two-note marimba ding, cartoon, short."
 - **countdown.ogg (v0.10):** "Single soft wooden clock tick with a gentle bright chime, friendly game countdown beep, clean, no voice." (0.8 s requested)
@@ -125,6 +127,8 @@ Some of Fizzwick's lines are spoken aloud by an **original designed voice**.
 | `VO/duel_start.ogg` | "Brains ready? Let the duel of wits begin!" (`FZ_DUELSTART_1`) | A duel race starts (v0.10) |
 | `VO/duel_win.ogg` | "Victory! Your brain won that duel fair and square!" (`FZ_DUELWIN_1`) | You won a duel (v0.10) |
 | `VO/duel_done.ogg` | "Great race! Every duel makes your brain stronger." (`FZ_DUELDONE_1`) | A duel ends and you did not win (v0.10) |
+| `VO/ge_start.ogg` | "Goggles down, wrenches up! Boltby is ready for orders." (`FZ_GESTART_1`) | A Gnomish Engineering round starts (v0.11) |
+| `VO/ge_blueprint.ogg` | "A new blueprint! Into the Binder it goes!" (`FZ_GEBLUEPRINT_1`) | New Blueprint Binder page (v0.11) |
 
 ## Voice design brief (original)
 

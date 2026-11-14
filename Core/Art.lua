@@ -42,6 +42,8 @@ A.EVENT_POSE = {
   -- v0.10 Duel of Wits
   DUELINVITE = "surprised", DUELSTART = "excited", DUELWIN = "celebrating", DUELDONE = "encouraging",
   DUELWAIT = "thinking",
+  -- v0.11 Gnomish Engineering
+  GESTART = "tinkering", GECORRECT = "excited", GEWRONG = "encouraging", GEBLUEPRINT = "excited", GEBINDER = "proud",
 }
 
 -- While a problem waits for an answer, Fizzwick works on something that fits the subject.

@@ -15,6 +15,7 @@ JU.UNKNOWN_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
 
 local function say(event) if ns.GuideUI then return ns.GuideUI.Say(event) end end
 local function tierName(t) return L[ns.Mastery.TIERS[t].key] end
+-- v0.11: one view for every collection book (Field Journal, Blueprint Binder, ...)
 
 function JU.Open(target)
   if not H.IsShown() then H.Open("home") end
@@ -28,19 +29,21 @@ function JU.PageInfo(nodeId, tier)
   local spec = J.Specimen(nodeId, tier)
   local _, node = ns.Modules.FindNode(nodeId)
   local status = J.Status(nodeId, tier)
-  local skill = string.format(L.JOURNAL_SKILL, node and L[node.key] or nodeId, tierName(tier))
+  local mid = spec and spec.moduleId
+  local function S(k) return J.Str(mid, k) end
+  local skill = string.format(S("SKILL"), node and L[node.key] or nodeId, tierName(tier))
   if status == "missing" then
-    return { status = status, name = L.JOURNAL_UNKNOWN, icon = JU.UNKNOWN_ICON, zone = "", skill = skill,
-      note = string.format(L.JOURNAL_HOWTO, node and L[node.key] or nodeId, tierName(tier)), action = "practice" }
+    return { status = status, name = S("UNKNOWN"), icon = JU.UNKNOWN_ICON, zone = "", skill = skill,
+      note = string.format(S("HOWTO"), node and L[node.key] or nodeId, tierName(tier)), action = "practice" }
   end
   local e = J.Entry(nodeId, tier)
   local info = { status = status, name = spec.name, icon = spec.icon, skill = skill, note = spec.note,
-    zone = string.format(L.JOURNAL_ZONE, spec.zone) }
+    zone = string.format(S("ZONE"), spec.zone) }
   if status == "faded" then
-    info.state = "|cffff8800" .. string.format(L.JOURNAL_FADING, node and L[node.key] or nodeId) .. "|r"
+    info.state = "|cffff8800" .. string.format(S("FADING"), node and L[node.key] or nodeId) .. "|r"
     info.action = "review"
   else
-    info.state = "|cff4dff66" .. string.format(L.JOURNAL_FOUND, date and e and e.at and date("%Y-%m-%d", e.at) or "") .. "|r"
+    info.state = "|cff4dff66" .. string.format(S("FOUND"), date and e and e.at and date("%Y-%m-%d", e.at) or "") .. "|r"
   end
   return info
 end
@@ -64,7 +67,7 @@ H.RegisterView("journal", function(parent)
   local title = W.Text(v, 18, L.JOURNAL_TITLE, W.GOLD, "LEFT")
   title:SetPoint("TOPLEFT", 4, -2)
   local back = W.Button(v, L.BACK, 90, 22, function()
-    ns.Lessons.moduleId = "naturalist"
+    ns.Lessons.moduleId = v.moduleId or J.DEFAULT
     H.ShowView("forge")
   end)
   back:SetPoint("TOPRIGHT", 0, 0)
@@ -155,14 +158,16 @@ H.RegisterView("journal", function(parent)
   function v:Refresh()
     local band = self.band or ns.Progress.GetBand() or "initiate"
     self.band = band
-    local have, total = J.Count()
-    local bh, bt = J.Count(band)
-    count:SetText(string.format(L.JOURNAL_COUNT, have, total) .. "    " ..
+    local mid = self.moduleId or J.DEFAULT
+    title:SetText(J.Str(mid, "TITLE"))
+    local have, total = J.Count(nil, mid)
+    local bh, bt = J.Count(band, mid)
+    count:SetText(string.format(J.Str(mid, "COUNT"), have, total) .. "    " ..
       string.format(L.JOURNAL_BAND_COUNT, L[ns.Progress.BAND_BY_ID[band].key], bh, bt))
     for _, t in ipairs(tabs) do
       if t.LockHighlight then if t.band == band then t:LockHighlight() else t:UnlockHighlight() end end
     end
-    local nodes = ns.Modules.Nodes("naturalist", band)
+    local nodes = ns.Modules.Nodes(mid, band)
     for r = 1, 5 do
       local nodeId = nodes[r]
       local _, node = ns.Modules.FindNode(nodeId or "")
@@ -214,18 +219,22 @@ H.RegisterView("journal", function(parent)
     else
       d.icon:SetTexture(JU.UNKNOWN_ICON)
       d.name:SetText(""); d.zone:SetText(""); d.skill:SetText(""); d.state:SetText("")
-      d.note:SetText(L.JOURNAL_PICK)
+      d.note:SetText(J.Str(mid, "PICK"))
       d.action:Hide()
       self.info = nil
     end
-    local nf = J.FadedCount()
-    faded:SetText(nf > 0 and string.format(L.JOURNAL_FADED, nf) or "")
+    local nf = J.FadedCount(nil, mid)
+    faded:SetText(nf > 0 and string.format(J.Str(mid, "FADED"), nf) or "")
   end
 
   -- arg: nil (refresh), "open"/"setup" (fresh open), or { nodeId=, tier= } to open a page
   function v:OnShowView(arg)
     if arg ~= nil then
       J.Sync()
+      local cur = ns.Lessons and ns.Lessons.moduleId
+      local m = type(arg) == "table" and arg.nodeId and ns.Modules.FindNode(arg.nodeId)
+      self.moduleId = (type(arg) == "table" and arg.moduleId) or (m and m.id)
+        or (cur and J.Book(cur) and cur) or J.DEFAULT
       if type(arg) == "table" and arg.nodeId then
         local _, node = ns.Modules.FindNode(arg.nodeId)
         self.band = node and node.band or self.band
@@ -235,7 +244,8 @@ H.RegisterView("journal", function(parent)
         self.selNode, self.selTier = nil, nil
       end
       C.Sound("page")
-      say("NATJOURNAL")
+      local book = J.Book(self.moduleId)
+      say(book and book.openEvent or "NATJOURNAL")
     end
     self:Refresh()
   end

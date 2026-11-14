@@ -320,7 +320,7 @@ if ns.Hub.current ~= "home" then fail("expected home view after band pick") end
 if ns.Progress.GetBand() == nil then fail("band not saved") end
 
 -- Coming-soon module + active module
-click("^Gnomish Engineering$") -- coming soon tile: prints, stays home
+click("^Librarian Quests$") -- coming soon tile: prints, stays home
 if ns.Hub.current ~= "home" then fail("coming-soon tile should not navigate") end
 click("^Rune Forger$")
 -- v0.2: first visit offers The Forgemaster's Trial
@@ -1562,7 +1562,7 @@ do
   ns.Progress.account.settings.unlockAllTiers = false
   ns.Hub.Open("home")
   if not findButton("^Azeroth Naturalist$") then fail("Azeroth Naturalist should be a real hub tile") end
-  if findButton("^Gnomish Engineering$") == nil and #ns.Hub.Tiles() < 6 then fail("coming-soon tiles still listed") end
+  if findButton("^Librarian Quests$") == nil and #ns.Hub.Tiles() < 6 then fail("coming-soon tiles still listed") end
   click("^Azeroth Naturalist$")
   if ns.Hub.current ~= "trial" or not visibleText("^The Field Warden's Survey$") then fail("Naturalist tile should open The Field Warden's Survey") end
   click("^Begin the Trial$")
@@ -1693,6 +1693,142 @@ do
   hub:Hide()
 end
 
+
+-- v0.11+: a curated/generated subject with a collection book, end to end through the UI
+local function subjectSmoke(cfg)
+  local en = ns.LocaleData.enUS
+  local GU = ns.GuideUI
+  local function isLine(prefix, text)
+    for i = 1, 20 do if en[prefix .. "_" .. i] and en[prefix .. "_" .. i] == text then return true end end
+    return false
+  end
+  local mod = ns.Modules.Get(cfg.id)
+  ns.Progress.SetBand("adept")
+  ns.Progress.account.settings.unlockAllTiers = false
+  ns.Hub.Open("home")
+  if not findButton("^" .. cfg.tile .. "$") then fail(cfg.tile .. " should be a real hub tile") end
+  click("^" .. cfg.tile .. "$")
+  if ns.Hub.current ~= "trial" or not visibleText("^" .. en[mod.placementKey] .. "$") then fail(cfg.tile .. " tile should open its trial") end
+  click("^Begin the Trial$")
+  local ts = ns.RuneForger.session
+  if not (ts and ts.isTrial and ts.moduleId == cfg.id) then fail(cfg.id .. " trial did not start") end
+  playSession(0.7, "trialResult")
+  if not (ns.Progress.char.modules[cfg.id] and ns.Progress.char.modules[cfg.id].placement.adept.status == "done") then fail(cfg.id .. " placement not saved") end
+  click("^Continue$")
+  if ns.Hub.current ~= "forge" or ns.Lessons.CurrentModule().id ~= cfg.id then fail("Continue should show the " .. cfg.id .. " skill list") end
+  if not findButton("ccff" .. en[mod.game.key] .. "|r$") then fail("skill list links to the book") end
+  -- every skill in every band plays through the UI
+  ns.Progress.account.settings.unlockAllTiers = true
+  for _, bandId in ipairs({ "initiate", "adept", "magister" }) do
+    for _, nodeId in ipairs(mod.bands[bandId].nodes) do
+      for _, tier in ipairs({ 1, math.random(2, 3) }) do playUIRound(nodeId, tier, 0.75) end
+    end
+  end
+  GU.voice = ns.Voice.NewState()
+  clock = clock + 100
+  local firstNode = mod.bands.adept.nodes[1]
+  ns.RuneForger.StartRound(firstNode, 1)
+  if GU.lastEvent ~= cfg.startEvent or not isLine("FZ_" .. cfg.startEvent, GU.lastText) then fail(cfg.id .. " round opens with its own line, got " .. tostring(GU.lastEvent)) end
+  if cfg.startVoice and (voicePlays[#voicePlays] == nil or not voicePlays[#voicePlays].path:find(cfg.startVoice, 1, true)) then fail(cfg.id .. " round start speaks " .. cfg.startVoice) end
+  runTimers()
+  ns.RuneForger.session = nil
+  if cfg.extra then cfg.extra() end
+  -- master a fresh tier -> book banner, Fizzwick, reward line, book button
+  local nodeId, tier = mod.bands.magister.nodes[5], 3
+  local item = ns.Journal.Specimen(nodeId, tier)
+  if ns.Journal.Has(nodeId, tier) then fail(cfg.id .. " item should not be collected yet") end
+  local gotBanner, guard = false, 0
+  local newText = en[cfg.prefix .. "_NEW"]:gsub("%%s.*$", "")
+  while not ns.Progress.GetTierRec(nodeId, tier).mastered and guard < 6 do
+    guard = guard + 1
+    ns.RuneForger.StartRound(nodeId, tier)
+    local view = ns.Hub.GetView("problem")
+    while ns.RuneForger.session and ns.Hub.current == "problem" do
+      local s = ns.RuneForger.session
+      clock = clock + 2
+      step(cfg.id .. " answer", function() view:Answer(s.problem.answer) end)
+      if visibleText(newText) then gotBanner = true end
+      runTimers(); update(0.5)
+    end
+  end
+  if not ns.Progress.GetTierRec(nodeId, tier).mastered then fail(cfg.id .. " tier mastered through the UI") end
+  if not ns.Journal.Has(nodeId, tier) then fail(cfg.id .. " mastery collected the item") end
+  if not gotBanner then fail(cfg.id .. " problem view shows the new-item banner") end
+  local rv = ns.Hub.GetView("reward")
+  if ns.Hub.current ~= "reward" or not (rv.summary and rv.summary.specimens and rv.summary.specimens[1] == item) then fail(cfg.id .. " reward summary carries the item") end
+  if GU.lastEvent ~= cfg.newEvent then fail("Fizzwick celebrates the " .. cfg.id .. " item, got " .. tostring(GU.lastEvent)) end
+  local openText = en[cfg.prefix .. "_OPEN"]
+  if not (rv.journalBtn and rv.journalBtn:IsVisible() and rv.journalBtn:GetText() == openText) then fail("reward screen offers " .. openText) end
+  click("^" .. openText .. "$")
+  local jv = ns.Hub.GetView("journal")
+  if ns.Hub.current ~= "journal" or jv.moduleId ~= cfg.id then fail(openText .. " opens the right book") end
+  if not (jv.selNode == nodeId and jv.selTier == tier) then fail(cfg.id .. " book opens on the new page") end
+  if not visibleText("^" .. en[cfg.prefix .. "_TITLE"] .. "$") then fail(cfg.id .. " book title") end
+  if not visibleText("^" .. item.name .. "$") then fail(cfg.id .. " page shows the item name") end
+  if GU.lastEvent ~= cfg.openEvent then fail("Fizzwick opens the " .. cfg.id .. " book, got " .. tostring(GU.lastEvent)) end
+  local countPat = "^" .. en[cfg.prefix .. "_COUNT"]:gsub("%%d", "%%d+"):gsub("%(", "%%("):gsub("%)", "%%)")
+  if not visibleText(countPat) then fail(cfg.id .. " book counter") end
+  if jv.cells[1][1].nodeId ~= mod.bands.magister.nodes[1] then fail(cfg.id .. " grid shows this subject's skills") end
+  click("^Back$")
+  if ns.Hub.current ~= "forge" or ns.Lessons.CurrentModule().id ~= cfg.id then fail(cfg.id .. " book Back returns to its skill list") end
+  -- slash commands + hub tile button
+  slash(cfg.slashBook)
+  if ns.Hub.current ~= "journal" or ns.Hub.GetView("journal").moduleId ~= cfg.id then fail("/aa " .. cfg.slashBook .. " opens the book") end
+  slash("journal")
+  if ns.Hub.GetView("journal").moduleId ~= "naturalist" then fail("/aa journal still opens the Field Journal") end
+  slash(cfg.slashSubject)
+  if ns.Hub.current ~= "forge" or ns.Lessons.CurrentModule().id ~= cfg.id then fail("/aa " .. cfg.slashSubject .. " opens the subject") end
+  ns.Hub.Open("home")
+  click("^" .. en[mod.game.tileKey] .. "$")
+  if ns.Hub.current ~= "journal" then fail(cfg.id .. " tile book button opens a book") end
+  ns.Progress.SetBand("adept")
+  ns.Progress.account.settings.unlockAllTiers = false
+  if not ns.Report.Build({}):find(en[cfg.prefix .. "_STATUS"]:gsub("%%d", "%%d+"), 1) then fail("progress report shows the " .. cfg.id .. " book") end
+  hub:Hide()
+end
+
+step("v0.11 gnomish engineering", function()
+  subjectSmoke({
+    id = "gnomish", tile = "Gnomish Engineering", prefix = "BLUEPRINT",
+    startEvent = "GESTART", newEvent = "GEBLUEPRINT", openEvent = "GEBINDER",
+    slashBook = "blueprints", slashSubject = "gnomish", startVoice = "ge_start",
+    extra = function()
+      -- a grid puzzle draws Boltby, the gear or letters, and the question beside it
+      local seen = 0
+      for _ = 1, 6 do
+        ns.RuneForger.StartRound("ge_program", 1)
+        local view = ns.Hub.GetView("problem")
+        local p = ns.RuneForger.session.problem
+        if p.grid then
+          seen = seen + 1
+          if not view.grid:IsShown() then fail("grid shown for a grid puzzle") end
+          local botCell = view.grid.cells[(p.grid.bot[2] - 1) * view.grid.maxSide + p.grid.bot[1]]
+          if not (botCell.icon:IsShown() and botCell.icon.__tex == ns.W.GRID_ICONS.bot) then fail("Boltby drawn on the grid") end
+          view:Answer(p.answer)
+          if ns.RuneForger.session.firstCorrect ~= 1 then fail("program answer accepted") end
+        end
+        runTimers()
+        ns.RuneForger.session = nil
+      end
+      if seen == 0 then fail("program puzzles carry a grid") end
+      ns.RuneForger.StartRound("ge_directions", 1)
+      local p = ns.RuneForger.session.problem
+      local view = ns.Hub.GetView("problem")
+      if p.grid and p.grid.marks then
+        if not visibleText("^A$") then fail("letters drawn on the grid") end
+      end
+      runTimers()
+      ns.RuneForger.session = nil
+      ns.RuneForger.StartRound("ge_sequence", 1)
+      if ns.Hub.GetView("problem").grid:IsShown() then fail("grid hidden for non-grid questions") end
+      ns.RuneForger.session = nil
+      local _ = view
+      -- duel setup lists the new subject
+      ns.Hub.Open("duel")
+      if not findButton("Gnomish Engineering") then fail("duel setup lists Gnomish Engineering") end
+    end,
+  })
+end)
 
 -- v0.10 Duel of Wits: host a party race, join one by invite, auto-declines,
 -- version mismatch, combat forfeit, parent settings, random queue, minimap entry

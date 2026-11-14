@@ -46,6 +46,9 @@ V.LINES = {
   FZ_DUELSTART_1 = { file = "duel_start", dur = 4.0 },
   FZ_DUELWIN_1 = { file = "duel_win", dur = 4.2, big = true },
   FZ_DUELDONE_1 = { file = "duel_done", dur = 3.9 },
+  -- v0.11 Gnomish Engineering
+  FZ_GESTART_1 = { file = "ge_start", dur = 4.4 },
+  FZ_GEBLUEPRINT_1 = { file = "ge_blueprint", dur = 3.3, big = true },
 }
 -- event -> clip that fits every line of the event
 V.EVENT_CLIPS = {

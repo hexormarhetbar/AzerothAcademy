@@ -41,10 +41,12 @@ S.EVENTS = {
   -- v0.10 Duel of Wits
   countdown  = { kits = { "RAID_WARNING", 8959 } },
   duelwin    = { kits = { "UI_EPICLOOT_TOAST", 31578, "LEVELUPSOUND", 888 }, important = true },
+  -- v0.11 Gnomish Engineering: workshop gears (round start + new blueprint)
+  gears      = { kits = { "PUT_DOWN_GEMS", 1204, "IG_ABILITY_OPEN", 834 } },
 }
 S.ORDER = { "click", "open", "close", "correct", "wrong", "combo", "overcharge", "forge",
   "scroll", "reward", "rankup", "exampass", "chirp", "hint", "cameo", "splash", "cannon", "gurgle", "flight",
-  "page", "specimen", "countdown", "duelwin" }
+  "page", "specimen", "countdown", "duelwin", "gears" }
 
 S.DEFAULTS = { enabled = true, channel = "SFX", level = "all", custom = true }
 

@@ -44,6 +44,7 @@ D.SUBJECTS = {
   { id = "lore",       module = "lore" },
   { id = "naturalist", module = "naturalist" },
   { id = "lorequiz",   module = "lorequiz" },
+  { id = "gnomish",    module = "gnomish" },
 }
 D.SUBJECT_BY_ID = {}
 for _, s in ipairs(D.SUBJECTS) do D.SUBJECT_BY_ID[s.id] = s end

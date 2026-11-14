@@ -36,6 +36,13 @@ local I = {
   nat_adapt = "Ability_Hunter_Pet_Turtle", nat_lifecycle = "INV_Misc_Herb_02",
   nat_fairtest = "Trade_Alchemy", nat_explain = "INV_Misc_Book_03", nat_ecosystems = "Spell_Nature_Regeneration",
   nat_forces = "Ability_Warrior_Charge", nat_energy = "Spell_Fire_Fire",
+  -- Gnomish Engineering (v0.11)
+  ge_sequence = "INV_Misc_Gear_03", ge_patterns = "INV_Misc_Gear_04", ge_directions = "Ability_Mount_MechaStrider",
+  ge_program = "INV_Misc_Gear_05", ge_turns = "INV_Misc_Gear_06",
+  ge_loops = "INV_Misc_Gear_07", ge_loopgrid = "INV_Misc_Gear_08", ge_conditionals = "INV_Misc_Lantern_01",
+  ge_debug = "INV_Misc_Wrench_01", ge_events = "INV_Misc_PocketWatch_01",
+  ge_variables = "INV_Battery_01", ge_functions = "INV_Gizmo_01", ge_boolean = "INV_Misc_Key_01",
+  ge_algorithms = "INV_Misc_Rune_01", ge_pseudocode = "INV_Misc_Note_05",
 }
 ns.SkillIcons = {}
 for id, name in pairs(I) do ns.SkillIcons[id] = P .. name end

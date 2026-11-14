@@ -320,6 +320,10 @@ H.RegisterView("problem", function(parent)
 
   local qtext = W.Text(card, 20, "", W.WHITE, "CENTER")
   qtext:SetWidth(520)
+  -- v0.11: Gnomish Engineering command grid (left side of the card)
+  local grid = W.Grid(card, 6, 22)
+  grid:SetPoint("LEFT", card, "LEFT", 12, 0)
+  v.grid = grid
 
   -- Answer area
   local answerArea = CreateFrame("Frame", nil, v)
@@ -391,14 +395,30 @@ H.RegisterView("problem", function(parent)
       end
     end
     qtext:ClearAllPoints()
-    if count > 0 then
+    qtext:SetWidth(520)
+    qtext:SetJustifyH(p.code and "LEFT" or "CENTER")
+    if p.grid then
+      grid:Draw(p.grid)
+      local gw = grid:GetWidth()
+      qtext:SetWidth(520 - gw - 10)
+      qtext:SetPoint("LEFT", card, "LEFT", 12 + gw + 16, 0)
+      local len = #(p.text or "")
+      W.SetFontSize(qtext, len > 140 and 12 or (len > 90 and 14 or 16))
+    else
+      grid:Hide()
+    end
+    if count > 0 and not p.grid then
       qtext:SetPoint("TOP", card, "TOP", 0, -10 - (count > 10 and 64 or 34) - 6)
       W.SetFontSize(qtext, 18)
-    else
+    elseif not p.grid then
       qtext:SetPoint("CENTER", card, "CENTER", 0, 0)
       local len = #(p.text or "")
       local size = (s.node.band == "initiate") and 22 or 19
       if len > 320 then size = 12 elseif len > 170 then size = 13 elseif len > 110 then size = 15 elseif len > 60 then size = math.min(size, 17) end
+      if p.code then
+        local _, nl = (p.text or ""):gsub("\n", "")
+        size = math.min(size, nl >= 5 and 13 or 15)
+      end
       W.SetFontSize(qtext, size)
     end
     qtext:SetText(p.text)
@@ -597,9 +617,10 @@ H.RegisterView("problem", function(parent)
       end
       if r.specimen then
         -- v0.9 Field Journal: a new specimen page for this mastered tier
-        C.Sound("specimen")
-        say("NATSPECIMEN")
-        text = text .. "\n|cff66ddaa" .. string.format(L.JOURNAL_NEW, r.specimen.name) .. "|r"
+        local book = ns.Journal.Book(r.specimen.moduleId) or {}
+        C.Sound(book.sound or "specimen")
+        say(book.newEvent or "NATSPECIMEN")
+        text = text .. "\n|cff66ddaa" .. string.format(ns.Journal.Str(r.specimen.moduleId, "NEW"), r.specimen.name) .. "|r"
       else
         say("MASTERED")
       end
@@ -701,7 +722,7 @@ H.RegisterView("reward", function(parent)
   -- v0.9: jump to the Field Journal after collecting a specimen
   local journalBtn = W.Button(v, L.JOURNAL_OPEN, 140, 26, function()
     local sp = v.summary and v.summary.specimens
-    H.ShowView("journal", sp and sp[1] and { nodeId = sp[1].nodeId, tier = sp[1].tier } or nil)
+    H.ShowView("journal", sp and sp[1] and { nodeId = sp[1].nodeId, tier = sp[1].tier, moduleId = sp[1].moduleId } or nil)
   end, 12)
   journalBtn:SetPoint("BOTTOM", hub, "TOP", 0, 8)
   journalBtn:Hide()
@@ -791,7 +812,9 @@ H.RegisterView("reward", function(parent)
       local names = {}
       for _, sp in ipairs(specimens) do names[#names + 1] = sp.name end
       local cur = lines[5]:GetText() or ""
-      lines[5]:SetText(cur .. (cur ~= "" and "\n" or "") .. "|cff66ddaa" .. string.format(L.JOURNAL_NEW, table.concat(names, ", ")) .. "|r")
+      local mid = specimens[1].moduleId
+      lines[5]:SetText(cur .. (cur ~= "" and "\n" or "") .. "|cff66ddaa" .. string.format(ns.Journal.Str(mid, "NEW"), table.concat(names, ", ")) .. "|r")
+      journalBtn:SetText(ns.Journal.Str(mid, "OPEN"))
       journalBtn:Show()
     else
       journalBtn:Hide()
@@ -803,7 +826,8 @@ H.RegisterView("reward", function(parent)
       if s.rankUp and ns.GuideUI then
         ns.GuideUI.Celebrate(info.key)
       elseif s.masteredNow then
-        say(#specimens > 0 and "NATSPECIMEN" or "MASTERED")
+        local book = #specimens > 0 and ns.Journal.Book(specimens[1].moduleId)
+        say(book and (book.newEvent or "NATSPECIMEN") or "MASTERED")
         if ns.GuideUI and ns.Guide.IsMilestone(ns.Progress.TotalMastered()) then ns.GuideUI.Cameo("MILESTONE") end
       elseif s.mode == "review" then
         local fading = false

@@ -1,4 +1,4 @@
-# Azeroth Academy v0.10.0 (test build)
+# Azeroth Academy v0.11.0 (test build)
 
 A free learning addon for kids ages 5 to 13. Lessons are framed as Academy quests in Azeroth.
 This build has the **Main Hub** and two subjects: **Rune Forger** (math) and, new in v0.3,
@@ -30,6 +30,10 @@ Every mastered tier adds a specimen page to the new **Field Journal**, a bestiar
 New in v0.10: **Duel of Wits**, learning races with other players. Challenge your group, your guild or one
 player (or, only if a parent allows it, a random challenger). Everyone answers the same kind of questions at their
 own age band; most correct wins and time breaks ties. Nothing typed is ever sent: only scores and four preset emotes.
+New in v0.11: **Gnomish Engineering**, subject #5 (programming). Tinker Nixa Sprocketwhirl runs the workshop at the
+Knowledge Exchange, and kids program **Boltby**, a clockwork critter, on a command grid: steps in order, patterns,
+directions, loops, IF/ELSE, debugging, then variables, functions, boolean logic, algorithms and pseudocode. Every
+mastered tier adds a gadget page to the new **Blueprint Binder**, and the subject joins Duel of Wits.
 Progress stays on your computer. The only thing the addon ever sends is Duel of Wits race data, inside the game, to
 the players you race (see "Duel of Wits").
 
@@ -86,6 +90,8 @@ Or tick **Load out of date AddOns** on the AddOns screen.
 | `/aa quiz` | Open the Lore Quiz for Everyone (v0.5; no age band, no trial) |
 | `/aa nature` | Open the Azeroth Naturalist skill list (v0.9; `/aa science` works too) |
 | `/aa journal` | Open the Field Journal (v0.9; specimens you collected by mastering Naturalist skills) |
+| `/aa gnomish` | Open the Gnomish Engineering skill list (v0.11; `/aa engineering` and `/aa code` work too) |
+| `/aa blueprints` | Open the Blueprint Binder (v0.11; gadget blueprints you collected by mastering Gnomish Engineering skills; `/aa binder` works too) |
 | `/aa review` | Start a Review Time round (if any reviews are due) |
 | `/aa trial` | Open the placement trial for the current subject and band |
 | `/aa exam` | Open the mastery exam screen for the current subject (it says how many skills are still needed) |
@@ -122,8 +128,8 @@ A round button with Fizzwick's face sits on the edge of the minimap.
 
 Race other players who also have Azeroth Academy. Open it from the hub's **Duel of Wits** button, `/aa duel`,
 or shift/middle-click on the minimap button.
-- **Setup:** pick a subject (Rune Forger, Scribe's Scrolls, Typing race, Lore Chronicles, Azeroth Naturalist or
-  the Lore Quiz), **5** or **10** questions, and who to challenge: **My group** (party or raid), **My guild**,
+- **Setup:** pick a subject (Rune Forger, Scribe's Scrolls, Typing race, Lore Chronicles, Azeroth Naturalist,
+  the Lore Quiz or, since v0.11, Gnomish Engineering, grid puzzles included), **5** or **10** questions, and who to challenge: **My group** (party or raid), **My guild**,
   **One player** (type their name), or **Random challenger**. Then **Send challenge**.
 - **Invites:** everyone challenged gets a small pop-up (**Accept** / **No thanks**), even with the Academy closed.
   It says no by itself after 25 seconds, and right away in combat, in a dungeon/raid/battleground, when duels are off
@@ -297,6 +303,26 @@ Flight paths are perfect lesson time, so Fizzwick speaks up a couple of seconds 
   and a page view. Undiscovered pages show a "?" and a **Go collect it!** button. When a skill's review is
   due or it is fading, its page's ink fades and offers **Review now**; passing brings the ink back. Pages are
   never taken away. The journal is account-wide, so siblings on different characters fill one book.
+- **Gnomish Engineering (new in v0.11):** Tinker Nixa Sprocketwhirl (original, neutral) runs the workshop of the
+  Knowledge Exchange in Gadgetzan. Kids give orders to **Boltby**, a clockwork critter, on a command grid drawn with
+  in-game icons (Boltby, the gear, rocks, lettered spots). Same tiers, rewards, trial ("The Tinker's Test Bench"),
+  reviews and exam ("Engineering Mastery Exam") as the other subjects. All questions are original; grid puzzles are
+  generated and every answer is worked out by the addon's own grid engine, so no puzzle has two right answers.
+  - Initiate (5–7): Steps in Order (first, next, last), Patterns (what comes next, what's missing, counting
+    patterns), Grid Directions (Up/Down/Left/Right: where does Boltby stop?), Program Boltby (which program reaches
+    the gear, with rocks in the way at higher levels), Turn and Go (Forward / Turn left / Turn right). Always 3 big buttons.
+  - Adept (8–10): Loops (repeat counts, nested loops, which loop matches a program, counting loops), Loop Paths (loops on
+    the grid), IF and ELSE (true runs THEN, false runs ELSE, also ELSE IF and AND), Debugging (which step is the bug /
+    what should it be, with exactly one fixable step), Events and Parts (WHEN-this-happens and decomposition).
+  - Magister (11–13): Variables (trace assignments, swaps with temp), Functions (parameters, return, nested calls, an IF
+    inside), Boolean Logic (and / or / not with brackets), Algorithms (sum, count, maximum, linear search, one bubble-sort
+    pass, binary search ideas), Reading Pseudocode (WHILE, FOR-each filters, what a program is for).
+  - **Typed answers** on Rune, Glyph and trials for Adept and Magister: numbers (loop totals, variable values, function
+    results, step numbers), *True*/*False* (*yes*/*no* count too) and a few short words. Code is shown left-aligned.
+- **Blueprint Binder (new in v0.11):** the Field Journal's sibling. Mastering a Gnomish Engineering tier drafts that
+  tier's gadget blueprint (45 pages: name, what it's built for, a note about the skill, an in-game icon). Same band
+  tabs, grid, smudged-lines-then-**Review now**, **Go collect it!**, reward-screen **Open Blueprint Binder** button,
+  skill-list link, hub tile **Binder** button and `/aa blueprints`. Account-wide like the journal.
 - **In-flight science:** if Azeroth Naturalist was the last subject you opened, flight rounds pick a
   "look down" skill first (Zone Sorting, Day and Night, Seasons; Water Cycle, Food Chains, Adaptations;
   Ecosystems, Energy, Forces) and Fizzwick says something like "Look down! Every zone below is a habitat."
@@ -662,6 +688,31 @@ Azeroth Academy v0.10.0** (two accounts, or a friend), both with an age band pic
 135. [ ] Random queue with **Allow random challengers: Off** shows "A parent can turn on random challengers...". **Stop searching** works; after 5 minutes alone it stops by itself.
 136. [ ] `/aa duel leave` leaves a race, waiting room or search. Tell me if anything feels too fast, too slow, or confusing for your kids.
 
+**Gnomish Engineering and the Blueprint Binder (v0.11)**. Restart the game client once (new sound and voice files).
+
+137. [ ] The hub shows a **Gnomish Engineering** tile (no longer "Coming soon"); **Librarian Quests** and **Mechanics Academy** are still "Coming soon". The tile offers **The Tinker's Test Bench**.
+138. [ ] A round starts with a gear-whirr sound and Fizzwick saying "Goggles down, wrenches up! Boltby is ready for orders." (voice and bubble).
+139. [ ] Initiate **Grid Directions** and **Program Boltby**: the card shows a small grid on the left with Boltby (strider icon with an arrow), a gear or lettered spots A/B/C, and rocks at higher levels. Trace a few with your finger: the answer is always right and only one choice works.
+140. [ ] **Turn and Go**: the arrow on Boltby shows which way it faces. Check that "turn right" is Boltby's own right.
+141. [ ] Adept **Debugging**: the program is numbered; only one step can be changed to reach the gear. On Rune/Glyph you type the step number or the right direction.
+142. [ ] Magister **Variables / Functions / Algorithms / Pseudocode**: code is left-aligned and readable; type numbers on Rune/Glyph. **Boolean Logic** accepts True/False (or yes/no).
+143. [ ] Read questions in each band. Tell me about anything confusing or too hard/easy for the age, and whether the grid is big enough to read.
+144. [ ] Master a Gnomish Engineering tier: "New blueprint for your Binder: ...", Fizzwick says "A new blueprint! Into the Binder it goes!", and the reward screen shows **Open Blueprint Binder**, which opens on the new page ("Built for: ...").
+145. [ ] `/aa blueprints`, the hub tile's **Binder** button and the skill list's **Blueprint Binder** link open the Binder; `/aa journal` still opens the Field Journal. **Back** returns to Gnomish Engineering.
+146. [ ] A day later, a Gnomish page says "The lines are smudging!" with **Review now**; passing restores it.
+147. [ ] Duel of Wits setup shows 7 subjects in two rows of 4 (Gnomish Engineering included) and nothing overlaps the question-count and "Who" rows. Race on Gnomish Engineering: grid questions show the grid in the race card.
+148. [ ] Parent Panel export ends with both "Field Journal: N / 45" and "Blueprint Binder: N / 45" lines.
+
+## Known limits (v0.11)
+
+- **Grid puzzles are drawn with icons, not animated.** Boltby doesn't walk the path yet; kids trace it themselves.
+  The answer explanation spells out the path.
+- **Code is pseudocode in English** (keywords like IF, WHILE, function, return), like most beginner coding courses.
+- **Gnomish Engineering duels need v0.11 on every racer.** A v0.10 player can't build those questions, so their
+  game just doesn't answer the invite (the challenger is told they didn't answer).
+- **No in-flight Gnomish skills**: flight rounds on Gnomish Engineering use normal skill picks.
+- **23 lines are spoken now** (2 new Gnomish lines); one new sound effect (`gears`).
+
 ## Known limits (v0.10)
 
 - **Duel of Wits hasn't been tried between two real clients yet.** It was tested headless with simulated players on a
@@ -769,7 +820,10 @@ AzerothAcademy/
     LoreData.lua            Lore Chronicles passages, questions, rubrics + Lore Quiz questions (original writing)
     LoreGen.lua             Lore Chronicles (module #3, 15 generators, keyword rubric) + Lore Quiz (unbanded)
     NaturalistData.lua      Azeroth Naturalist questions, habitats, food chains, substances, life cycles, 45 specimens (original)
-    NaturalistGen.lua       Azeroth Naturalist (module #4, 15 generators, typed-answer checker) + Field Journal rules
+    NaturalistGen.lua       Azeroth Naturalist (module #4, 15 generators, typed-answer checker); registers the Field Journal book
+    Journal.lua             collection books (v0.11): Field Journal + Blueprint Binder share one account-wide store
+    GnomishData.lua         Gnomish Engineering curated questions + 45 blueprint pages (original writing)
+    GnomishGen.lua          Gnomish Engineering (module #5): grid engine (moves, turns, loops, BFS), 15 generators, checker
     Art.lua                 posed art rules: pose per event/subject, head crops, Sprocket states, fallbacks
     SkillIcons.lua          per-skill in-game icon paths
     BoardingData.lua        Murloc Boarding Party crew orders + Tidehunter sentences (original writing)
@@ -784,10 +838,11 @@ AzerothAcademy/
   UI/                       Widgets (+ reveal/pulse/count-up animations), Hub (+ profile/home), Guide (Fizzwick strip,
                             parrot, cameo card, rank-up celebration), Lessons (skill list/problem/reward for any
                             module), Trial (trial intro/result), ParentPanel, Minimap (minimap button), Flight (flight watcher + toast),
-                            Boarding (Murloc Boarding Party: setup, ship deck, result), Journal (Field Journal),
+                            Boarding (Murloc Boarding Party: setup, ship deck, result), Journal (Field Journal and
+                            Blueprint Binder), Widgets.Grid (Gnomish command grid),
                             Duel (Duel of Wits: setup + waiting room, invite pop-up, race, results)
-  Media/Sounds/             23 original sound effects (.ogg) + README.md (events, fallbacks, prompts, voice notes)
-  Media/Sounds/VO/          21 original Fizzwick voice clips (.ogg)
+  Media/Sounds/             24 original sound effects (.ogg) + README.md (events, fallbacks, prompts, voice notes)
+  Media/Sounds/VO/          23 original Fizzwick voice clips (.ogg)
   Media/Art/                Hex's posed art: 13 x 512 full figures + 13 x 256 head crops (TGA), Manifest.lua, README.md
   tools/convert_art.sh      PNG -> 512 TGA + 256 head crops (ImageMagick) + manifest writer
   tools/make_heads.py       face-centered 256 head-and-chest crops (Python, Pillow + numpy)
@@ -891,6 +946,25 @@ originals and face-centered head crops, and wrote a 26-entry manifest.
 For v0.5, `tools/convert_art.sh` was run with ImageMagick 7.1.2 on test PNGs. It produced 512x512 RGBA TGAs, a 1024x256 (4-frame) and a 2048x256 (8-frame) strip, and a correct manifest. Removed files dropped out of the manifest, and a bad `STRIP_FRAMES` was rejected.
 
 ## Changelog
+
+**v0.11.0**
+- **Gnomish Engineering (programming), subject #5:** 15 skills across Initiate / Adept / Magister with the usual
+  Spark → Rune → Glyph mastery, placement trial ("The Tinker's Test Bench"), spaced review, mastery exam, shards,
+  bonus minutes and the parent report. Host: Tinker Nixa Sprocketwhirl; star: Boltby the clockwork critter (both original).
+- **Command-grid puzzles:** a pure-Lua grid engine (absolute moves, Forward/Turn left/Turn right, nested loops, walls,
+  BFS shortest paths). Where-does-it-stop puzzles letter the real end square plus one-mistake-away decoys; program
+  choices are replayed so only the answer reaches the gear; debugging puzzles have exactly one fixable step.
+  `W.Grid` draws the grid (in-game icons) on the problem card and in Duel of Wits races.
+- **Blueprint Binder:** 45 gadget blueprints. The Field Journal code became a shared collection system
+  (`Core/Journal.lua`, books keyed by module, one account-wide store, per-book strings/events/sounds); the journal view,
+  reward screen, banner and report now work for any book. No schema change.
+- **Duel of Wits:** Gnomish Engineering is a duel subject; the setup screen lays subjects out 4 per row when there are more than 6.
+- **Fizzwick:** 5 new events (round start, right, wrong, new blueprint, binder) with 15 lines, 2 new voice clips and the
+  `gears` sound effect. (ElevenLabs: 306 credits for this push's whole audio batch, which also covers v0.12/v0.13 lines.)
+- **Slash:** `/aa gnomish` (`engineering`, `code`), `/aa blueprints` (`binder`).
+- **Tests:** a reusable subject suite in the harness (registration, book, curated data, generator sweep, engine,
+  report, deterministic duel sets) plus section 24 (grid engine + replay of every grid puzzle), and a reusable UI smoke
+  pass for subjects with a book.
 
 **v0.10.0**
 - **Duel of Wits, multiplayer learning races:** challenge your party/raid, guild or one player; 2-5 racers; any subject

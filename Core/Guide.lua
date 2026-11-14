@@ -23,6 +23,8 @@ G.EVENTS = {
   "NATSTART", "NATCORRECT", "NATWRONG", "NATSPECIMEN", "NATJOURNAL", "NATFLIGHT",
   -- v0.10: Duel of Wits
   "DUELINVITE", "DUELSTART", "DUELWIN", "DUELDONE", "DUELWAIT",
+  -- v0.11: Gnomish Engineering
+  "GESTART", "GECORRECT", "GEWRONG", "GEBLUEPRINT", "GEBINDER",
 }
 
 -- Who can appear and how the UI should try to show them. Model IDs are tried in

@@ -308,3 +308,73 @@ function W.FramedIcon(parent, size, texture)
   icon.border = border
   return icon
 end
+
+-- v0.11: command grid for Gnomish Engineering puzzles (also drawn in duels).
+-- spec = { w, h, bot = {x, y, dir}, goal = {x, y}, walls = {{x, y}}, coins = {{x, y}},
+--          marks = {{x, y, label}} } with x/y 1-based and y = 1 the top row.
+-- Pictures are in-game icons loaded at runtime.
+W.GRID_ICONS = {
+  bot = "Interface\\Icons\\Ability_Mount_MechaStrider",
+  goal = "Interface\\Icons\\INV_Misc_Gear_01",
+  wall = "Interface\\Icons\\INV_Stone_01",
+  coin = "Interface\\Icons\\INV_Misc_Coin_01",
+}
+W.GRID_ARROWS = { N = "^", E = ">", S = "v", W = "<" }
+function W.Grid(parent, maxSide, cell)
+  maxSide, cell = maxSide or 6, cell or 22
+  local g = CreateFrame("Frame", nil, parent)
+  g:SetSize(maxSide * cell, maxSide * cell)
+  g.cells, g.cell, g.maxSide = {}, cell, maxSide
+  for y = 1, maxSide do
+    for x = 1, maxSide do
+      local bg = g:CreateTexture(nil, "BACKGROUND")
+      bg:SetSize(cell - 2, cell - 2)
+      bg:SetPoint("TOPLEFT", (x - 1) * cell + 1, -((y - 1) * cell + 1))
+      local icon = g:CreateTexture(nil, "ARTWORK")
+      icon:SetSize(cell - 4, cell - 4)
+      icon:SetPoint("CENTER", bg, "CENTER", 0, 0)
+      local label = W.Text(g, math.floor(cell * 0.6), "", W.GOLD, "CENTER", "OVERLAY")
+      label:SetPoint("CENTER", bg, "CENTER", 0, 0)
+      g.cells[(y - 1) * maxSide + x] = { bg = bg, icon = icon, label = label }
+    end
+  end
+  function g:Draw(spec)
+    if type(spec) ~= "table" then self:Hide() return end
+    local w, h = math.min(spec.w or 5, self.maxSide), math.min(spec.h or 5, self.maxSide)
+    local kind = {}
+    local function put(list, k)
+      for _, c in ipairs(list or {}) do kind[c[2] * 100 + c[1]] = { k = k, label = c[3] } end
+    end
+    put(spec.walls, "wall"); put(spec.coins, "coin")
+    if spec.goal then put({ spec.goal }, "goal") end
+    put(spec.marks, "mark")
+    if spec.bot then put({ { spec.bot[1], spec.bot[2], W.GRID_ARROWS[spec.bot[3] or "E"] } }, "bot") end
+    for y = 1, self.maxSide do
+      for x = 1, self.maxSide do
+        local c = self.cells[(y - 1) * self.maxSide + x]
+        if x <= w and y <= h then
+          local k = kind[y * 100 + x]
+          C.SetColor(c.bg, 0.16, 0.13, 0.24, 0.95)
+          c.bg:Show()
+          c.label:SetText(k and k.label or "")
+          c.label:Show()
+          if k and k.k ~= "mark" then
+            c.icon:SetTexture(W.GRID_ICONS[k.k])
+            c.icon:SetAlpha(k.k == "bot" and 1 or 0.9)
+            c.icon:Show()
+          else
+            c.icon:Hide()
+          end
+          if k and k.k == "mark" then C.SetColor(c.bg, 0.3, 0.22, 0.05, 0.95) end
+        else
+          c.bg:Hide(); c.icon:Hide(); c.label:Hide()
+        end
+      end
+    end
+    self.spec = spec
+    self:SetSize(w * self.cell, h * self.cell)
+    self:Show()
+  end
+  g:Hide()
+  return g
+end
