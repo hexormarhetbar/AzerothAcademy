@@ -126,8 +126,20 @@ function PlaySound(id, channel) soundsPlayed = soundsPlayed + 1; lastKit, lastCh
 local CUSTOM_FILES = { ["Interface\\AddOns\\AzerothAcademy\\Media\\Sounds\\correct.ogg"] = true }
 -- v0.8: Fizzwick's voice clips (Media\Sounds\VO\) "exist" unless listed in voiceFail
 local voicePlays, voiceStops, voiceFail, voiceHandle = {}, {}, {}, 100
+-- v1.2: World Tongues clips (Media\Sounds\Tongues\) "exist" when the real file is in the repo,
+-- unless tongueFail is set (a client without the files)
+local tonguePlays, tongueFail = {}, false
 function PlaySoundFile(path, channel)
   fileTries[path] = (fileTries[path] or 0) + 1
+  if path:find("\\Tongues\\", 1, true) then
+    local rel = path:gsub("^Interface\\AddOns\\AzerothAcademy\\", ""):gsub("\\", "/")
+    local fh = io.open(rel, "rb")
+    if fh then fh:close() end
+    if tongueFail or not fh then return false end
+    voiceHandle = voiceHandle + 1
+    tonguePlays[#tonguePlays + 1] = { path = path, channel = channel, handle = voiceHandle }
+    return true, voiceHandle
+  end
   if path:find("\\VO\\", 1, true) then
     if voiceFail[path:match("([%w_]+)%.ogg$")] then return false end
     voiceHandle = voiceHandle + 1
@@ -2395,6 +2407,24 @@ step("v1.1 language / areas / World Tongues", function()
   click("Study the Lessons")
   if ns.Hub.current ~= "tonguesstudy" then luaFail("study view opens") end
   if not visibleText("^あ  a") and not visibleText("あ") then fail("study page shows the kana chart") end
+  -- v1.2: every hiragana line has a Play button that plays its clip
+  do
+    local sv = ns.Hub.GetView("tonguesstudy")
+    local shown = 0
+    for _, b in ipairs(sv.plays) do if b:IsShown() then shown = shown + 1 end end
+    if shown ~= 8 then luaFail("study page: 8 Play buttons on the first hiragana page, got " .. shown) end
+    local before = #tonguePlays
+    sv.plays[1]:Click()
+    local last = tonguePlays[#tonguePlays]
+    if #tonguePlays ~= before + 1 or not last.path:find("Tongues\\ja_k_a%.ogg$") then luaFail("study Play plays ja_k_a.ogg") end
+    if last.channel ~= ns.SoundEvents.Channel(ns.Progress.account.settings.sound) then luaFail("Tongues clips use the addon's sound channel, got " .. tostring(last.channel)) end
+    ns.Progress.account.settings.sound.enabled = false
+    sv:Render()
+    for _, b in ipairs(sv.plays) do if b:IsShown() then luaFail("sound off hides the study Play buttons") break end end
+    if ns.Compat.PlayTongue(ns.TonguesAudio.Clip("ja", "か")) then luaFail("sound off: no clip plays") end
+    ns.Progress.account.settings.sound.enabled = true
+    sv:Render()
+  end
   click("^Next lesson >$"); click("^Next lesson >$")
   click("^>$")
   click("^Practice$")
@@ -2403,6 +2433,24 @@ step("v1.1 language / areas / World Tongues", function()
     if not (pvw.courseFont and pvw.courseFont:find("AzAcadSans")) and ns.Compat.CLIENT_LOCALE ~= "jaJP" then
       -- every non-Japanese client draws the course with a bundled font that has kana and kanji
       luaFail("World Tongues round uses the bundled course font, got " .. tostring(pvw.courseFont))
+    end
+    -- v1.2 Listen: the card autoplays the clip and shows Replay; a clip that will not play
+    -- falls back to the written question and hides the button
+    do
+      local p = ns.Lessons.session.problem
+      p.audioFile, p.fallbackText = "ja_k_ka", "FALLBACK-TEXT"
+      local before = #tonguePlays
+      pvw:Render()
+      if #tonguePlays ~= before + 1 or not pvw.playBtn:IsShown() then luaFail("Listen card autoplays and shows Replay") end
+      click("^Replay$")
+      if #tonguePlays ~= before + 2 then luaFail("Replay plays the clip again") end
+      tongueFail = true
+      p.audioFile, p.audioPlayed = "ja_k_ki", nil
+      pvw:Render()
+      if pvw.playBtn:IsShown() or not visibleText("^FALLBACK%-TEXT$") then luaFail("missing clip: card falls back to the written question") end
+      if not ns.TonguesAudio.state.missing.ja_k_ki then luaFail("missing clip is remembered") end
+      tongueFail = false
+      ns.TonguesAudio.state = ns.TonguesAudio.NewState()
     end
     local guard = 0
     while ns.Lessons.session and guard < 40 do
@@ -2442,9 +2490,9 @@ runTimers()
 update(1)
 
 scanTexts("end")
-io.write(string.format("UI smoke (interface %d" .. (LEGACY and ", legacy fallbacks" or "") .. (LOCALE ~= "enUS" and (", locale " .. LOCALE) or "") .. ", flavor %s): %d frames created, %d sounds, %d voice clips, %d chat lines, %d errors" ..
+io.write(string.format("UI smoke (interface %d" .. (LEGACY and ", legacy fallbacks" or "") .. (LOCALE ~= "enUS" and (", locale " .. LOCALE) or "") .. ", flavor %s): %d frames created, %d sounds, %d voice clips, %d language clips, %d chat lines, %d errors" ..
   (LOCALE ~= "enUS" and (", " .. textSkipped .. " English-only text checks skipped, " .. scannedTexts .. " on-screen texts scanned") or "") .. "\n",
-  INTERFACE, tostring(ns.Compat.flavor), #allFrames, soundsPlayed, #voicePlays, #chat, errors))
+  INTERFACE, tostring(ns.Compat.flavor), #allFrames, soundsPlayed, #voicePlays, #tonguePlays, #chat, errors))
 if exportText then io.write("--- export sample ---\n" .. exportText:sub(1, 900) .. "\n") end
 _ = realPrint
 os.exit(errors == 0 and 0 or 1)

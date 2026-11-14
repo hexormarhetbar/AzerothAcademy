@@ -3785,6 +3785,121 @@ do
   for _, loc in ipairs({ "enUS", "deDE", "frFR", "esES", "ptBR", "itIT", "ruRU" }) do need("AzAcadSans-JP.ttf", "Locales/" .. loc .. ".lua") end
   need("AzAcadSans-KR.ttf", "Locales/koKR.lua"); need("AzAcadSans-SC.ttf", "Locales/zhCN.lua"); need("AzAcadSans-TC.ttf", "Locales/zhTW.lua")
   ok(slurp("Media/Fonts/OFL.txt"):find("SIL Open Font License", 1, true), "font license shipped")
+  need("AzAcadSans-JP.ttf", "Core/TonguesClips.lua"); need("AzAcadSans-JP.ttf", "Core/TonguesAudio.lua")
+
+  -- (h) v1.2 World Tongues audio: every in-scope entry has a clip, files are mono 44.1 kHz
+  -- Ogg Vorbis, Listen questions are fair, and everything degrades without sound
+  local TA = AR.TonguesAudio
+  local function allHave(list, course, what)
+    local miss = {}
+    for _, e in ipairs(list) do if not TA.Clip(course, e[1]) then miss[#miss + 1] = e[1] end end
+    ok(#miss == 0, what .. ": every entry has a clip" .. (#miss > 0 and (" (missing " .. table.concat(miss, " ") .. ")") or ""))
+  end
+  allHave(TD.hiragana, "ja", "hiragana (46)"); allHave(TD.hiraganaVoiced, "ja", "hiragana sound marks (25)")
+  allHave(TD.katakana, "ja", "katakana (share the hiragana clips)"); allHave(TD.katakanaVoiced, "ja", "katakana sound marks")
+  local jaLessons = {}
+  for _, l in ipairs(TD.courses.ja.lessons) do jaLessons[l.id] = l end
+  allHave(jaLessons.greetings.entries, "ja", "Japanese greetings"); allHave(jaLessons.phrases.entries, "ja", "trader's phrasebook")
+  for i, d in ipairs(TD.dialogues) do allHave(d, "ja", "co-op dialogue " .. i) end
+  local esN = 0
+  for _, l in ipairs(TD.courses.es.lessons) do allHave(l.entries, "es", "Spanish " .. l.id); esN = esN + #l.entries end
+  ok(esN == 20 and TA.Count("es") == 20, "Spanish starter: 20 entries, 20 clips")
+  ok(#TD.hiragana == 46 and #TD.hiraganaVoiced == 25, "46 + 25 hiragana")
+  ok(TA.Clip("ja", "ぢ") == TA.Clip("ja", "じ") and TA.Clip("ja", "づ") == TA.Clip("ja", "ず") and TA.Clip("ja", "カ") == TA.Clip("ja", "か"),
+    "homophones and katakana share the hiragana clip")
+  ok(TA.SoundKey("ja", "を") == TA.SoundKey("ja", "お") and TA.SoundKey("ja", "ヲ") == TA.SoundKey("ja", "お"), "を / ヲ sound like お")
+  local files, listed, bad = {}, 0, {}
+  for line in io.lines("tools/tongues_clips.tsv") do
+    local clip = line:match("^([%w_]+)\t")
+    if clip and not line:find("^#") then files[clip] = true; listed = listed + 1 end
+  end
+  for clip in pairs(files) do
+    local fh = io.open("Media/Sounds/Tongues/" .. clip .. ".ogg", "rb")
+    if not fh then bad[#bad + 1] = clip .. " (missing)" else
+      local head = fh:read(200); local size = fh:seek("end"); fh:close()
+      local at = head:find("\1vorbis", 1, true)
+      local ch = at and head:byte(at + 11)
+      local b1, b2, b3, b4 = head:byte(at and at + 12 or 1, at and at + 15 or 4)
+      local rate = at and (b1 + b2 * 256 + b3 * 65536 + b4 * 16777216)
+      if head:sub(1, 4) ~= "OggS" or ch ~= 1 or rate ~= 44100 or size < 1500 or size > 120000 then
+        bad[#bad + 1] = clip .. string.format(" (ch %s, %s Hz, %d bytes)", tostring(ch), tostring(rate), size)
+      end
+    end
+  end
+  ok(#bad == 0, "every clip is mono 44.1 kHz Ogg Vorbis of sane size" .. (#bad > 0 and (": " .. table.concat(bad, ", ")) or ""))
+  ok(listed == 121, "121 clips listed in tools/tongues_clips.tsv, got " .. listed)
+  local clipN = 0
+  for _, list in pairs(AR.TonguesClipData) do for _ in pairs(list) do clipN = clipN + 1 end end
+  ok(clipN == listed, "Core/TonguesClips.lua matches the TSV (re-run tools/gen_tongues_clips.py)")
+  -- Listen questions: generated, fair (no two buttons that sound alike), with a written fallback
+  local listenKinds, listenBad, listenN = {}, 0, 0
+  for _, m in ipairs(WT.MODULES) do
+    for _, nodeId in ipairs(AR.Modules.Nodes(m.id, "everyone")) do
+      for level = 1, 5 do
+        for tier = 1, 3 do
+          for _ = 1, math.max(3, math.floor(ITER / 40)) do
+            local p = AR.Modules.Generate(nodeId, level, tier, "practice")
+            if p.audioFile then
+              listenN = listenN + 1
+              listenKinds[p.kind] = true
+              local lesson = WT.LESSON_BY_NODE[nodeId]
+              local good = p.fallbackText and p.fallbackText ~= "" and p.audio == TA.DIR .. p.audioFile .. ".ogg"
+              if p.mode == "choice" and p.kind == "listenNative" then
+                local keys = {}
+                for _, c in ipairs(p.choices) do
+                  local k = TA.SoundKey(lesson.course, c) or c
+                  if keys[k] then good = false end
+                  keys[k] = true
+                end
+              end
+              if not good then listenBad = listenBad + 1 end
+            end
+          end
+        end
+      end
+    end
+  end
+  for _, k in ipairs({ "listenNative", "listenReading", "listenMeaning" }) do ok(listenKinds[k], "question type used: " .. k) end
+  ok(listenN > 0 and listenBad == 0, "Listen questions carry a clip and a written fallback, never two buttons that sound alike (" .. listenN .. ")")
+  local hiraLesson = WT.LESSON_BY_NODE.wt_ja_hira
+  local woEntry
+  for _, e in ipairs(TD.hiragana) do if e[1] == "を" then woEntry = e end end
+  local pWo = WT.Q.listenReading(hiraLesson, woEntry, TD.hiragana, TA.Clip("ja", "を"))
+  pWo.mode = "input"
+  ok(WT.Check(pWo, "o") and WT.Check(pWo, "wo"), "Listen を: typing o or wo is right (it sounds like お)")
+  -- co-op phrasebook: the partner's line comes with its clip; the set itself is unchanged
+  local pb = WT.PhrasebookSet(AR.Util.NewRNG(7), 5, 1)
+  local pbAudio = 0
+  for _, p in ipairs(pb) do if p.audioFile then pbAudio = pbAudio + 1 end end
+  ok(pbAudio == 5, "co-op: every reply question plays the partner's line")
+  -- sound off: no Listen questions, no co-op audio, nothing plays
+  local mOff = newNS(); mOff.Progress.Bind({}, {})
+  mOff.Progress.account.settings.sound = mOff.Progress.account.settings.sound or {}
+  mOff.Progress.account.settings.sound.enabled = false
+  local offAudio = 0
+  for _ = 1, 300 do
+    local p = mOff.Modules.Generate("wt_ja_hira", 2, 1, "practice")
+    if p.audioFile then offAudio = offAudio + 1 end
+    p = mOff.Modules.Generate("wt_es_greetings", 2, 1, "practice")
+    if p.audioFile then offAudio = offAudio + 1 end
+  end
+  for _, p in ipairs(mOff.Tongues.PhrasebookSet(mOff.Util.NewRNG(7), 5, 0)) do if p.audioFile then offAudio = offAudio + 1 end end
+  ok(offAudio == 0, "sound off: no Listen questions and no co-op clips")
+  local pbOff = mOff.Tongues.PhrasebookSet(mOff.Util.NewRNG(7), 5, 1)
+  local same = true
+  for i, p in ipairs(pbOff) do if p.answer ~= pb[i].answer or table.concat(p.choices, "|") ~= table.concat(pb[i].choices, "|") then same = false end end
+  ok(same, "co-op: sound on or off, both players get the same questions")
+  -- missing files: a failed clip is skipped; three failures before anything plays = no audio
+  local st = TA.NewState()
+  local ka = TA.Clip("ja", "か", st)
+  TA.Result(ka, false, st)
+  ok(TA.Clip("ja", "か", st) == nil and TA.Available(nil, st), "a clip that fails is remembered as missing")
+  TA.Result(TA.Clip("ja", "き", st), false, st); TA.Result(TA.Clip("ja", "く", st), false, st)
+  ok(not TA.Available(nil, st), "three failures before any clip plays: audio off for the session")
+  local st2 = TA.NewState()
+  TA.Result(TA.Clip("ja", "か", st2), true, st2)
+  for _, k in ipairs({ "き", "く", "け", "こ" }) do TA.Result(TA.Clip("ja", k, st2), false, st2) end
+  ok(TA.Available(nil, st2), "after a clip has played, single missing files do not switch audio off")
 end
 
 -------------------------------------------------------------------------
