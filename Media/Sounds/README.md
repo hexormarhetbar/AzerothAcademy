@@ -54,6 +54,10 @@ that file again until the next `/reload`. You can replace any file with your own
 | `stamp.ogg` | A new stamp is added to the Library Passport (v0.12) | 0.5-0.9 s | IG_ABILITY_PAGE_TURN (836), then IG_QUEST_LIST_COMPLETE (878) |
 | `drill.ogg` | A Mechanics Academy round starts, or a new tactics card is earned (v0.13) | 0.6-1.0 s | READY_CHECK (8960) |
 
+## World Tongues clips (v1.2.0)
+
+The language clips live in `Tongues/` with their own README (voices, prompts, speech-to-text check).
+
 ## Sound-effect briefs
 
 The shipped files were made with the ElevenLabs *Sound Effects* generator

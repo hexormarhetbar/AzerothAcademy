@@ -5,7 +5,7 @@
 local ADDON, ns = ...
 
 ns.ADDON = ADDON or "AzerothAcademy"
-ns.VERSION = "1.1.0"
+ns.VERSION = "1.2.0"
 ns.Env = ns.Env or {}
 
 -- v1.0 locales: each Locales/<code>.lua fills its table through ns.WantLocale.

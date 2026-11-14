@@ -674,3 +674,24 @@ UI position, shards, and stats are untouched. The report notes "carried over fro
   needs (`D.ProtoFor`): classic subjects stay version 1 for v1.0 peers. A language INV arriving as version 1 is refused.
   Co-op phrasebook: roles come from the racer order in STA, so both sides agree; `D.TeamUp` turns the ranking into one
   team result with no win bonus.
+
+## v1.2.0: World Tongues audio
+
+- **Data.** `tools/tongues_clips.tsv` (clip, course, native text exactly as in `TonguesData`, seconds) is the source;
+  `tools/gen_tongues_clips.py` writes `Core/TonguesClips.lua` (`ns.TonguesClipData[course][native] = { file, seconds }`).
+  The .toc loads it, then `Core/TonguesAudio.lua`, before `TonguesGen.lua`.
+- **Lookup (`ns.TonguesAudio`, pure).** `TA.Clip(course, native)` → clip or nil. Katakana alias the hiragana clip at the
+  same index when the readings match; ぢ/づ alias じ/ず. `TA.SoundKey` groups entries that sound alike (を → お), and
+  Listen distractors are drawn only from other sound keys, so a Listen button question has exactly one right answer.
+- **Availability.** `TA.Available()` = sound not switched off (`settings.sound.enabled ~= false`) and not `state.broken`.
+  `C.PlayTongue(clip)` reports back through `TA.Result`: a failure marks the file missing for the session; failing the
+  first `TA.MAX_FAILS` (3) tries before anything played sets `broken` (files not installed). Session state only, not saved.
+- **Questions.** `WT.Generate` asks `WT.ListenType` first; when an entry has a playable clip, one question in three is a
+  Listen question (`p.audio`, `p.audioFile`, `p.audioDur`, `p.fallbackText`). Clip availability is checked at
+  generation time, so with sound off no Listen question is ever made. Listen reading questions go through the normal
+  `InputMode` (typed for Magister from Rune / Adept on Glyph); native and meaning ones are button-only.
+- **UI.** `Lessons` problem view: `v:PlayClip()` on render (autoplay) and on Replay; if it never played, the card
+  swaps to `fallbackText` and hides the button. `Tongues` study view: a Play button per line, shown only when a clip
+  exists and audio is available (a failed press re-renders, hiding it). `Duel` race: co-op replies carry the partner
+  line's clip (picked without the seeded RNG, so both players' sets stay identical) and get a Replay button.
+

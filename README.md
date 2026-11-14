@@ -1,4 +1,4 @@
-# Azeroth Academy v1.1.0
+# Azeroth Academy v1.2.0
 
 A free learning addon for kids ages 5 to 13. Lessons are framed as Academy quests in Azeroth.
 This build has the **Main Hub** and two subjects: **Rune Forger** (math) and, new in v0.3,
@@ -213,8 +213,8 @@ sentences and 10 phrases. Each kanji teaches one common reading (for example 日
 with the course button on the study page, or in **Settings → Areas to Show**.
 
 **Question types:** kana → romaji, romaji → kana, meaning → word, word → meaning, matching (three pairs, pick the
-right set), number ↔ word, fill-in-the-blank sentences and particles. There is no audio, by design: no recorded or
-cloned voices.
+right set), number ↔ word, fill-in-the-blank sentences and particles, and (v1.2.0) **Listen** questions with real
+audio (see below).
 
 **Romaji** is Hepburn, written with doubled vowels instead of macrons (`ohayou`, `kyuu`, `gakusei`) so it can be typed on
 any keyboard, and with は read *wa* and を read *o* when they are particles. When you type, case, spaces and
@@ -225,6 +225,30 @@ kana word, sentence and dialogue line: its romaji must be the Hepburn reading of
 **Study the Lessons** (the blue link on the skill list) opens a phrasebook page for each lesson, 8 entries per page,
 with the kana chart, words and meanings, notes, and a **Practice** button. The skill list pages through lessons 5 at a
 time.
+
+## World Tongues audio (v1.2.0)
+
+World Tongues can now be **heard**. 121 short clips (1.3 MB in all) cover every hiragana (46 + 25 with sound marks),
+the 12 Japanese greetings, the 10 trader's phrasebook lines, every co-op dialogue line and all 20 Spanish starter items.
+Katakana use the hiragana clip with the same sound (ア = あ), and homophones share one clip (ぢ = じ, づ = ず).
+
+- **Voices generated with ElevenLabs.** Two **original voices designed from a text description** for this addon
+  (a Tokyo-standard Japanese teacher and a neutral Latin American Spanish teacher), on the multilingual v2 model.
+  **No voice cloning and no recordings of real people.** Each clip was generated from the kana / Japanese script (or
+  the Spanish spelling), checked with ElevenLabs speech-to-text, regenerated when it did not match, and mastered with
+  `tools/master_audio.py` (mono 44.1 kHz Ogg Vorbis). Details: `Media/Sounds/Tongues/README.md`.
+- **Listen questions.** About one question in three, for an entry that has a clip: the clip plays when the card
+  appears, and a **Replay** button (top right of the card) plays it again. Then pick the kana or word you heard, pick
+  what it means, or (Magister from Rune, Adept on Glyph) **type the romaji**. Buttons never offer two answers that
+  sound the same (を is said like お, so typing `o` is right for を).
+- **Study page.** Every entry with a clip has a **Play** button beside it.
+- **Co-op phrasebook.** The partner's line plays when your turn comes, with a Replay button. The written line stays
+  on the card, and both players still get the same questions whether their sound is on or off.
+- **Sound settings are respected.** Clips use the same channel and volume as Fizzwick's voice and sound effects, and
+  **Settings → sound off** turns them off too. With sound off there are no Listen questions and no Play buttons.
+- **No audio, no problem.** If a clip will not play (file missing, sound off mid-round), the card switches to the
+  written question and the button goes away. If the first three clips all fail, audio is treated as unavailable for
+  the session. Everything else in World Tongues works exactly as in v1.1.
 
 ## Install
 
@@ -1039,6 +1063,30 @@ Azeroth Academy v0.10.0** (two accounts, or a friend), both with an age band pic
 209. [ ] With duels turned off in Settings, a language-duel invite is declined.
 210. [ ] Ask a Japanese speaker to skim the Japanese course (readings and meanings) and send corrections.
 
+**v1.2.0: World Tongues audio**
+
+211. [ ] Hiragana study page: each line has a **Play** button. Press a few (あ, か, し, つ, ん): the sound is clear, not cut off, and about as loud as Fizzwick.
+212. [ ] Play a Hiragana round at Initiate. Some questions say "Listen..." and play the sound by themselves; **Replay** plays it again; one of the three buttons matches.
+213. [ ] Same at Magister on Rune: a Listen question asks you to **type** the romaji. Typing `o` for を counts as right.
+214. [ ] Greetings and the Trader's Phrasebook: Listen → meaning questions. The Japanese sounds natural (ask a speaker if you can).
+215. [ ] Spanish course: Play buttons on the study page, and Listen questions in a Spanish Greetings round. The Spanish sounds natural.
+216. [ ] Turn sound **off** in Settings: no Listen questions, no Play buttons, nothing plays. Turn it back on and they return.
+217. [ ] Lower the sound-effects (or master) volume: language clips follow it like the other sounds.
+218. [ ] **Phrasebook (co-op)** with a friend: the partner's line plays when your turn comes, and Replay works. A friend on v1.1 can still play with you.
+219. [ ] Rename or remove `Media/Sounds/Tongues` and reload: World Tongues still works, with written questions only and no errors.
+
+## Known limits (v1.2.0)
+
+- **Not run in a real game client yet** (headless harness + mock-UI smoke tests only). Loudness, timing of the autoplay
+  and the button placement need a look in game.
+- **Single kana are very short** (about 0.2-0.3 s each; い is 0.16 s). That is how they are said, but Replay may get a lot of use.
+- **Homophones share a clip** (じ/ぢ, ず/づ; を is said like お), so Listen questions never ask to tell them apart.
+- **Colors, family, food, numbers, sentences and kanji have no audio yet** (this release covers hiragana, katakana via
+  the hiragana clips, greetings, the phrasebook, the dialogues and the Spanish starter). Only those get Listen questions.
+- The speech-to-text check was done by machine (ElevenLabs Scribe), not by a native speaker; ち, つ, ふ, へ, り and る were
+  confirmed by their place in a longer checked run rather than one by one.
+- A typed answer to a Spanish Listen question is checked against the unaccented spelling (`como estas`); accents are not required.
+
 ## Known limits (v1.1.0)
 
 - **Nothing in v1.1.0 has run in a real game client yet.** It was tested headlessly (harness + mock-UI smoke tests on
@@ -1055,7 +1103,7 @@ Azeroth Academy v0.10.0** (two accounts, or a friend), both with an age band pic
 - The co-op phrasebook needs **exactly 2** players; kana/word races take 2 to 5.
 - Loading every locale for live switching costs about 1 MB more memory than v1.0 (which loaded only the client's).
   The bundled fonts add about 1.4 MB to the download; a font only loads when it is used.
-- No audio in World Tongues (no recorded or cloned voices), so there is no listening practice.
+- No audio in World Tongues (no recorded or cloned voices), so there is no listening practice. *(Fixed in v1.2.0.)*
 
 ## Known limits (v1.0.0-rc)
 
@@ -1231,6 +1279,8 @@ AzerothAcademy/
                             (v1.1: kana race, own-course word race, co-op phrasebook)
     TonguesData.lua         World Tongues data (v1.1): kana tables, words, numbers 1-100, 60 kanji, dialogues, Spanish starter
     TonguesGen.lua          World Tongues question builders, romaji checker, phrasebook sets; registers tongues_ja / tongues_es
+    TonguesClips.lua        v1.2: World Tongues clip table (GENERATED by tools/gen_tongues_clips.py)
+    TonguesAudio.lua        v1.2: which clip goes with an entry, sound-alike keys, missing-file and sound-off rules
   Locales/                  enUS + 9 translated tables; Init.lua: fallback, live switching (SetLocale), picker list
   Adapters/Compat.lua       client detection and every version-sensitive API call
   UI/                       Widgets (+ reveal/pulse/count-up animations), Hub (+ profile/home), Guide (Fizzwick strip,
@@ -1243,12 +1293,15 @@ AzerothAcademy/
   Media/Fonts/              v1.1: AzAcadSans-JP/KR/SC/TC.ttf (Noto Sans subsets, SIL OFL 1.1), OFL.txt, coverage.txt, README.md
   Media/Sounds/             24 original sound effects (.ogg) + README.md (events, fallbacks, prompts, voice notes)
   Media/Sounds/VO/          23 original Fizzwick voice clips (.ogg)
+  Media/Sounds/Tongues/     v1.2: 121 World Tongues clips (.ogg, ElevenLabs original designed voices) + README.md
   Media/Art/                Hex's posed art: Fizzwick/Sprocket 13 x 512 full figures + 13 x 256 head crops (TGA), Manifest.lua, README.md
                             + Zixi and Quill: 2 x 6 poses x (512 + 256 head crop) since v1.0.0-rc
   tools/convert_art.sh      PNG -> 512 TGA + 256 head crops (ImageMagick) + manifest writer
   tools/make_heads.py       face-centered 256 head-and-chest crops (Python, Pillow + numpy)
   tools/master_audio.py     master a generated clip: mono 44.1 kHz, trim, ~-16 LUFS, Ogg Vorbis q4 (ffmpeg + numpy)
   tools/build_fonts.py      rebuild the bundled font subsets from the Noto Sans sources (fontTools)
+  tools/tongues_clips.tsv   v1.2: World Tongues clip list (file, course, native text, seconds)
+  tools/gen_tongues_clips.py  v1.2: writes Core/TonguesClips.lua from the TSV
   tools/pack.py             build the release zip (leaves out tests/, .luacheckrc, git files, raw audio)
   Main.lua                  events, slash commands, combat hide/resume
   README.md, DESIGN.md
@@ -1348,6 +1401,23 @@ originals and face-centered head crops, and wrote a 26-entry manifest.
 For v0.5, `tools/convert_art.sh` was run with ImageMagick 7.1.2 on test PNGs. It produced 512x512 RGBA TGAs, a 1024x256 (4-frame) and a 2048x256 (8-frame) strip, and a correct manifest. Removed files dropped out of the manifest, and a bad `STRIP_FRAMES` was rejected.
 
 ## Changelog
+
+**v1.2.0**
+- **World Tongues audio:** 121 clips in `Media/Sounds/Tongues/` (hiragana 46 + 25, Japanese greetings, trader's
+  phrasebook, co-op dialogue lines, Spanish starter 20), generated with ElevenLabs (eleven_multilingual_v2) in two
+  original designed voices, no cloning; verified with ElevenLabs Scribe speech-to-text; mastered with
+  `tools/master_audio.py`. `tools/tongues_clips.tsv` → `tools/gen_tongues_clips.py` → `Core/TonguesClips.lua`.
+- `Core/TonguesAudio.lua`: clip lookup per course (katakana and homophones alias the hiragana clip), `SoundKey` for
+  sound-alike entries (を = お), sound-off and missing-file rules (a failed clip is skipped; three failures before any
+  clip plays switch audio off for the session).
+- **Listen questions** (`listenNative`, `listenReading`, `listenMeaning`): about one in three for entries with a clip,
+  only when sound is on; distractors never sound like the answer; every one carries a written `fallbackText`.
+- `C.PlayTongue` / `C.StopTongue` (same channel and on/off switch as the voice; a replay stops the clip before it).
+- UI: Play/Replay on the problem card (autoplay, falls back to text), Play buttons on the study page, Replay in the
+  co-op phrasebook race. 8 new strings in all 10 languages.
+- Tests: clip coverage, Ogg format (mono, 44.1 kHz), Listen fairness, を typed as `o`, sound-off and missing-file
+  fallbacks, co-op sets identical with sound on or off; the smoke test plays clips from the real files.
+- Duel protocol unchanged: v1.1 and v1.2 still duel and play the co-op phrasebook together.
 
 **v1.1.0**
 - **In-game language picker:** `Locales/Init.lua` keeps every locale in memory (`ns.WantLocale` always true;
@@ -1647,4 +1717,4 @@ For v0.5, `tools/convert_art.sh` was run with ImageMagick 7.1.2 on test PNGs. It
 
 ## License
 
-Azeroth Academy is released under the [MIT License](LICENSE). You are free to use, modify, and share it, as long as you keep the copyright notice and credit: "Azeroth Academy by HexorMarhetbar". Original art, sounds, and Professor Fizzwick's voice are part of the project and covered by the same license. The bundled fonts in `Media/Fonts` are not MIT: they are modified subsets of **Noto Sans JP, KR, SC and TC**, Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source', licensed under the **SIL Open Font License 1.1** (`Media/Fonts/OFL.txt`), and renamed "AzAcad Sans" as that license requires. World of Warcraft is a trademark of Blizzard Entertainment; this addon is fan-made and not affiliated with Blizzard.
+Azeroth Academy is released under the [MIT License](LICENSE). You are free to use, modify, and share it, as long as you keep the copyright notice and credit: "Azeroth Academy by HexorMarhetbar". Original art, sounds, and Professor Fizzwick's voice are part of the project and covered by the same license. Sounds and voices were generated with ElevenLabs; the World Tongues voices (v1.2) are original voices designed for this addon, with no voice cloning. The bundled fonts in `Media/Fonts` are not MIT: they are modified subsets of **Noto Sans JP, KR, SC and TC**, Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source', licensed under the **SIL Open Font License 1.1** (`Media/Fonts/OFL.txt`), and renamed "AzAcad Sans" as that license requires. World of Warcraft is a trademark of Blizzard Entertainment; this addon is fan-made and not affiliated with Blizzard.
