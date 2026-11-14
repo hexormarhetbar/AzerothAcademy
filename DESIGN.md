@@ -1,4 +1,4 @@
-# Azeroth Academy: Architecture (v0.13)
+# Azeroth Academy: Architecture (v0.14)
 
 ## Goals that shape the code
 1. **WoW Forever first, Retail second.** Forever (1.60.1, interface 16001) is a Mainline-family
@@ -237,6 +237,10 @@ The IDs were cross-checked on Wowhead's Classic and Retail NPC pages, and both l
 - `hidden = true`: no hub tile (`Modules.Visible()`).
 - `linkModule` + `linkKey`: a button at the bottom right of the skill list opens the linked module. Lore Chronicles links to the quiz, and **Story lessons** links back.
 - Saved data is unchanged: quiz progress lives under `char.modules.lorequiz.nodes`, like any other module.
+- **Cameo stories (v0.14):** data entries may carry `cameo = "thrall" | "magni"`. `LC.Draw` remembers the entry it
+  dealt (`LC.lastEntry`) and every Lore generator is wrapped to copy `cameo` onto the problem. `LC.CAMEOS` maps the tag
+  to a locale name; `UI/Lessons.lua` calls `GuideUI.Say("LORECAMEO", name)` once per problem outside trials. The
+  harness keeps the two leaders at equal counts in every band.
 
 ## Posed art (v0.5.1; slots since v0.5)
 

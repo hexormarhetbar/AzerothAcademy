@@ -32,6 +32,13 @@ D.SENTENCES = {
   { lv = 3, s = "The baby dragon sneezed, and a puff of smoke filled the room.", q = "What filled the room?", a = "a puff of smoke", d = { "a bright rainbow", "cold water" } },
   { lv = 3, s = "The orc chief smiled when the children sang a song for him.", q = "What made the chief smile?", a = "the children sang a song", d = { "the rain stopped", "he found gold" } },
   { lv = 3, s = "Every morning, the gnome checks that her robot has oil.", q = "What does the gnome check every morning?", a = "that her robot has oil", d = { "that her door is locked", "that her plants have water" } },
+  -- v0.14
+  { lv = 1, s = "The baby turtle crawled slowly to the warm sand.", q = "Where did the turtle crawl?", a = "to the warm sand", d = { "up a tree", "into a cave" } },
+  { lv = 1, s = "Kip the goblin has six shiny coins in his bag.", q = "How many coins does Kip have?", a = "six", d = { "two", "ten" } },
+  { lv = 2, s = "The old wizard kept his spell books on a high shelf.", q = "Where did the wizard keep his books?", a = "on a high shelf", d = { "under the bed", "in a boat" } },
+  { lv = 2, s = "Nola the night elf shared her berries with a hungry squirrel.", q = "Who did Nola share her berries with?", a = "a hungry squirrel", d = { "a sleepy owl", "a lost fox" } },
+  { lv = 3, s = "When the bell rang, the young dwarves ran outside to play in the snow.", q = "What made the dwarves run outside?", a = "the bell rang", d = { "the sun came out", "their mother called" } },
+  { lv = 3, s = "The troll fisher waited until the tide was low before walking out to the rocks.", q = "When did the fisher walk to the rocks?", a = "until the tide was low", d = { "after the storm", "at sunrise" } },
 }
 
 -- Tiny stories with a who / what / where question each.
@@ -100,6 +107,23 @@ D.STORIES = {
     who = { "Who helped the fawn?", "Sela", { "Hilda", "Nix" } },
     what = { "What did Sela help?", "a sick fawn", { "a lost kitten", "a hurt bird" } },
     where = { "Where did Sela help the fawn?", "in Ashenvale", { "in Tanaris", "in Ironforge" } } },
+  -- v0.14: cameo stories (Thrall and Magni, told the same way)
+  { lv = 1, cameo = "thrall", text = "Thrall rode his big gray wolf to a small farm. He helped a family fix their broken fence.",
+    who = { "Who rode the wolf?", "Thrall", { "Magni", "Gruk" } },
+    what = { "What did Thrall help fix?", "their broken fence", { "a leaky boat", "an old cart" } },
+    where = { "Where did Thrall ride?", "to a small farm", { "to the sea", "to a big castle" } } },
+  { lv = 1, cameo = "magni", text = "King Magni walked to the great forge in Ironforge. He made a tiny hammer for a dwarf girl.",
+    who = { "Who walked to the forge?", "King Magni", { "Thrall", "Tilly" } },
+    what = { "What did Magni make?", "a tiny hammer", { "a gold crown", "a big shield" } },
+    where = { "Where did Magni walk?", "to the great forge", { "to the lake", "to the market" } } },
+  { lv = 2, text = "Nessa the gnome flew her little plane over Loch Modan. She waved at the fishers below.",
+    who = { "Who flew the plane?", "Nessa", { "Brin", "Lono" } },
+    what = { "What did Nessa do to the fishers?", "She waved", { "She shouted", "She sang" } },
+    where = { "Where did Nessa fly?", "over Loch Modan", { "over the desert", "under the sea" } } },
+  { lv = 3, text = "Old Garo the tauren carved a wooden kodo for his grandson. He painted it bright blue by the fire.",
+    who = { "Who carved the kodo?", "Old Garo", { "Bo", "Mia" } },
+    what = { "What color was the kodo?", "bright blue", { "deep red", "plain brown" } },
+    where = { "Where did Garo paint it?", "by the fire", { "in the river", "on the roof" } } },
 }
 
 -- Three events in order (the passage shows them in order).
@@ -118,6 +142,10 @@ D.SEQUENCES = {
   { lv = 3, steps = { "The kodo drank from the river.", "It walked back to the herd.", "It fell asleep in the sun." } },
   { lv = 3, steps = { "Fizz checked the engine.", "She started her go-kart.", "She zoomed across the finish line." } },
   { lv = 3, steps = { "Grandma Tula lit the campfire.", "The children sat down.", "She told a story about the stars." } },
+  { lv = 1, steps = { "Kip found a seed.", "Kip planted it.", "A tall tree grew." } },
+  { lv = 2, steps = { "Thrall saddled his wolf.", "He rode to the farm.", "He helped fix the fence." } },
+  { lv = 2, steps = { "Magni lit the forge.", "He hammered the hot metal.", "He gave the girl a hammer." } },
+  { lv = 3, steps = { "The scout climbed the tall hill.", "She saw smoke in the valley.", "She ran back to warn the village." } },
 }
 
 ------------------------------------------------------------------------
@@ -195,6 +223,27 @@ D.PASSAGES_A = {
     feel = { "How did the workers probably feel when the dock creaked?", "worried", { "bored", "delighted", "sleepy" } },
     cause = { "Why did the workers add wooden posts?", "The dock creaked under the heavy crate.", { "The crane was too short.", "They wanted to build a house.", "The ships were too slow." } },
     vocab = { "unload", "take things off", { "put things on", "paint something", "break something" } } },
+  -- v0.14
+  { lv = 1, cameo = "thrall", text = "Thrall grew up far from other orcs, and for years he felt alone. One day he met a wise old orc who taught him to listen to the spirits of earth, wind, fire and water. Thrall practiced every day. In time he became a shaman, and he used his new wisdom to help his people find peace.",
+    main = { "Thrall learns patience and wisdom and uses it to help his people.", { "Thrall wants to live alone forever.", "Shamans never practice.", "Water is the strongest spirit." } },
+    feel = { "How did Thrall feel when he was young?", "lonely", { "proud", "silly", "sleepy" } },
+    cause = { "Why did Thrall become a shaman?", "A wise orc taught him and he practiced every day.", { "He found a magic hat.", "He won a race.", "His wolf taught him." } },
+    vocab = { "wisdom", "good sense that comes from learning", { "a kind of armor", "a loud noise", "a heavy stone" } } },
+  { lv = 1, cameo = "magni", text = "King Magni loved the great forge of Ironforge. Every morning he visited the smiths and asked about their work. When a young smith made a crooked axe, Magni laughed kindly and showed her how to hold the hammer. Her next axe was straight and strong, and Magni cheered louder than anyone.",
+    main = { "Magni helps a young smith improve by being patient and kind.", { "Magni never visits the forge.", "Crooked axes are the best kind.", "The young smith gives up." } },
+    feel = { "How did Magni probably feel when the new axe was straight?", "delighted", { "grumpy", "frightened", "bored" } },
+    cause = { "Why was the second axe straight?", "Magni showed her how to hold the hammer.", { "She used a different forge.", "The metal was magic.", "Another smith made it for her." } },
+    vocab = { "crooked", "bent, not straight", { "very shiny", "brand new", "too heavy" } } },
+  { lv = 2, text = "Every spring, the people of Westfall hold a scarecrow contest. This year a shy farm boy named Tam built a scarecrow wearing his grandfather's old hat. At first he was too timid to enter, but his sister cheered him on. Tam's scarecrow won second prize, and he wore the hat home with a big grin.",
+    main = { "A shy boy finds courage and does well in a contest.", { "Scarecrows scare away every bird.", "Tam's sister wins first prize.", "Westfall has no farms." } },
+    feel = { "How did Tam feel before he entered?", "timid", { "furious", "careless", "jealous" } },
+    cause = { "Why did Tam enter the contest?", "His sister cheered him on.", { "He wanted a new hat.", "His grandfather told him to stay home.", "He lost a bet." } },
+    vocab = { "timid", "shy and a little afraid", { "very tall", "loud and bossy", "quick and clever" } } },
+  { lv = 3, text = "The goblin trader Vexi promised to deliver fresh water to a dusty camp in the Barrens. On the way, a sandstorm blew her cart off the road. Instead of turning back, Vexi waited out the storm, dug the wheels free, and arrived a day late. The thirsty campers forgave her, because she had kept her word.",
+    main = { "Vexi keeps her promise even when it becomes hard.", { "Sandstorms are good for carts.", "The campers were angry forever.", "Vexi sells sand to travelers." } },
+    feel = { "How did the campers feel when Vexi arrived?", "grateful", { "annoyed", "afraid", "confused" } },
+    cause = { "Why did the campers forgive Vexi?", "She kept her word and still came.", { "She gave them gold.", "She arrived early.", "They did not need water." } },
+    vocab = { "forgave", "stopped being upset with someone", { "ran away from", "sold something to", "forgot about" } } },
 }
 
 -- Word tiles: the kid puts the words back in order (choose on Spark, type on Rune/Glyph).
@@ -222,6 +271,10 @@ D.BUILD = {
   { lv = 3, s = "The kodo walked across the dusty plains." },
   { lv = 3, s = "Brave heroes guard the gates of the city." },
   { lv = 3, s = "The owl watched the travelers from an old tree." },
+  { lv = 1, s = "The turtle swam under the old bridge." },
+  { lv = 2, s = "Thrall rode his wolf across the hills." },
+  { lv = 2, s = "Magni hammered a shield at the forge." },
+  { lv = 3, s = "The friendly goblin repaired the broken airship." },
 }
 
 ------------------------------------------------------------------------
@@ -276,6 +329,23 @@ D.PASSAGES_M = {
     infer = { "Why did members from both factions join the Argent Dawn?", "They faced a danger that threatened everyone.", { "They were paid by the Scourge.", "They had nothing else to do.", "They wanted to fight each other." } },
     purpose = { "to explain why the Argent Dawn brought rivals together", { "to describe the weather in the north", "to persuade readers to join the Scourge", "to tell a bedtime story" } },
     summary = { "The Argent Dawn united many races against the Scourge.", { "The Argent Dawn helped the Scourge spread.", "Only humans joined the Argent Dawn.", "The Argent Dawn started new quarrels." } } },
+  -- v0.14
+  { lv = 2, cameo = "thrall", text = "As Warchief, Thrall often walked through Orgrimmar without his guards. He listened to farmers, traders and young warriors, and he asked them what they needed. Some advisers called this risky, but Thrall said a leader who never hears his people cannot truly lead them.",
+    infer = { "What can you infer about Thrall as a leader?", "He believed listening to people mattered.", { "He was afraid of his own city.", "He did not trust farmers.", "He wanted to be left alone." } },
+    purpose = { "to show what kind of leader Thrall tried to be", { "to explain how to grow crops in Durotar", "to persuade readers to become guards", "to describe the walls of Orgrimmar" } },
+    summary = { "Thrall listened to ordinary people because he thought leaders must hear them.", { "Thrall stayed inside his hall all day.", "Advisers led Orgrimmar instead of Thrall.", "Thrall only spoke with warriors." } } },
+  { lv = 2, cameo = "magni", text = "King Magni was proud of his brothers. Muradin was a mighty warrior and Brann was a famous explorer who sent letters full of strange maps. Magni kept every letter in a chest beside his throne and read them aloud to visitors, even when the stories were hard to believe.",
+    infer = { "What can you infer about Magni and his brothers?", "He cared about them and liked to share their adventures.", { "He was jealous of them.", "He never heard from them.", "He did not like maps." } },
+    purpose = { "to show how Magni felt about his family", { "to teach readers how to draw maps", "to describe the throne room's furniture", "to persuade readers to become explorers" } },
+    summary = { "Magni proudly kept and shared the adventures of his brothers.", { "Magni burned Brann's letters.", "Muradin wrote all the maps.", "Visitors were not allowed to hear the letters." } } },
+  { lv = 3, text = "In the desert town of Gadgetzan, prices change every hour. When water is scarce, a single flask can cost as much as a sword; after a rainstorm, merchants practically give it away. Clever traders watch the sky as closely as they watch their coins.",
+    infer = { "Why do traders watch the sky?", "Rain changes how much water is worth.", { "They like to look at clouds.", "Swords fall from the sky.", "The sky tells them the time." } },
+    purpose = { "to explain how supply changes prices in Gadgetzan", { "to describe how swords are made", "to persuade readers to move to the desert", "to tell a story about a storm" } },
+    summary = { "In Gadgetzan, water prices rise when it is scarce and fall after rain.", { "Water is always free in Gadgetzan.", "Swords and water always cost the same.", "Traders never look at the weather." } } },
+  { lv = 3, text = "The Explorers' League and the Reliquary both search old ruins for lost relics. The dwarves of the League say relics belong in museums for everyone to learn from, while the blood elves of the Reliquary say ancient magic must be guarded by those who can handle it safely.",
+    infer = { "What do both groups have in common?", "They both value ancient relics.", { "They both hate ruins.", "They both want to sell relics.", "They both live in Ironforge." } },
+    purpose = { "to compare two groups' views about ancient relics", { "to explain how to dig a tunnel", "to persuade readers that relics are worthless", "to describe a museum's opening hours" } },
+    summary = { "Two groups search for relics but disagree about who should keep them.", { "Both groups agree relics should be destroyed.", "Only the dwarves search ruins.", "The Reliquary builds museums." } } },
 }
 
 -- Two accounts of the same thing, one from each faction, told fairly.
@@ -336,6 +406,13 @@ D.COMPARE = {
       { "What do both accounts agree on?", "Booty Bay is a safe place to trade.", { "Booty Bay is very cheap.", "Only humans may trade in Booty Bay.", "The guards cause trouble." } },
       { "How do their opinions differ?", "The merchant finds prices high; the sailor got a fair price.", { "The sailor thinks the town is unsafe.", "The merchant never trades there.", "They disagree about who runs the town." } },
     } },
+  { lv = 3, place = "the Crossroads",
+    horde = "Crossroads guard: 'This trading post keeps the roads of the Barrens safe for our caravans. Without it, merchants and travelers would be lost.'",
+    alliance = "Northwatch scout: 'The Crossroads sits right on the road our soldiers use. We worry that it lets them watch and block our supply wagons.'",
+    qs = {
+      { "What do both accounts agree on?", "The Crossroads is on an important road.", { "The Crossroads is empty.", "Nobody uses the roads.", "Both sides built the Crossroads together." } },
+      { "How do the two views differ?", "One sees it as protection; the other sees it as a threat.", { "Both think it should be torn down.", "Both see it as a farm.", "One sees it as a lake; the other as a forest." } },
+    } },
 }
 
 -- Grammar and sentence correction: one correct sentence, three with errors.
@@ -360,6 +437,9 @@ D.GRAMMAR = {
   { lv = 3, a = "The mage quickly cast a spell.", d = { "The mage quick cast a spell.", "The mage quickly casted a spell.", "The mage quicker cast a spell." }, why = "Use the adverb 'quickly'; the past of 'cast' is 'cast'." },
   { lv = 3, a = "After the storm, the sailors fixed the sails.", d = { "After the storm the sailors, fixed the sails.", "After, the storm the sailors fixed the sails.", "After the storm, the sailors fixes the sails." }, why = "Put the comma after the opening phrase 'After the storm'." },
   { lv = 3, a = "The tauren lifted the heavy log by himself.", d = { "The tauren lifted the heavy log by hisself.", "The tauren lifted the heavy log by itselves.", "The tauren lifted the heavy log by theirselves." }, why = "The correct word is 'himself'." },
+  { lv = 1, a = "The wolves howled at the moon.", d = { "The wolfs howled at the moon.", "The wolves howls at the moon.", "The wolve howled at the moon." }, why = "The plural of 'wolf' is 'wolves', and 'howled' is the past tense." },
+  { lv = 2, a = "Thrall and Magni have both led their people.", d = { "Thrall and Magni has both led their people.", "Thrall and Magni have both lead their people.", "Thrall and Magni have both led there people." }, why = "Two people take 'have'; the past of 'lead' is 'led'; 'their' shows belonging." },
+  { lv = 3, a = "The dwarves, who live in Ironforge, love their forge.", d = { "The dwarves who live in Ironforge, love their forge.", "The dwarves, who live in Ironforge love their forge.", "The dwarves, who lives in Ironforge, love their forge." }, why = "The extra information needs commas on both sides, and 'who live' matches 'dwarves'." },
 }
 
 -- Short written answers. rubric = groups of acceptable key words (any word in a group
@@ -413,6 +493,23 @@ D.WRITE = {
     q = "How did Thrall and Jaina keep the peace?", model = "They trusted each other and talked through problems instead of fighting.",
     rubric = { { "talk", "talked", "talking", "met", "meet", "speak" }, { "trust", "peace", "instead", "problems", "fighting", "war" } }, need = 2,
     d = { "They built a giant wall.", "They never spoke to each other.", "They moved to another world." } },
+  -- v0.14
+  { lv = 1, cameo = "thrall", text = "Thrall saw a farmer's fence was broken. He got off his wolf and helped carry the heavy wood until the fence stood tall again.",
+    q = "How did Thrall help the farmer?", model = "He helped carry wood to fix the broken fence.",
+    rubric = { { "fence", "fix", "fixed", "repair", "built" }, { "wood", "carry", "carried", "helped", "help" } }, need = 2,
+    d = { "He bought the farm.", "He rode away quickly.", "He planted some flowers." } },
+  { lv = 1, cameo = "magni", text = "A dwarf girl dropped her little hammer into the forge fire. King Magni made her a new one and told her to keep practicing.",
+    q = "What did Magni do for the girl?", model = "He made her a new hammer and told her to keep practicing.",
+    rubric = { { "hammer", "made", "new", "forged" }, { "practice", "practicing", "keep", "girl", "gave" } }, need = 2,
+    d = { "He sent her home.", "He laughed at her.", "He closed the forge." } },
+  { lv = 2, text = "The bridge over the river was old and shaky. The villagers worked together for a whole week to build a new one, so the children could walk safely to school.",
+    q = "Why did the villagers build a new bridge?", model = "The old bridge was shaky, so they made a safe one for the children.",
+    rubric = { { "old", "shaky", "broken", "unsafe", "dangerous" }, { "safe", "safely", "children", "school", "kids" } }, need = 2,
+    d = { "They wanted to go fishing.", "The river dried up.", "They were bored." } },
+  { lv = 3, text = "Some traders in Booty Bay sell maps they have never checked. Careful explorers buy maps only from mapmakers who have walked the land themselves.",
+    q = "Why do careful explorers choose certain mapmakers?", model = "Those mapmakers walked the land, so their maps are more reliable.",
+    rubric = { { "walked", "visited", "checked", "been there", "themselves", "explored" }, { "reliable", "trust", "accurate", "correct", "true", "right" } }, need = 2,
+    d = { "Their maps are the cheapest.", "They draw with gold ink.", "They live in Booty Bay." } },
 }
 
 ------------------------------------------------------------------------

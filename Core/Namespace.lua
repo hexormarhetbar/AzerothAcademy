@@ -5,7 +5,7 @@
 local ADDON, ns = ...
 
 ns.ADDON = ADDON or "AzerothAcademy"
-ns.VERSION = "0.13.0"
+ns.VERSION = "0.14.0"
 ns.Env = ns.Env or {}
 
 local Util = {}

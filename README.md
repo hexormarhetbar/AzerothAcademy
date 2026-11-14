@@ -1,4 +1,4 @@
-# Azeroth Academy v0.13.0 (test build)
+# Azeroth Academy v0.14.0 (test build)
 
 A free learning addon for kids ages 5 to 13. Lessons are framed as Academy quests in Azeroth.
 This build has the **Main Hub** and two subjects: **Rune Forger** (math) and, new in v0.3,
@@ -43,6 +43,9 @@ the Training Ring: tank/healer/DPS roles, "avoid the fire" grid puzzles, health 
 cooldowns, classes and racial traits, plus DPS math, mana budgets, priority lists and boss mechanics. The class and
 race lists follow your game client (9 classes on WoW Forever and Classic Era, 13 on Retail). Each mastered tier adds a
 card to the **Tactics Deck**. Every hub tile is now a real subject.
+New in v0.14: **Lore Chronicles grows**: 34 new passages, stories and prompts across all three bands, including
+**cameo stories** about Thrall and King Magni Bronzebeard (the same number for each, in every band), which Fizzwick
+introduces when they come up.
 Progress stays on your computer. The only thing the addon ever sends is Duel of Wits race data, inside the game, to
 the players you race (see "Duel of Wits").
 
@@ -276,6 +279,10 @@ Flight paths are perfect lesson time, so Fizzwick speaks up a couple of seconds 
     and an Alliance account of the same place, shown in random order), Purpose & Summary (author's
     purpose or best summary), Sentence Doctor (pick the correctly written sentence), and
     Chronicler's Answer (a short written answer).
+  - **Cameo stories (v0.14):** some stories star Thrall or King Magni Bronzebeard (4 each: one Initiate story, one
+    Adept passage, one Magister passage and one written prompt per leader). When one comes up, Fizzwick says
+    something like "Ooh, a story about Thrall! Read it closely." (not during trials or exams). Both leaders are shown
+    to every player, whatever their faction.
   - **Reading questions always use buttons**, because typing "the main idea" would be unfair.
     Sentence Builder and Chronicler's Answer use buttons on Spark and a wide text box on Rune,
     Glyph, and trials.
@@ -787,6 +794,17 @@ Azeroth Academy v0.10.0** (two accounts, or a friend), both with an age band pic
 170. [ ] Duel of Wits setup shows 9 subjects in three rows (4 + 4 + 1) and nothing overlaps the question-count and "Who" rows. A Mechanics race shows the fire grid in the race card.
 171. [ ] Parent Panel export also lists "Tactics Deck: N / 45 cards collected."
 
+**Lore Chronicles expansion (v0.14)**
+
+172. [ ] Play a few Initiate **Who? / What? / Where?** rounds: sometimes the story is about Thrall (riding his wolf to a farm) or King Magni (at the great forge), and Fizzwick says "Ooh, a story about ...!" first.
+173. [ ] Adept **Main Idea / Feelings / Cause / Words in Context** and Magister **Reading Between the Lines / Purpose & Summary / Chronicler's Answer**: the new passages (Thrall learning to be a shaman, Magni teaching a young smith, Thrall listening in Orgrimmar, Magni's brothers' letters, Gadgetzan water prices, the Explorers' League and the Reliquary, the Crossroads) read well and fit the age.
+174. [ ] Tell me if any story feels like it favors one faction.
+
+## Known limits (v0.14)
+
+- **Cameo stories have no new voice clips**; Fizzwick's introduction is text (the recorded lines stay as they were).
+- **Lore is paraphrased in our own words** and kept simple for kids; it is not a complete history of either leader.
+
 ## Known limits (v0.13)
 
 - **Class and race lists are picked by client type.** WoW Forever and Classic Era get the original 9 classes and 8 races,
@@ -1053,6 +1071,16 @@ originals and face-centered head crops, and wrote a 26-entry manifest.
 For v0.5, `tools/convert_art.sh` was run with ImageMagick 7.1.2 on test PNGs. It produced 512x512 RGBA TGAs, a 1024x256 (4-frame) and a 2048x256 (8-frame) strip, and a correct manifest. Removed files dropped out of the manifest, and a bad `STRIP_FRAMES` was rejected.
 
 ## Changelog
+
+**v0.14.0**
+- **Lore Chronicles expansion:** 34 new entries: 6 sentences, 4 stories, 4 sequences, 4 Adept passages, 4 word-tile
+  sentences, 4 Magister passages, 1 two-sides comparison (the Crossroads), 3 grammar items and 4 written prompts
+  (now 24 / 20 / 18 / 18 / 26 / 16 / 9 / 23 / 16).
+- **Thrall and Magni cameo stories:** 8 entries tagged `cameo` (4 per leader, balanced in every band and checked by the
+  harness). Problems carry `p.cameo`; the problem view has Fizzwick introduce them with the new `LORECAMEO` event
+  (3 lines, not during trials or exams).
+- **Tests:** cameo balance per band, every cameo names its leader, cameo tags reach generated problems, and a UI smoke
+  step for the Fizzwick introduction.
 
 **v0.13.0**
 - **Mechanics Academy (group tactics), subject #7:** 15 skills across Initiate / Adept / Magister with the usual

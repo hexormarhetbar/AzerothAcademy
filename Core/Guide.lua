@@ -29,6 +29,8 @@ G.EVENTS = {
   "LIBSTART", "LIBCORRECT", "LIBWRONG", "LIBSTAMP", "LIBPASSPORT",
   -- v0.13: Mechanics Academy
   "MECHSTART", "MECHCORRECT", "MECHWRONG", "MECHCARD", "MECHDECK",
+  -- v0.14: Lore Chronicles cameo stories
+  "LORECAMEO",
 }
 
 -- Who can appear and how the UI should try to show them. Model IDs are tried in

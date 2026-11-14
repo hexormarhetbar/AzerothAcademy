@@ -983,9 +983,9 @@ do
     ok(n >= 2, "Fizzwick has lines for " .. ev .. " (" .. n .. ")")
     for i = 1, n do
       local text = en["FZ_" .. ev .. "_" .. i]
-      if ev == "HINT" then
+      if ev == "HINT" or ev == "LORECAMEO" then
         local _, c = text:gsub("%%s", "")
-        ok(c == 1, "hint line " .. i .. " has exactly one %s")
+        ok(c == 1, ev .. " line " .. i .. " has exactly one %s")
       else
         ok(not hasFormatLeftovers(text), "FZ_" .. ev .. "_" .. i .. " has no placeholders")
       end
@@ -1339,6 +1339,30 @@ do
     distinct(e.model, e.d, tag, 3)
   end
   levels(D.WRITE, "written")
+
+  -- v0.14: Thrall and Magni cameo stories, told the same number of times in every band
+  local cam = { thrall = { 0, 0, 0 }, magni = { 0, 0, 0 } }
+  local bandOf = { STORIES = 1, SEQUENCES = 1, SENTENCES = 1, PASSAGES_A = 2, BUILD = 2, PASSAGES_M = 3, WRITE = 3, COMPARE = 3, GRAMMAR = 3 }
+  for listName, band in pairs(bandOf) do
+    for _, e in ipairs(D[listName]) do
+      if e.cameo then
+        ok(LC.CAMEOS[e.cameo] ~= nil, "known cameo: " .. tostring(e.cameo))
+        local who = e.cameo == "thrall" and "Thrall" or "Magni"
+        ok((e.text or ""):find(who, 1, true) ~= nil, listName .. " cameo story names " .. who)
+        if cam[e.cameo] then cam[e.cameo][band] = cam[e.cameo][band] + 1 end
+      end
+    end
+  end
+  for b = 1, 3 do
+    ok(cam.thrall[b] >= 1 and cam.thrall[b] == cam.magni[b], "cameo stories balanced in band " .. b .. " (" .. cam.thrall[b] .. "/" .. cam.magni[b] .. ")")
+  end
+  for _, k in pairs(LC.CAMEOS) do ok(tns.L[k] ~= k, "cameo name string " .. k) end
+  local seenCameo = false
+  for _ = 1, 200 do
+    local p = Mods.Generate("lc_who", 1, 1, "practice")
+    if p.cameo then seenCameo = true; ok(LC.CAMEOS[p.cameo] and p.text:find(p.cameo == "thrall" and "Thrall" or "Magni", 1, true), "cameo problem carries its tag") end
+  end
+  ok(seenCameo, "cameo stories show up in the Initiate story nodes")
 
   -- Lore Quiz data
   local quizNodes = Mods.Nodes("lorequiz", "everyone")

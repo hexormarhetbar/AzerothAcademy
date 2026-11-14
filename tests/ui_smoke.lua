@@ -1900,6 +1900,28 @@ step("v0.13 mechanics academy", function()
   })
 end)
 
+step("v0.14 lore cameo stories", function()
+  local GU = ns.GuideUI
+  ns.Progress.SetBand("initiate")
+  ns.Progress.account.settings.unlockAllTiers = true
+  local seen = 0
+  for _ = 1, 40 do
+    ns.RuneForger.StartRound("lc_who", 1)
+    local p = ns.RuneForger.session and ns.RuneForger.session.problem
+    if p and p.cameo then
+      seen = seen + 1
+      local name = ns.L[ns.Lore.CAMEOS[p.cameo]]
+      if GU.lastEvent ~= "LORECAMEO" or not GU.lastText:find(name, 1, true) then fail("Fizzwick introduces the " .. p.cameo .. " cameo story, got " .. tostring(GU.lastEvent)) end
+    end
+    runTimers()
+    ns.RuneForger.session = nil
+  end
+  if seen == 0 then fail("cameo stories appear in Lore Chronicles rounds") end
+  ns.Progress.account.settings.unlockAllTiers = false
+  ns.Progress.SetBand("adept")
+  hub:Hide()
+end)
+
 -- v0.10 Duel of Wits: host a party race, join one by invite, auto-declines,
 -- version mismatch, combat forfeit, parent settings, random queue, minimap entry
 step("v0.10 duel of wits", function()

@@ -48,6 +48,7 @@ A.EVENT_POSE = {
   LIBSTART = "researching", LIBCORRECT = "excited", LIBWRONG = "encouraging", LIBSTAMP = "celebrating",
   LIBPASSPORT = "proud",
   -- v0.13 Mechanics Academy
+  LORECAMEO = "researching", -- v0.14
   MECHSTART = "excited", MECHCORRECT = "excited", MECHWRONG = "encouraging", MECHCARD = "celebrating", MECHDECK = "proud",
 }
 

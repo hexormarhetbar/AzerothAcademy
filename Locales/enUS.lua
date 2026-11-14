@@ -1495,4 +1495,10 @@ ns.LocaleData.enUS = {
   FZ_MECHDECK_1 = "Your Tactics Deck! Every card is a skill you mastered.",
   FZ_MECHDECK_2 = "Look at that deck. Any group would want you along!",
   FZ_MECHDECK_3 = "A fading card? A quick review makes it shine again.",
+  -- v0.14 Lore Chronicles cameo stories
+  LORE_CAMEO_THRALL = "Thrall",
+  LORE_CAMEO_MAGNI = "King Magni Bronzebeard",
+  FZ_LORECAMEO_1 = "Ooh, a story about %s! Read it closely.",
+  FZ_LORECAMEO_2 = "A tale from the history books: %s! Let's see what happens.",
+  FZ_LORECAMEO_3 = "Leaders were young learners once too. Here's one about %s.",
 }

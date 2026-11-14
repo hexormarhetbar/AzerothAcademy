@@ -108,6 +108,7 @@ function LC.Draw(bagKey, list, level)
   end
   local e = pool[bag.order[bag.pos]]
   bag.pos = bag.pos + 1
+  LC.lastEntry = e
   return e
 end
 
@@ -298,6 +299,16 @@ LC.BANDS = {
   adept    = { id = "adept",    nodes = { "lc_main_idea", "lc_feelings", "lc_cause", "lc_vocab", "lc_build" } },
   magister = { id = "magister", nodes = { "lc_inference", "lc_compare", "lc_bigpicture", "lc_grammar", "lc_written" } },
 }
+-- v0.14: cameo stories (Thrall / Magni) tag their problems so Fizzwick can introduce them
+for id, fn in pairs(gen) do
+  gen[id] = function(level)
+    LC.lastEntry = nil
+    local p = fn(level)
+    p.cameo = LC.lastEntry and LC.lastEntry.cameo or nil
+    return p
+  end
+end
+LC.CAMEOS = { thrall = "LORE_CAMEO_THRALL", magni = "LORE_CAMEO_MAGNI" }
 LC.NODES = {}
 for id, fn in pairs(gen) do LC.NODES[id] = { key = "LC_NODE_" .. id:sub(4):upper(), gen = fn } end
 LC.GEN = gen

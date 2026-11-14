@@ -481,6 +481,11 @@ H.RegisterView("problem", function(parent)
     setFeedback("")
     self.locked = false
     if ns.GuideUI then ns.GuideUI.ProblemShown(s.moduleId, not s.noHints) end
+    -- v0.14: Fizzwick introduces Thrall and Magni cameo stories (not during trials or exams)
+    if p.cameo and not p.cameoShown and ns.GuideUI and not s.isTrial and ns.Lore and ns.Lore.CAMEOS[p.cameo] then
+      p.cameoShown = true
+      ns.GuideUI.Say("LORECAMEO", L[ns.Lore.CAMEOS[p.cameo]])
+    end
   end
 
   function v:Advance()
