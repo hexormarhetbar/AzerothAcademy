@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Master generated audio for Azeroth Academy: mono 44.1 kHz, trim silence,
 normalize to about -16 LUFS with peaks held at -1 dBFS (sample peak -1.5 for true-peak headroom),
-encode Ogg Vorbis q4.  usage: master_audio.py in.(mp3|wav) out.ogg [target_lufs]"""
+encode Ogg Vorbis q4.  usage: master_audio.py in.(mp3|wav|ogg) out.ogg [target_lufs] [--tempo T] [--lead S] [--tail S]
+v1.2.3: --tempo slows speech without changing pitch (rubberband, formants kept; 0.85 = 15% slower),
+--lead / --tail add that many seconds of silence before / after the trimmed clip (World Tongues: 0.2 / 0.15)."""
 import subprocess, sys, re, numpy as np, tempfile, os
 
 def decode(path):
@@ -42,10 +44,22 @@ def limit(y):
     if m > 0.84: z *= 0.84 / m
     return z
 
+def stretch(x, tempo):
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-f", "f32le", "-ar", "44100", "-ac", "1", "-i", "-",
+                          "-af", f"rubberband=tempo={tempo}:pitch=1:transients=smooth:formant=preserved:pitchq=quality",
+                          "-f", "f32le", "-"], input=x.astype(np.float32).tobytes(), capture_output=True, check=True).stdout
+    return trim(np.frombuffer(raw, dtype=np.float32).copy())
+
 def main():
-    src, dst = sys.argv[1], sys.argv[2]
-    target = float(sys.argv[3]) if len(sys.argv) > 3 else -16.0
+    args, opts = [], {"--tempo": 1.0, "--lead": 0.0, "--tail": 0.0}
+    it = iter(sys.argv[1:])
+    for a in it:
+        if a in opts: opts[a] = float(next(it))
+        else: args.append(a)
+    src, dst = args[0], args[1]
+    target = float(args[2]) if len(args) > 2 else -16.0
     x = trim(decode(src))
+    if abs(opts["--tempo"] - 1.0) > 1e-6: x = stretch(x, opts["--tempo"])
     l = lufs(x)
     gain_db = target - l
     peak = 20 * np.log10(max(np.abs(x).max(), 1e-9))
@@ -53,6 +67,9 @@ def main():
     y = (x * 10 ** (gain_db / 20)).astype(np.float32)
     if np.abs(y).max() > 10 ** (-1.5 / 20):
         y = limit(y)
+    lead, tail = int(opts["--lead"] * 44100), int(opts["--tail"] * 44100)
+    if lead or tail:
+        y = np.concatenate([np.zeros(lead, np.float32), y.astype(np.float32), np.zeros(tail, np.float32)])
     with tempfile.NamedTemporaryFile(suffix=".f32", delete=False) as t:
         t.write(y.tobytes()); tmp = t.name
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "f32le", "-ar", "44100", "-ac", "1", "-i", tmp,
