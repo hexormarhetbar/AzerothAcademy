@@ -3874,6 +3874,24 @@ do
   end
   for _, k in ipairs({ "listenNative", "listenReading", "listenMeaning" }) do ok(listenKinds[k], "question type used: " .. k) end
   ok(listenN > 0 and listenBad == 0, "Listen questions carry a clip and a written fallback, never two buttons that sound alike (" .. listenN .. ")")
+  -- v1.2.2: the sound-mark lessons have two homophone pairs (ず/づ, じ/ぢ); no two distractors may share a sound
+  local marksN, marksBad = 0, 0
+  for _, nodeId in ipairs({ "wt_ja_hira_marks", "wt_ja_kata_marks" }) do
+    local lesson = WT.LESSON_BY_NODE[nodeId]
+    for _ = 1, 1500 do
+      local p = AR.Modules.Generate(nodeId, 5, 3, "practice")
+      if p.kind == "listenNative" and p.mode == "choice" then
+        marksN = marksN + 1
+        local keys = {}
+        for _, c in ipairs(p.choices) do
+          local k = TA.SoundKey(lesson.course, c) or c
+          if keys[k] then marksBad = marksBad + 1 end
+          keys[k] = true
+        end
+      end
+    end
+  end
+  ok(marksN > 100 and marksBad == 0, "sound-mark Listen questions: no two choices sound alike (" .. marksN .. ", bad " .. marksBad .. ")")
   local hiraLesson = WT.LESSON_BY_NODE.wt_ja_hira
   local woEntry
   for _, e in ipairs(TD.hiragana) do if e[1] == "を" then woEntry = e end end

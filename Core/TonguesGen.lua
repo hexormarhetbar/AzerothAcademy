@@ -179,13 +179,23 @@ end
 -- v1.2 Listen: a clip plays (and replays from the card's play button); the kid answers with
 -- what they heard. Every listen problem carries `fallbackText`: the same question with the
 -- word written out, shown instead if the clip will not play after all (UI/Lessons.lua).
+-- v1.2.2: at most one entry per sound (pool and lesson together), so two distractors never
+-- sound alike either (ず / づ, ジ / ヂ)
 local function soundDistractors(lesson, pool, e, field, n)
   local key = TA.SoundKey(lesson.course, e[1])
-  local cand = {}
-  for _, o in ipairs(pool) do if TA.SoundKey(lesson.course, o[1]) ~= key then cand[#cand + 1] = o end end
-  local all = {}
-  for _, o in ipairs(lesson.entries) do if TA.SoundKey(lesson.course, o[1]) ~= key then all[#all + 1] = o end end
-  return WT.Distractors(cand, e, field, n, all)
+  local seen = { [key or e[1]] = true }
+  local function bySound(list)
+    local copy, out = {}, {}
+    for i, o in ipairs(list) do copy[i] = o end
+    Util.Shuffle(copy)
+    for _, o in ipairs(copy) do
+      local k = TA.SoundKey(lesson.course, o[1]) or o[1]
+      if not seen[k] then seen[k] = true; out[#out + 1] = o end
+    end
+    return out
+  end
+  local cand = bySound(pool)
+  return WT.Distractors(cand, e, field, n, bySound(lesson.entries))
 end
 WT.SoundDistractors = soundDistractors
 
