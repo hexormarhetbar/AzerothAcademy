@@ -1078,6 +1078,20 @@ do
   ok(SE.Plan("correct", { enabled = false }) == nil, "mute plays nothing")
   ok(SE.Plan("click", { level = "important" }) == nil and SE.Plan("correct", { level = "important" }) ~= nil, "important-only filter")
   ok(SE.Plan("correct", { custom = false })[1].kit ~= nil, "custom files can be turned off")
+  -- v1.2.3 speech channel rules
+  local lenOk = true
+  for _, e in ipairs(SE.ORDER) do if not (SE.LENGTH[e] and SE.LENGTH[e] > 0 and SE.LENGTH[e] < 3) then lenOk = false end end
+  ok(lenOk, "v1.2.3: every sound event has a length for ducking")
+  ok(SE.Duck("click", 0) == "play" and SE.Duck("correct", 0) == "play", "v1.2.3: no speech: effects play")
+  ok(SE.Duck("click", 0.3) == "drop" and SE.Duck("page", 2) == "drop" and SE.Duck("chirp", 1) == "drop", "v1.2.3: UI ticks are skipped during speech")
+  local how, w = SE.Duck("correct", 0.5)
+  ok(how == "wait" and w == 0.5, "v1.2.3: feedback waits for speech that is about to end")
+  ok(SE.Duck("correct", 3) == "drop", "v1.2.3: feedback never plays over a long line")
+  local how2, w2 = SE.Duck("cameo", 3)
+  ok(how2 == "wait" and w2 == 3 and SE.Duck("cameo", 9) == "drop", "v1.2.3: stingers wait for the line to end")
+  ok(SE.SPEECH_DELAY >= 0.15 and SE.SPEECH_DELAY <= 0.25 and SE.SpeechStart(nil, 0) == SE.SPEECH_DELAY, "v1.2.3: speech starts 0.15-0.25 s after the press")
+  ok(SE.SpeechStart(nil, 0.35) == 0.35 and SE.SpeechStart(nil, 5) == SE.SPEECH_WAIT_MAX and SE.SPEECH_WAIT_MAX >= SE.LENGTH.rankup,
+    "v1.2.3: speech waits for a stinger that is still ringing (capped)")
   ok(SE.Plan("correct", {}, { correct = true })[1].kit ~= nil, "a missing custom file is skipped")
   ok(SE.Plan("nope", {}) == nil, "unknown sound event is ignored")
   ok(SE.Channel({ channel = "Dialog" }) == "Dialog" and SE.Channel({ channel = "Bogus" }) == "SFX" and SE.Channel(nil) == "SFX", "channel validation")
@@ -3844,6 +3858,35 @@ do
   local clipN = 0
   for _, list in pairs(AR.TonguesClipData) do for _ in pairs(list) do clipN = clipN + 1 end end
   ok(clipN == listed, "Core/TonguesClips.lua matches the TSV (re-run tools/gen_tongues_clips.py)")
+  -- v1.2.3: every clip has room around the word (0.2 s lead + 0.15 s tail) and the listed
+  -- seconds match the file (Ogg granule position of the last page / 44100)
+  local padBad, durBad = {}, {}
+  for _, list in pairs(AR.TonguesClipData) do
+    for _, c in pairs(list) do
+      local fh = io.open("Media/Sounds/Tongues/" .. c[1] .. ".ogg", "rb")
+      local data = fh and fh:read("*a")
+      if fh then fh:close() end
+      local last
+      if data then
+        local at = 1
+        while true do
+          local i = data:find("OggS", at, true)
+          if not i then break end
+          last, at = i, i + 4
+        end
+      end
+      local secs
+      if last then
+        local g = 0
+        for k = 7, 0, -1 do g = g * 256 + data:byte(last + 6 + k) end
+        secs = g / 44100
+      end
+      if not secs or math.abs(secs - c[2]) > 0.03 then durBad[#durBad + 1] = c[1] .. "=" .. tostring(secs) end
+      if c[2] < 0.5 then padBad[#padBad + 1] = c[1] end
+    end
+  end
+  ok(#durBad == 0, "v1.2.3: clip seconds match the files" .. (#durBad > 0 and (": " .. table.concat(durBad, ", ")) or ""))
+  ok(#padBad == 0, "v1.2.3: every clip is padded (>= 0.5 s with lead and tail silence)" .. (#padBad > 0 and (": " .. table.concat(padBad, ", ")) or ""))
   -- Listen questions: generated, fair (no two buttons that sound alike), with a written fallback
   local listenKinds, listenBad, listenN = {}, 0, 0
   for _, m in ipairs(WT.MODULES) do

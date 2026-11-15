@@ -981,9 +981,12 @@ if ns.Lessons.session then
   if GU.lastEvent ~= "ROUNDSTART" then fail("round start should get a Fizzwick line, got " .. tostring(GU.lastEvent)) end
   local pview = ns.Hub.GetView("problem")
   local hintText = ns.Lessons.session.problem.hint or ""
+  clock = clock + 10 -- v1.2.3: the round-start line has finished (Sprocket's chirp would wait for it)
   click("^Hint$")
   if GU.lastSpeaker ~= "parrot" or not (strip.text.__text or ""):find(hintText, 1, true) then fail("hint should come from Sprocket the parrot") end
-  if not (ns.Compat.lastSound and ns.Compat.lastSound.event == "hint") then fail("hint should play the parrot sound") end
+  local heardHint = false
+  for _, e in ipairs(ns.Compat.soundHistory) do if e == "hint" then heardHint = true end end
+  if not heardHint then fail("hint should play the parrot sound") end
   local s = ns.Lessons.session
   -- wrong first
   local p = s.problem
@@ -1010,6 +1013,7 @@ if ns.Lessons.session then
 end
 if (fileTries["Interface\\AddOns\\AzerothAcademy\\Media\\Sounds\\click.ogg"] or 0) ~= 1 then fail("missing click.ogg should be tried once, then skipped") end
 if not ns.Compat.missingSounds.click then fail("missing custom file not remembered") end
+clock = clock + 30 -- v1.2.3: after any line Fizzwick was saying (UI ticks are skipped during speech)
 ns.Compat.Sound("click")
 if not (ns.Compat.lastSound.how == "kit" and ns.Compat.lastSound.value == 856) then fail("click should fall back to SoundKit 856") end
 
@@ -1075,6 +1079,7 @@ end
 click("^Unlock$")
 if not pv2.unlocked then fail("v0.4: could not unlock parent panel") end
 local snd = ns.Progress.account.settings.sound
+clock = clock + 30 -- v1.2.3: let any line Fizzwick is saying finish (effects make way for speech)
 click("^Sound channel: Effects$")
 if snd.channel ~= "Master" then fail("channel toggle should cycle SFX -> Master") end
 if lastChannel ~= "Master" then fail("sounds should play on the chosen channel, got " .. tostring(lastChannel)) end
@@ -1584,42 +1589,45 @@ do
   clock = clock + 100
   local n0 = #voicePlays
   GU.Say("CORRECT")
+  if #voicePlays ~= n0 then fail("v1.2.3: a voice line waits a moment before it starts") end
+  runTimers()
   if #voicePlays ~= n0 + 1 or lastClip() ~= "correct" then fail("first right answer speaks the recorded line (" .. tostring(lastClip()) .. ")") end
   if GU.lastText ~= ns.L.FZ_CORRECT_1 then fail("the voice plays with its own bubble text") end
   if voicePlays[#voicePlays].channel ~= ns.SoundEvents.Channel(st.sound) then fail("voice uses the sound-effects channel") end
   GU.Say("COMBO") -- straight after: still talking
+  runTimers()
   if #voicePlays ~= n0 + 1 then fail("voice clips never overlap") end
   clock = clock + 10
-  GU.Say("COMBO")
+  GU.Say("COMBO"); runTimers()
   if lastClip() ~= "combo" or GU.lastText ~= ns.L.FZ_COMBO_1 then fail("combo line spoken once the first clip is done") end
-  GU.Say("RANKUP") -- a big moment may cut in
+  GU.Say("RANKUP"); runTimers() -- a big moment may cut in
   if lastClip() ~= "rankup" or #voiceStops == 0 or voiceStops[#voiceStops] ~= voicePlays[#voicePlays - 1].handle then fail("rank-up interrupts the clip that was playing") end
   clock = clock + 10
   local n1 = #voicePlays
-  for _ = 1, 4 do GU.Say("CORRECT"); clock = clock + 1 end
+  for _ = 1, 4 do GU.Say("CORRECT"); runTimers(); clock = clock + 1 end
   if #voicePlays > n1 then fail("the same clip is throttled") end
   -- /aa voice
   slash("voice off")
   if st.voice.enabled ~= false then fail("/aa voice off saves the setting") end
   clock = clock + 60
   n1 = #voicePlays
-  GU.Say("MASTERED"); GU.Parrot("Count the tens first.")
+  GU.Say("MASTERED"); GU.Parrot("Count the tens first."); runTimers()
   if #voicePlays ~= n1 then fail("/aa voice off silences Fizzwick") end
   slash("voice on")
   if st.voice.enabled ~= true then fail("/aa voice on saves the setting") end
-  GU.Say("MASTERED")
+  GU.Say("MASTERED"); runTimers()
   if lastClip() ~= "mastered" or GU.lastText ~= ns.L.FZ_MASTERED_1 then fail("voice back on after /aa voice on") end
   slash("voice bogus")
   if st.voice.enabled ~= true then fail("unknown /aa voice argument changes nothing") end
   -- parrot hint uses the event clip
   clock = clock + 60
-  GU.Parrot("Count the tens first.")
+  GU.Parrot("Count the tens first."); runTimers()
   if lastClip() ~= "hint" then fail("Sprocket's hint has a voice clip") end
   -- Sound OFF mutes the voice too
   st.sound.enabled = false
   clock = clock + 60
   n1 = #voicePlays
-  GU.Say("WRONG")
+  GU.Say("WRONG"); runTimers()
   if #voicePlays ~= n1 then fail("sound mute silences the voice") end
   st.sound.enabled = true
   -- Parent Panel toggle
@@ -1636,7 +1644,7 @@ do
   hub:Hide()
   clock = clock + 60
   n1 = #voicePlays
-  ns.Hub.Open(); clock = clock + 2; hub:Hide()
+  ns.Hub.Open(); clock = clock + 2; hub:Hide(); runTimers()
   if #voicePlays ~= n1 then fail("no goodbye after a quick peek") end
   clock = clock + 60
   ns.Hub.Open(); clock = clock + 30
@@ -1644,7 +1652,7 @@ do
   if hub:IsShown() or #voicePlays ~= n1 then fail("no goodbye when combat hides the window") end
   inCombat = false; fire("PLAYER_REGEN_ENABLED")
   clock = clock + 60
-  ns.Hub.Open(); clock = clock + 30; hub:Hide()
+  ns.Hub.Open(); clock = clock + 30; hub:Hide(); runTimers()
   if lastClip() ~= "bye" then fail("Fizzwick says goodbye when the Academy closes (" .. tostring(lastClip()) .. ")") end
   -- a clip the client refuses is not retried
   GU.voice = V.NewState()
@@ -1652,11 +1660,11 @@ do
   clock = clock + 100
   n1 = #voicePlays
   local tries0 = fileTries[V.DIR .. "greet.ogg"] or 0
-  GU.Say("GREET")
+  GU.Say("GREET"); runTimers()
   if #voicePlays ~= n1 or not GU.voice.missing.greet then fail("a missing clip is remembered") end
   GU.voice.heard.GREET = nil
   clock = clock + 100
-  GU.Say("GREET")
+  GU.Say("GREET"); runTimers()
   if (fileTries[V.DIR .. "greet.ogg"] or 0) ~= tries0 + 1 then fail("a missing clip is not tried again") end
   voiceFail.greet = nil
   hub:Hide()
@@ -1696,7 +1704,7 @@ do
   -- round start uses the Naturalist line (every time) and the page sound
   GU.voice = ns.Voice.NewState()
   clock = clock + 100
-  ns.RuneForger.StartRound("nat_matter", 2)
+  ns.RuneForger.StartRound("nat_matter", 2); runTimers()
   if GU.lastEvent ~= "NATSTART" or not isLine("FZ_NATSTART", GU.lastText) then fail("Naturalist round opens with a field-journal line, got " .. tostring(GU.lastEvent)) end
   if voicePlays[#voicePlays] == nil or not voicePlays[#voicePlays].path:find("nat_start", 1, true) then fail("first Naturalist round start speaks nat_start") end
   local tp = ns.RuneForger.session.problem
@@ -1839,7 +1847,7 @@ local function subjectSmoke(cfg)
   GU.voice = ns.Voice.NewState()
   clock = clock + 100
   local firstNode = mod.bands.adept.nodes[1]
-  ns.RuneForger.StartRound(firstNode, 1)
+  ns.RuneForger.StartRound(firstNode, 1); runTimers()
   if GU.lastEvent ~= cfg.startEvent or not isLine("FZ_" .. cfg.startEvent, GU.lastText) then fail(cfg.id .. " round opens with its own line, got " .. tostring(GU.lastEvent)) end
   if cfg.startVoice and (voicePlays[#voicePlays] == nil or not voicePlays[#voicePlays].path:find(cfg.startVoice, 1, true)) then fail(cfg.id .. " round start speaks " .. cfg.startVoice) end
   runTimers()
@@ -2417,7 +2425,12 @@ step("v1.1 language / areas / World Tongues", function()
     for _, b in ipairs(sv.plays) do if b:IsShown() then shown = shown + 1 end end
     if shown ~= 8 then luaFail("study page: 8 Play buttons on the first hiragana page, got " .. shown) end
     local before = #tonguePlays
+    local sounds0, ticks0 = soundsPlayed, #ns.Compat.soundHistory
     sv.plays[1]:Click()
+    -- v1.2.3: no click tick on an audio button, and the clip waits a moment after the press
+    if #ns.Compat.soundHistory ~= ticks0 or soundsPlayed ~= sounds0 then luaFail("v1.2.3: study Play makes no click sound") end
+    if #tonguePlays ~= before then luaFail("v1.2.3: the clip starts a moment after the press, not with it") end
+    runTimers()
     local last = tonguePlays[#tonguePlays]
     if #tonguePlays ~= before + 1 or not last.path:find("Tongues\\ja_k_a%.ogg$") then luaFail("study Play plays ja_k_a.ogg") end
     if last.channel ~= ns.SoundEvents.Channel(ns.Progress.account.settings.sound) then luaFail("Tongues clips use the addon's sound channel, got " .. tostring(last.channel)) end
@@ -2443,13 +2456,40 @@ step("v1.1 language / areas / World Tongues", function()
       local p = ns.Lessons.session.problem
       p.audioFile, p.fallbackText = "ja_k_ka", "FALLBACK-TEXT"
       local before = #tonguePlays
-      pvw:Render()
+      pvw:Render(); runTimers()
       if #tonguePlays ~= before + 1 or not pvw.playBtn:IsShown() then luaFail("Listen card autoplays and shows Replay") end
+      local stops0 = #voiceStops
+      local ticks0 = #ns.Compat.soundHistory
       click("^Replay$")
-      if #tonguePlays ~= before + 2 then luaFail("Replay plays the clip again") end
+      if #ns.Compat.soundHistory ~= ticks0 then luaFail("v1.2.3: Replay makes no click sound") end
+      click("^Replay$") -- pressed twice quickly: one clip, the first press is replaced before it starts
+      runTimers()
+      if #tonguePlays ~= before + 2 then luaFail("Replay plays the clip again (rapid presses play once), got " .. (#tonguePlays - before)) end
+      if #voiceStops <= stops0 or voiceStops[#voiceStops] ~= tonguePlays[before + 1].handle then luaFail("v1.2.3: a replay stops the clip that is still playing") end
+      -- a UI tick during a clip is skipped; speech never overlaps another clip
+      ns.Compat.Sound("click")
+      if ns.Compat.lastDropped ~= "click" then luaFail("v1.2.3: a click tick is skipped while a clip plays") end
+      -- v1.2.3 one speech channel: Fizzwick does not talk over a clip that is playing ...
+      local GUv = ns.GuideUI
+      GUv.voice = ns.Voice.NewState()
+      local vp0 = #voicePlays
+      GUv.Say("CORRECT"); runTimers()
+      if #voicePlays ~= vp0 then luaFail("v1.2.3: a Fizzwick line never starts over a language clip") end
+      -- ... and a Listen card's autoplay waits for a line Fizzwick is still saying
+      clock = clock + 30
+      GUv.voice = ns.Voice.NewState()
+      GUv.Say("CORRECT"); runTimers()
+      if #voicePlays ~= vp0 + 1 then luaFail("Fizzwick line plays once the clip is over") end
+      local t0 = #tonguePlays
+      pvw:Render(); runTimers(); runTimers() -- (legacy: the OnUpdate timer needs > 2.5 s)
+      local lg = ns.Compat.speechLog[#ns.Compat.speechLog]
+      if #tonguePlays ~= t0 + 1 or not (lg and lg.kind == "tongue" and lg.wait >= ns.Voice.LINES.FZ_CORRECT_1.dur) then
+        luaFail("v1.2.3: the card's autoplay waits for Fizzwick's line, wait " .. tostring(lg and lg.wait))
+      end
+      clock = clock + 5
       tongueFail = true
       p.audioFile, p.audioPlayed = "ja_k_ki", nil
-      pvw:Render()
+      pvw:Render(); runTimers()
       if pvw.playBtn:IsShown() or not visibleText("^FALLBACK%-TEXT$") then luaFail("missing clip: card falls back to the written question") end
       if not ns.TonguesAudio.state.missing.ja_k_ki then luaFail("missing clip is remembered") end
       tongueFail = false

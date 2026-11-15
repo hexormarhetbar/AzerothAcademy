@@ -369,7 +369,7 @@ H.RegisterView("home", function(parent)
   langBtn:SetPoint("TOPRIGHT", -6, -6)
   langBtn:SetNormalTexture("Interface\\Icons\\INV_Misc_Map_01")
   if langBtn.SetHighlightTexture then pcall(langBtn.SetHighlightTexture, langBtn, "Interface\\Buttons\\ButtonHilight-Square", "ADD") end
-  langBtn:SetScript("OnClick", function() C.Sound("click"); H.ShowView("language") end)
+  langBtn:SetScript("OnClick", function() H.ShowView("language"); C.Sound("click") end)
   langBtn:SetScript("OnEnter", function(self)
     if not GameTooltip then return end
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -415,8 +415,8 @@ H.RegisterView("home", function(parent)
     C.SetColor(hl, 1, 1, 1, 0.08)
     if m.active then
       b:SetScript("OnClick", function()
-        C.Sound("click")
         ns.Lessons.OpenModule(m.id)
+        C.Sound("click") -- v1.2.3: after, so it is skipped when Fizzwick speaks
       end)
       -- Quick Drill for this subject: straight into its best next lesson
       local drillBtn = W.Button(b, L.TILE_DRILL, 56, 18, function()
@@ -473,8 +473,8 @@ H.RegisterView("home", function(parent)
     end
     if not H.greeted and ns.GuideUI then
       H.greeted = true
+      C.Sound("chirp") -- v1.2.3: chirp first; the greeting starts once it has rung out
       ns.GuideUI.Say("GREET")
-      C.Sound("chirp")
     end
   end
   return v

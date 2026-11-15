@@ -489,17 +489,19 @@ H.RegisterView("duel", function(parent)
   qtext:SetWidth(520)
   v.qtext = qtext
   -- v1.2 World Tongues co-op: hear the partner's line (the line is also written on the card)
-  local playBtn = W.Button(card, L.WT_REPLAY, 90, 22, function() v:PlayClip() end, 12)
+  local playBtn = W.AudioButton(card, L.WT_REPLAY, 90, 22, function() v:PlayClip() end, 12) -- v1.2.3: no tick
   playBtn:SetPoint("TOPRIGHT", card, "TOPRIGHT", -6, -4)
   playBtn:Hide()
   v.playBtn = playBtn
-  function v:PlayClip()
+  -- `auto` = the partner's line as the question appears (waits for a line already playing)
+  function v:PlayClip(auto)
     local E = DU.engine
     local p = E and E:Current()
     local TA = ns.TonguesAudio
     local clip = p and p.audioFile and TA and TA.ByFile(p.audioFile)
-    local played = clip and C.PlayTongue(clip) or false
-    if not played and not (clip and TA.Available()) then playBtn:Hide() end
+    local function failed() if not (clip and TA.Available()) then playBtn:Hide() end end
+    local played = clip and C.PlayTongue(clip, function(ok) if not ok then failed() end end, auto) or false
+    if not played then failed() end
     return played
   end
   -- v0.11: Gnomish Engineering grid puzzles
@@ -576,7 +578,7 @@ H.RegisterView("duel", function(parent)
     end
     if self.shownIdx ~= idx then
       self.shownIdx = idx
-      if p.audioFile then self:PlayClip() end
+      if p.audioFile then self:PlayClip(true) end
     end
     local TA = ns.TonguesAudio
     if p.audioFile and TA and TA.Available() and TA.ByFile(p.audioFile) then self.playBtn:Show() else self.playBtn:Hide() end

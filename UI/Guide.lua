@@ -24,12 +24,16 @@ function GU.Speak(event, key)
   local now = C.Now()
   local clip = V.Decide(GU.voice, event, key, now, accountSettings())
   if not clip then return false end
-  if C.PlayVoice(V.Path(clip), clip.big) then
+  -- v1.2.3: on the shared speech channel (never over a language clip or another line; it
+  -- starts a moment after the click / stinger that triggered it)
+  local scheduled = C.PlayVoice(V.Path(clip), clip.big, clip.dur, function(played)
+    if not played then GU.voice.missing[clip.file] = true end -- file refused: don't try it again this session
+  end)
+  if scheduled then
     V.Started(GU.voice, event, clip, now)
     GU.lastVoice = clip.file
     return true
   end
-  GU.voice.missing[clip.file] = true -- file refused: don't try it again this session
   return false
 end
 

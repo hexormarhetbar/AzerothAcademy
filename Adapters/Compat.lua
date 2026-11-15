@@ -212,12 +212,46 @@ local function soundSettings()
   return a and a.settings and a.settings.sound or nil
 end
 
+-- v1.2.3: effects make way for speech (S.Duck): UI ticks are skipped while a voice or language
+-- clip is playing or about to, and an important effect that would cover the end of a clip waits
+-- for it. C.sfxEndsAt tells a speech clip that starts next how long the effect still rings.
+C.sfxEndsAt, C.droppedSounds, C.soundHistory = 0, 0, {}
+C.waitingSounds = {}
+local playSound
 function C.Sound(event)
   local S = ns.SoundEvents
   if not S then return false end
+  local how, wait = "play", 0
+  if S.Duck then how, wait = S.Duck(event, C.SpeechLeft()) end
+  if how == "drop" then
+    C.droppedSounds = C.droppedSounds + 1
+    C.lastDropped = event
+    return false
+  elseif how == "wait" then
+    -- At most one pending effect per event; if a new line replaced this one, discard the
+    -- stale chime instead of playing it over that line (or growing a sound backlog).
+    local token = C.speech.token
+    C.waitingSounds[event] = token
+    C.After(wait + 0.02, function()
+      if C.waitingSounds[event] ~= token then return end
+      C.waitingSounds[event] = nil
+      if C.speech.token == token and C.SpeechLeft() <= 0 then playSound(event) end
+    end)
+    return true
+  end
+  return playSound(event)
+end
+
+function playSound(event)
+  local S = ns.SoundEvents
   local settings = soundSettings()
   local plan = S.Plan(event, settings, C.missingSounds)
   if not plan then return false end
+  local len = S.LENGTH and S.LENGTH[event] or 0
+  C.sfxEndsAt = math.max(C.sfxEndsAt or 0, C.Now() + len)
+  local hist = C.soundHistory
+  hist[#hist + 1] = event
+  if #hist > 20 then table.remove(hist, 1) end
   local channel = S.Channel(settings)
   for _, step in ipairs(plan) do
     if step.file then
@@ -244,45 +278,114 @@ function C.Sound(event)
   return false
 end
 
--- v0.8: Fizzwick's recorded voice. One clip at a time: `interrupt` stops the clip that is
--- still playing (StopSound with a short fade, where the client has it). Same channel as
--- the sound effects, so the player's volume slider for that channel applies.
-C.voiceHandle, C.lastVoice = nil, nil
-function C.PlayVoice(path, interrupt)
+-- v1.2.3 speech channel: Fizzwick's voice lines and the World Tongues clips share ONE channel,
+-- so two of them never overlap. A new clip stops the one before it (StopSound on the stored
+-- handle, short fade) and cancels one that is still waiting to start. It starts
+-- S.SPEECH_DELAY after the call, later if a stinger is still ringing (S.SpeechStart), so a
+-- click or chime never lands on the first word. Same channel / switch as the effects.
+-- opts: dur (seconds, for ducking), kind ("voice" | "tongue"), delay (nil = default, 0 = no
+-- extra delay), queue (wait for a clip that is playing instead of cutting it), fade (ms),
+-- onResult(played) called once the clip really was tried.
+-- Returns true when the clip played or is scheduled, false when it cannot play at all.
+C.speech = { token = 0, handle = nil, startAt = 0, endsAt = 0, kind = nil, path = nil }
+C.speechLog = {} -- { path, kind, at, wait } of the last few starts (tests / debugging)
+
+function C.SpeechLeft()
+  local sp = C.speech
+  local left = (sp.endsAt or 0) - C.Now()
+  return left > 0 and left or 0
+end
+
+function C.StopSpeech(fade)
+  local sp = C.speech
+  sp.token = sp.token + 1 -- a clip still waiting to start will not start
+  if sp.handle and StopSound then pcall(StopSound, sp.handle, fade or 100) end
+  sp.handle, sp.kind, sp.path, sp.endsAt = nil, nil, nil, 0
+end
+
+function C.Speak(path, opts)
+  opts = opts or {}
   if not PlaySoundFile then return false end
   local settings = soundSettings()
   if settings and settings.enabled == false then return false end
-  if interrupt and C.voiceHandle and StopSound then pcall(StopSound, C.voiceHandle, 250) end
-  local channel = ns.SoundEvents and ns.SoundEvents.Channel(settings) or "SFX"
-  local ok, willPlay, handle = pcall(PlaySoundFile, path, channel)
-  if ok and willPlay then
-    C.voiceHandle, C.lastVoice = handle, path
-    return true
+  local sp = C.speech
+  local S = ns.SoundEvents
+  local now = C.Now()
+  -- opts.queue (a card's autoplay): let a clip that is already playing finish, then start
+  local queueAfter = 0
+  if opts.queue and sp.handle and sp.startAt <= now and C.SpeechLeft() > 0 then
+    queueAfter = C.SpeechLeft()
+    sp.token = sp.token + 1 -- only cancels a clip still waiting; the playing one goes on
+  else
+    C.StopSpeech(opts.fade)
   end
-  return false
+  local token = sp.token
+  local sfxLeft = math.max((C.sfxEndsAt or 0) - now, queueAfter)
+  local wait = opts.delay == 0 and math.max(0, math.min(sfxLeft, S and S.SPEECH_WAIT_MAX or 0))
+    or (S and S.SpeechStart(opts.delay, sfxLeft) or 0)
+  if queueAfter > 0 then wait = math.max(wait, queueAfter + (S and S.SPEECH_DELAY or 0)) end
+  local dur = opts.dur or 1
+  sp.kind, sp.path, sp.startAt, sp.endsAt = opts.kind, path, now + wait, now + wait + dur
+  local done = false
+  local function start()
+    if done then return false end
+    done = true
+    if sp.token ~= token then return false end -- stopped or replaced meanwhile
+    local current = soundSettings()
+    if current and current.enabled == false then
+      sp.endsAt, sp.handle, sp.kind, sp.path = 0, nil, nil, nil
+      return false -- muted during the delay: cancellation, not a missing file
+    end
+    if sp.handle and StopSound then pcall(StopSound, sp.handle, 0) end
+    local channel = S and S.Channel(current) or "SFX"
+    local ok, willPlay, handle = pcall(PlaySoundFile, path, channel)
+    local played = ok and willPlay and true or false
+    if played then
+      sp.handle, sp.startAt, sp.endsAt = handle, C.Now(), C.Now() + dur
+      local log = C.speechLog
+      log[#log + 1] = { path = path, kind = opts.kind, at = C.Now(), wait = wait }
+      if #log > 20 then table.remove(log, 1) end
+    else
+      sp.endsAt, sp.kind, sp.path = 0, nil, nil
+    end
+    if opts.onResult then opts.onResult(played) end
+    return played
+  end
+  if wait <= 0 then return start() end
+  C.After(wait, start)
+  return true
 end
 
--- v1.2 World Tongues: play one language clip (`clip` from ns.TonguesAudio). Stops the clip
--- before it (a replay never overlaps itself), uses the same channel and the same sound
--- switch as everything else, and tells ns.TonguesAudio whether it played, so a missing
--- file is remembered and the UI can fall back to text. Returns true when it plays.
-function C.PlayTongue(clip)
+-- v0.8: Fizzwick's recorded voice, on the speech channel. `interrupt` (a big moment) may cut
+-- into speech that is still going; otherwise a line never starts over another clip.
+C.voiceHandle, C.lastVoice = nil, nil
+function C.PlayVoice(path, interrupt, dur, onResult)
+  if not interrupt and C.SpeechLeft() > 0 then return false end
+  return C.Speak(path, { kind = "voice", dur = dur, fade = 250, onResult = function(played)
+    if played then C.voiceHandle, C.lastVoice = C.speech.handle, path end
+    if onResult then onResult(played) end
+  end })
+end
+
+-- v1.2 World Tongues: play one language clip (`clip` from ns.TonguesAudio) on the speech
+-- channel (it always replaces what is playing, so rapid replays never overlap). Tells
+-- ns.TonguesAudio whether it played, so a missing file is remembered; `onResult(false)` lets
+-- the UI fall back to text. Returns true when the clip played or is about to.
+function C.PlayTongue(clip, onResult, queue)
   local TA = ns.TonguesAudio
   if not (TA and clip) then return false end
   if not TA.Available() then return false end
   if not PlaySoundFile then return false end
-  if C.tongueHandle and StopSound then pcall(StopSound, C.tongueHandle, 100) end
-  C.tongueHandle = nil
-  local channel = ns.SoundEvents and ns.SoundEvents.Channel(soundSettings()) or "SFX"
-  local ok, willPlay, handle = pcall(PlaySoundFile, TA.Path(clip), channel)
-  local played = ok and willPlay and true or false
-  TA.Result(clip, played)
-  if played then C.tongueHandle, C.lastTongue = handle, TA.Path(clip) end
-  return played
+  local path = TA.Path(clip)
+  return C.Speak(path, { kind = "tongue", dur = clip.dur, queue = queue, onResult = function(played)
+    TA.Result(clip, played)
+    if played then C.tongueHandle, C.lastTongue = C.speech.handle, path end
+    if onResult then onResult(played) end
+  end })
 end
 
 function C.StopTongue()
-  if C.tongueHandle and StopSound then pcall(StopSound, C.tongueHandle, 100) end
+  if C.speech.kind == "tongue" then C.StopSpeech(100) end
   C.tongueHandle = nil
 end
 

@@ -33,8 +33,10 @@ H.RegisterView("tonguesstudy", function(parent)
     W.SetFontFace(t, C.CourseFont(), 13)
     lines[i] = t
     -- v1.2: hear the entry (only when it has a clip and sound is on)
-    local b = W.Button(v, L.WT_PLAY_SHORT, 50, 22, function(self)
-      if self.clip and not C.PlayTongue(self.clip) then v:Render() end -- failed: hide what cannot play
+    -- v1.2.3: no click tick; the clip starts a moment after the press and replaces one still playing
+    local b = W.AudioButton(v, L.WT_PLAY_SHORT, 50, 22, function(self)
+      local function failed() if v:IsShown() then v:Render() end end -- hide what cannot play
+      if self.clip and not C.PlayTongue(self.clip, function(played) if not played then failed() end end) then failed() end
     end, 11)
     b:SetPoint("TOPLEFT", 4, -152 - (i - 1) * 29)
     b:Hide()

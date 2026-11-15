@@ -144,8 +144,8 @@ H.RegisterView("forge", function(parent)
   exam:SetPoint("RIGHT", back, "LEFT", -6, 0)
   -- v0.5: a module can link to a companion module (Lore Chronicles <-> Lore Quiz for Everyone)
   local link = W.Button(v, "", 200, 22, function(self)
-    if self.gameView then C.Sound("click"); H.ShowView(self.gameView, "setup") return end
-    if self.moduleId then C.Sound("click"); RF.OpenModule(self.moduleId) end
+    if self.gameView then H.ShowView(self.gameView, "setup") return end
+    if self.moduleId then RF.OpenModule(self.moduleId) end
   end)
   link:SetPoint("BOTTOMRIGHT", 0, 0)
   link:Hide()
@@ -185,8 +185,8 @@ H.RegisterView("forge", function(parent)
       local b = W.Button(row, tierName(t), 78, 26, nil, 11)
       b:SetPoint("RIGHT", row, "RIGHT", -10 - (3 - t) * 84, 0)
       b:SetScript("OnClick", function(self)
-        C.Sound("click")
         if self.nodeId then RF.StartRound(self.nodeId, t) end
+        C.Sound("click") -- v1.2.3: after, so it is skipped when the round start speaks
       end)
       row.tiers[t] = b
     end
@@ -381,7 +381,8 @@ H.RegisterView("problem", function(parent)
 
   -- v1.2 World Tongues Listen: play / replay the clip. If it will not play (sound off, file
   -- missing), the card falls back to the written question and the button goes away.
-  local playBtn = W.Button(card, L.WT_PLAY, 96, 26, function() v:PlayClip(true) end, 13)
+  -- v1.2.3: an audio button (no click tick); the clip starts a moment after the press
+  local playBtn = W.AudioButton(card, L.WT_PLAY, 96, 26, function() v:PlayClip(true) end, 13)
   playBtn:SetPoint("TOPRIGHT", card, "TOPRIGHT", -8, -8)
   playBtn:Hide()
   v.playBtn = playBtn
@@ -564,26 +565,36 @@ H.RegisterView("problem", function(parent)
   end
 
   -- Play the problem's clip. Falls back to text when it cannot play; `replay` = button press.
+  -- v1.2.3: the clip starts a moment later on the speech channel (Compat.Speak), so the result
+  -- can arrive after this returns; the autoplay waits for a line Fizzwick is still saying.
   function v:PlayClip(replay)
     local p = RF.session and RF.session.problem
     if not (p and p.audioFile) then playBtn:Hide(); return false end
     local TA = ns.TonguesAudio
     local clip = TA and TA.ByFile(p.audioFile)
-    local played = clip and C.PlayTongue(clip) or false
-    v.lastClipPlayed = played
-    if played then
-      playBtn:SetText(L.WT_REPLAY)
-      playBtn:Show()
-      p.audioPlayed = true
-    elseif not p.audioPlayed or not (TA and TA.Available()) or not clip then
-      -- never heard (or sound was switched off / the file is gone): ask in writing instead
-      playBtn:Hide()
-      if p.fallbackText then
-        p.text, p.audioFile, p.audio = p.fallbackText, nil, nil
-        qtext:SetText(p.text)
+    local function failed()
+      if not (RF.session and RF.session.problem == p) then return end -- the card has moved on
+      v.lastClipPlayed = false
+      if not p.audioPlayed or not (TA and TA.Available()) or not clip then
+        -- never heard (or sound was switched off / the file is gone): ask in writing instead
+        playBtn:Hide()
+        if p.fallbackText then
+          p.text, p.audioFile, p.audio = p.fallbackText, nil, nil
+          qtext:SetText(p.text)
+        end
       end
     end
-    return played
+    local scheduled = clip and C.PlayTongue(clip, function(played)
+      if played then p.audioPlayed = true else failed() end
+    end, not replay) or false
+    v.lastClipPlayed = scheduled
+    if scheduled then
+      playBtn:SetText(L.WT_REPLAY)
+      playBtn:Show()
+    else
+      failed()
+    end
+    return scheduled
   end
 
   function v:Advance()
@@ -742,6 +753,9 @@ H.RegisterView("problem", function(parent)
     end
     if mode == "new" or not RF.session.problem then
       local s = RF.session
+      -- v1.2.3: the start sound first, then Fizzwick (his line waits for it to ring out)
+      local module = ns.Modules.Get(s.moduleId or "") or RF.CurrentModule()
+      C.Sound(module.startSound or "forge")
       if s.isTrial then
         say(s.kind == "exam" and "EXAMSTART" or "TRIALSTART")
       elseif s.mode == "review" then
@@ -749,8 +763,6 @@ H.RegisterView("problem", function(parent)
       else
         sayFor(s.module, "ROUNDSTART")
       end
-      local module = ns.Modules.Get(s.moduleId or "") or RF.CurrentModule()
-      C.Sound(module.startSound or "forge")
       self:Advance()
     else
       -- resuming (after combat or reopening): redraw the pending problem

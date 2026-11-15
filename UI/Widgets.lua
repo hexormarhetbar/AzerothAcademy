@@ -79,11 +79,21 @@ function W.Button(parent, text, width, height, onClick, fontSize)
   b:SetText(text or "")
   if fontSize and b:GetFontString() then W.SetFontSize(b:GetFontString(), fontSize) end
   if onClick then
+    -- v1.2.3: the click tick comes AFTER the handler, so a press that starts speech (a Play
+    -- button, a Next that brings up a Listen card, a line from Fizzwick) has no tick at all:
+    -- C.Sound skips UI ticks while speech is playing or about to. `b.silent` skips it always.
     b:SetScript("OnClick", function(self, ...)
-      C.Sound("click")
       onClick(self, ...)
+      if not self.silent then C.Sound("click") end
     end)
   end
+  return b
+end
+
+-- v1.2.3: a button whose job is to play speech (Play / Replay): never a click tick.
+function W.AudioButton(parent, text, width, height, onClick, fontSize)
+  local b = W.Button(parent, text, width, height, onClick, fontSize)
+  b.silent = true
   return b
 end
 

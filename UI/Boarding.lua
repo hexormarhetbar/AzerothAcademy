@@ -91,8 +91,7 @@ H.RegisterView("boarding", function(parent)
   end
   v.routeBtns = routeBtns
   local sail = W.Button(setup, L.BOARD_SET_SAIL, 200, 34, function()
-    C.Sound("click")
-    BU.Start(v.selected)
+    BU.Start(v.selected) -- (W.Button ticks after the handler, v1.2.3)
   end, 15)
   sail:SetPoint("TOP", 0, -200)
   local logTitle = W.Text(setup, 13, L.BOARD_LOG, W.GOLD, "LEFT")
@@ -274,7 +273,6 @@ H.RegisterView("boarding", function(parent)
     v.hero:SetPoint("TOPLEFT", -4, -40)
   end
   local again = W.Button(result, L.BOARD_AGAIN, 140, 30, function()
-    C.Sound("click")
     BU.Start(BU.lastResult and BU.lastResult.unlocked or (BU.game and BU.game.routeId))
   end, 13)
   again:SetPoint("BOTTOM", -150, 10)

@@ -70,13 +70,13 @@ H.RegisterView("language", function(parent)
   cur:SetWidth(540)
 
   local buttons = {}
-  local auto = W.Button(v, "", 540, 28, function() C.Sound("click"); LU.Apply("auto", "language") end, 13)
+  local auto = W.Button(v, "", 540, 28, function() LU.Apply("auto", "language") end, 13)
   auto:SetPoint("TOPLEFT", cur, "BOTTOMLEFT", 0, -10)
   auto.code = "auto"
   buttons[1] = auto
   for i, c in ipairs(ns.LANGUAGE_CHOICES) do
     local col, row = (i - 1) % 2, math.floor((i - 1) / 2)
-    local b = W.Button(v, "", 266, 28, function() C.Sound("click"); LU.Apply(c.code, "language") end, 13)
+    local b = W.Button(v, "", 266, 28, function() LU.Apply(c.code, "language") end, 13)
     b:SetPoint("TOPLEFT", auto, "BOTTOMLEFT", col * 274, -8 - row * 32)
     b.code = c.code
     -- each language is written in its own script, so it gets the font that has its letters

@@ -2,7 +2,7 @@
 -- Every event maps to built-in client SoundKits (tried in order: SOUNDKIT name,
 -- then numeric kit ID). A parent can drop a custom file at
 --   Interface\AddOns\AzerothAcademy\Media\Sounds\<event>.ogg
--- and it is tried first. The addon ships NO audio files; see Media/Sounds/README.md.
+-- and it is tried first (the addon ships one per event); see Media/Sounds/README.md.
 local _, ns = ...
 
 local S = {}
@@ -53,6 +53,48 @@ S.ORDER = { "click", "open", "close", "correct", "wrong", "combo", "overcharge",
   "page", "specimen", "countdown", "duelwin", "gears", "stamp", "drill" }
 
 S.DEFAULTS = { enabled = true, channel = "SFX", level = "all", custom = true }
+
+-- v1.2.3 speech channel rules (pure; Adapters/Compat.lua applies them). Speech = Fizzwick's
+-- voice lines and the World Tongues clips: only one plays at a time, it starts a moment after
+-- the press (and after a stinger that is still ringing), and sound effects get out of its way.
+S.SPEECH_DELAY = 0.2     -- seconds from the press / event to the start of a speech clip
+S.SPEECH_WAIT_MAX = 2.1  -- longest a speech clip waits for a stinger that is still playing (rankup 2.05 s)
+S.SFX_WAIT_MAX = 0.8     -- an important effect waits for speech that ends within this long
+-- Length in seconds of each effect (the shipped Media/Sounds/<event>.ogg; kits are similar).
+S.LENGTH = {
+  click = 0.35, open = 0.37, close = 0.12, correct = 0.68, wrong = 0.19, combo = 0.68, overcharge = 1.19,
+  forge = 0.62, scroll = 0.65, reward = 1.21, rankup = 2.05, exampass = 1.9, chirp = 0.48, hint = 0.46,
+  cameo = 1.06, splash = 0.51, cannon = 0.79, gurgle = 0.6, flight = 0.74, page = 0.56, specimen = 0.89,
+  countdown = 0.66, duelwin = 1.58, gears = 0.94, stamp = 0.67, drill = 0.8,
+}
+-- UI ticks that are simply skipped while someone is speaking (they would only cover a word).
+S.MINOR = { click = true, open = true, close = true, scroll = true, page = true, chirp = true }
+-- Answer feedback and game hits: they belong to the click that caused them, so they wait only
+-- for speech that is about to end (S.SFX_WAIT_MAX); under a long line they are skipped (the
+-- card still flashes green / amber), never played over a word.
+S.FEEDBACK = { correct = true, wrong = true, combo = true, overcharge = true, countdown = true,
+  splash = true, cannon = true, gurgle = true }
+S.SFX_WAIT_LONG = 6      -- other stingers (cameo, reward, flight chime ...) wait up to this long, else skipped
+
+-- What to do with effect `event` when speech has `speechLeft` seconds to go (0 = silent):
+-- "play" now, "drop" it, or "wait" (second value = seconds to wait).
+function S.Duck(event, speechLeft)
+  if not speechLeft or speechLeft <= 0 then return "play", 0 end
+  if S.MINOR[event] then return "drop", 0 end
+  if S.FEEDBACK[event] then
+    if speechLeft <= S.SFX_WAIT_MAX then return "wait", speechLeft end
+    return "drop", 0 -- feedback must not lag far behind the action or mask a word
+  end
+  if speechLeft <= S.SFX_WAIT_LONG then return "wait", speechLeft end
+  return "drop", 0
+end
+
+-- Seconds to wait before a speech clip starts: the press delay, or until a stinger has rung out.
+function S.SpeechStart(delay, sfxLeft)
+  delay = delay or S.SPEECH_DELAY
+  local wait = math.min(math.max(sfxLeft or 0, 0), S.SPEECH_WAIT_MAX)
+  return math.max(delay, wait)
+end
 
 function S.FilePath(event) return S.DIR .. event .. ".ogg" end
 
