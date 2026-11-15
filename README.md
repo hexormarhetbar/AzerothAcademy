@@ -1,4 +1,4 @@
-# Azeroth Academy v1.2.1
+# Azeroth Academy v1.2.2
 
 A free learning addon for kids ages 5 to 13. Lessons are framed as Academy quests in Azeroth.
 This build has the **Main Hub** and two subjects: **Rune Forger** (math) and, new in v0.3,
@@ -228,7 +228,7 @@ time.
 
 ## World Tongues audio (v1.2.0)
 
-World Tongues can now be **heard**. 121 short clips (1.3 MB in all) cover every hiragana (46 + 25 with sound marks),
+World Tongues can now be **heard**. 121 short clips (about 1.1 MB in all) cover every hiragana (46 + 25 with sound marks),
 the 12 Japanese greetings, the 10 trader's phrasebook lines, every co-op dialogue line and all 20 Spanish starter items.
 Katakana use the hiragana clip with the same sound (ア = あ), and homophones share one clip (ぢ = じ, づ = ず).
 
@@ -237,6 +237,9 @@ Katakana use the hiragana clip with the same sound (ア = あ), and homophones s
   **No voice cloning and no recordings of real people.** Each clip was generated from the kana / Japanese script (or
   the Spanish spelling), checked with ElevenLabs speech-to-text, regenerated when it did not match, and mastered with
   `tools/master_audio.py` (mono 44.1 kHz Ogg Vorbis). Details: `Media/Sounds/Tongues/README.md`.
+- **v1.2.2: one consistent voice.** The Japanese clips were regenerated with steadier settings and one prompt format,
+  measured against each other (pitch and speaker embeddings, `tools/voice_check/`), and the odd ones out retaken or
+  nudged in pitch, so every kana and phrase sounds like the same teacher. The Spanish outliers were fixed the same way.
 - **Listen questions.** About one question in three, for an entry that has a clip: the clip plays when the card
   appears, and a **Replay** button (top right of the card) plays it again. Then pick the kana or word you heard, pick
   what it means, or (Magister from Rune, Adept on Glyph) **type the romaji**. Buttons never offer two answers that
@@ -1081,6 +1084,25 @@ Azeroth Academy v0.10.0** (two accounts, or a friend), both with an age band pic
 221. [ ] Hub tiles: every name and subtitle sits above the Drill / Deck / Study buttons, including World Tongues ("Languages: Japanese & more") and Mechanics Academy ("Tank, heal & DPS").
 222. [ ] Switch to German, French and Russian with `/aa lang`: no tile text runs into its buttons.
 
+**v1.2.2: one voice for World Tongues**
+
+223. [ ] Hiragana study page: press Play down the whole chart (あ to ぽ). Every kana sounds like the **same woman**, at about the same pitch and loudness; none sounds like a different or much higher / lower voice.
+224. [ ] Each kana is said correctly, especially い, う, え, つ, ふ, を and ん (a native speaker if you can).
+225. [ ] Greetings, Trader's Phrasebook and the co-op dialogue lines: the same voice as the kana, and each line is said correctly.
+226. [ ] Spanish course: all 20 Play buttons sound like the same man.
+227. [ ] Hiragana / Katakana with sound marks, Listen questions: never two buttons that sound the same (for example ず and づ).
+
+## Known limits (v1.2.2)
+
+- **No seed.** The ElevenLabs tool used here cannot fix a seed or pass neighbouring text, so a regenerated clip can
+  still come out a little different; consistency comes from higher stability, one prompt format, measuring every clip
+  and retaking outliers.
+- **37 clips had their pitch nudged** (Praat PSOLA, a few semitones at most; formants and timing kept). Five Japanese
+  phrases and five Spanish clips are still just over 4 semitones from their group median (natural intonation).
+- **Single kana were not checked by speech recognition in v1.2.2** (local Whisper cannot judge one syllable, and the
+  paid ElevenLabs check was skipped). The phrases were checked with local Whisper. い, う, いいえ and おなまえは are
+  the v1.2.0 clips, because their new takes were misread.
+
 ## Known limits (v1.2.1)
 
 - The tile-text check uses a font-width **estimate** (`Util.TextLines`, deliberately generous), not the real font. If a
@@ -1316,6 +1338,9 @@ AzerothAcademy/
   tools/build_fonts.py      rebuild the bundled font subsets from the Noto Sans sources (fontTools)
   tools/tongues_clips.tsv   v1.2: World Tongues clip list (file, course, native text, seconds)
   tools/gen_tongues_clips.py  v1.2: writes Core/TonguesClips.lua from the TSV
+  tools/voice_check/        v1.2.2: clip consistency checks: pitch_summary.py (Praat pitch vs. group median, before/after),
+                            consistency.py (Resemblyzer embeddings + spectral stats), pitchnorm.py (PSOLA pitch nudge),
+                            pitchcheck.py, seg.py (split row takes on silence), v122_takes.tsv (per-clip take log)
   tools/pack.py             build the release zip (leaves out tests/, .luacheckrc, git files, raw audio)
   Main.lua                  events, slash commands, combat hide/resume
   README.md, DESIGN.md
@@ -1415,6 +1440,15 @@ originals and face-centered head crops, and wrote a 26-entry manifest.
 For v0.5, `tools/convert_art.sh` was run with ImageMagick 7.1.2 on test PNGs. It produced 512x512 RGBA TGAs, a 1024x256 (4-frame) and a 2048x256 (8-frame) strip, and a correct manifest. Removed files dropped out of the manifest, and a bad `STRIP_FRAMES` was rejected.
 
 ## Changelog
+
+**v1.2.2**
+- **World Tongues sounds like one teacher.** All Japanese clips (kana, greetings, phrasebook, dialogue) regenerated
+  with the same designed voice at stability 0.75, similarity 0.9, style 0 and one prompt format (`か。`) for every kana;
+  every clip measured against its group median and the outliers retaken (best of up to 3 rounds) or nudged in pitch.
+  Kana pitch spread: 5.1 → 2.5 semitones (largest jump 13.3 → 4.0). Spanish: 7.5 → 3.3. い, う, いいえ and おなまえは
+  kept from v1.2.0. Per-clip log in `tools/voice_check/v122_takes.tsv`; method in `Media/Sounds/Tongues/README.md`.
+- **Fix:** sound-mark Listen questions could offer two distractors that sound the same (ず and づ). Distractors now
+  have one entry per sound; new harness check.
 
 **v1.2.1**
 - **Sprocket is easy to see on the strip.** `tools/sprocket_pop.py` brightens his two head crops (shadow lift, a little

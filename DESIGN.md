@@ -703,3 +703,15 @@ UI position, shards, and stats are untouched. The report notes "carried over fro
   `GetStringHeight` when the client has it, else `Util.TextLines`; tries `H.TILE_FONTS` in order, then caps the
   subtitle's height. `H.TileTextHeight` (estimate) is what the smoke test checks for every locale.
 
+## v1.2.2: World Tongues voice consistency
+
+- Audio only, plus one generator fix. Clips are regenerated offline; nothing in the addon measures audio at run time.
+- `tools/voice_check/`: `pitch_summary.py BEFORE AFTER [out.json]` groups clips (ja kana / ja phrases / es), takes the
+  Praat autocorrelation median F0 of each, and reports SD, max and counts beyond 4 / 6 semitones from the group median.
+  `consistency.py` adds Resemblyzer cosine distance to the group's median embedding (weak on sub-second clips).
+  `pitchnorm.py in out semitones [floor ceil]` is the PSOLA nudge (Praat Manipulation, pitch tier shifted, formants kept).
+- Selection rule: per clip, the take closest to the group median (phrases also had to match local Whisper; a few kana
+  were picked by hand after a misreading); then a PSOLA shift toward the median if it was still outside the band.
+  Scripts that drove generation and selection stayed in the staging area; the outcome is `v122_takes.tsv`.
+- `soundDistractors` (Core/TonguesGen.lua) dedupes by `TA.SoundKey` across pool and lesson with a shared `seen` set
+  seeded by the answer's key, so a choice set never holds two homophones.
