@@ -715,3 +715,19 @@ UI position, shards, and stats are untouched. The report notes "carried over fro
   Scripts that drove generation and selection stayed in the staging area; the outcome is `v122_takes.tsv`.
 - `soundDistractors` (Core/TonguesGen.lua) dedupes by `TA.SoundKey` across pool and lesson with a shared `seen` set
   seeded by the answer's key, so a choice set never holds two homophones.
+
+## v1.2.3: speech channel
+
+- `Compat.Speak(path, opts)` is the only way speech is played (`PlayVoice` and `PlayTongue` wrap it). State in
+  `C.speech` = { token, handle, startAt, endsAt, kind, path }. A call bumps `token` (so a clip still waiting in
+  `C.After` does not start) and stops the stored handle, except `opts.queue` with a clip playing: then it waits
+  `SpeechLeft() + SPEECH_DELAY` and leaves that clip alone. `onResult(played)` reports the real outcome later, so the UI
+  falls back to text asynchronously (`Lessons` checks the card is still the same problem). Sound switched off during
+  the delay cancels the clip without marking the file missing.
+- `C.Sound(event)` asks `SoundEvents.Duck(event, SpeechLeft())`: MINOR (click, open, close, scroll, page, chirp)
+  drop; FEEDBACK (answers, game hits, countdown) wait if the speech ends within `SFX_WAIT_MAX` (0.8 s), else drop;
+  other stingers wait up to `SFX_WAIT_LONG` (6 s). A waiting effect is dropped if new speech replaced the old one.
+  Every played effect sets `C.sfxEndsAt` from `SoundEvents.LENGTH` (the shipped files' lengths), and
+  `SoundEvents.SpeechStart` makes speech wait for it (at least `SPEECH_DELAY` 0.2 s, at most `SPEECH_WAIT_MAX` 2.1 s).
+- `W.Button` runs the handler first and ticks after (`b.silent` skips it); `W.AudioButton` = silent button.
+- Fizzwick's `Voice.Started` is recorded when the line is scheduled; a refused file is marked missing in `onResult`.

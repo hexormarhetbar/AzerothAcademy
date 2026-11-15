@@ -27,7 +27,7 @@ that file again until the next `/reload`. You can replace any file with your own
 
 | File | Plays when | Length | Built-in fallback (SoundKit) |
 |---|---|---|---|
-| `click.ogg` | Any button press | 0.1-0.2 s | IG_MAINMENU_OPTION_CHECKBOX_ON (856) |
+| `click.ogg` | Any button press (after its action; not on Play / Replay, and skipped while someone speaks, v1.2.3) | 0.35 s | IG_MAINMENU_OPTION_CHECKBOX_ON (856) |
 | `open.ogg` | The Academy window opens | 0.4-0.6 s | IG_SPELLBOOK_OPEN (829) |
 | `close.ogg` | The Academy window closes | 0.3-0.5 s | IG_SPELLBOOK_CLOSE (830) |
 | `correct.ogg` | Right answer | 0.5-0.8 s | IG_QUEST_LIST_COMPLETE (878) |
@@ -56,7 +56,7 @@ that file again until the next `/reload`. You can replace any file with your own
 
 ## World Tongues clips (v1.2.0)
 
-The language clips live in `Tongues/` with their own README (voices, prompts, speech-to-text check).
+The language clips live in `Tongues/` with their own README (voices, prompts, checks, v1.2.3 padding).
 
 ## Sound-effect briefs
 
@@ -109,6 +109,9 @@ Some of Fizzwick's lines are spoken aloud by an **original designed voice**.
   between clips, and the same clip at most once every 45 s. Rank-up and Mastered may cut
   off a clip that is still playing. "Goodbye" plays only after a visit of 20 s or more,
   and never when the window hides for combat.
+- **v1.2.3 speech channel:** the voice shares one channel with the World Tongues clips (never two at
+  once), starts 0.2 s after the event or once a stinger has rung out, and effects make way for it.
+  See "Sound and speech (v1.2.3)" in the main README for the full list of triggers.
 - **Off switch:** Parent Panel "Fizzwick's voice", `/aa voice off`, or Sound OFF (mutes all).
   The voice uses the same channel/volume slider as the sound effects.
 

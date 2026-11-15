@@ -1,4 +1,4 @@
-# Azeroth Academy v1.2.2
+# Azeroth Academy v1.2.3
 
 A free learning addon for kids ages 5 to 13. Lessons are framed as Academy quests in Azeroth.
 This build has the **Main Hub** and two subjects: **Rune Forger** (math) and, new in v0.3,
@@ -252,6 +252,53 @@ Katakana use the hiragana clip with the same sound (ア = あ), and homophones s
 - **No audio, no problem.** If a clip will not play (file missing, sound off mid-round), the card switches to the
   written question and the button goes away. If the first three clips all fail, audio is treated as unavailable for
   the session. Everything else in World Tongues works exactly as in v1.1.
+
+## Sound and speech (v1.2.3)
+
+In v1.2.2 a World Tongues **Play** press played the button click (`click.ogg`, 0.35 s) and the language clip in the
+same frame, and the clips started 12 ms into the file, so a short word was lost under the click. The same pattern
+(an effect or a click on top of a spoken line) existed all over the addon. v1.2.3 adds **one speech channel**
+(`Compat.Speak`) for Fizzwick's voice lines, Sprocket's hint line and every World Tongues clip, with these rules
+(`Core/SoundEvents.lua`, `S.Duck` / `S.SpeechStart`):
+
+- **One clip at a time.** A new clip stops the one playing (`StopSound` on the stored handle) and cancels one still
+  waiting. Fizzwick's ordinary lines never start over speech; big moments (rank up, mastered, new specimen /
+  blueprint / stamp / card, duel win) cut in. A Listen card's **autoplay queues** behind a line that is playing.
+- **Speech starts 0.2 s after the press** (`C_Timer.After`, or the OnUpdate fallback on clients without it), and
+  later if a stinger is still ringing (up to 2.1 s, the length of the rank-up fanfare).
+- **No click on buttons that start speech.** Play / Replay are audio buttons (no tick). Every other button now ticks
+  *after* its action, and a tick, page turn, chirp or open / close sound is skipped while speech is playing or about to.
+- **Effects make way.** Answer feedback and game hits wait for speech that ends within 0.8 s, otherwise they are skipped
+  (the card still flashes green / amber); other stingers wait up to 6 s for the line to finish.
+- **The clips have room:** 0.2 s of silence before the word, 0.15 s after; single kana are 15% slower (pitch kept).
+
+| Trigger | Sounds | Before (v1.2.2) | After (v1.2.3) |
+|---|---|---|---|
+| World Tongues study page: Play | click + clip | click and clip in the same frame; clip began 12 ms in; rapid presses restarted the clip | no click; clip 0.2 s after the press with 0.2 s lead-in; a new press replaces the playing or waiting clip |
+| Listen card: Replay (lessons) | click + clip | same as above | same as above |
+| Listen card appears (autoplay after Next, an answer, Practice / Drill) | Next / answer click, clip, sometimes a Fizzwick line | the click and the clip overlapped; the clip could start over Fizzwick | the click is skipped (speech is pending); the clip waits 0.2 s, or until Fizzwick's line ends |
+| Co-op phrasebook: partner's line + Replay (Duel of Wits) | right / wrong chime, clip, click | the clip started under the chime of your last answer; Replay clicked | the clip waits for the chime; Replay has no click; queues behind Fizzwick |
+| Answer a question | click, correct / wrong / combo / overcharge, Fizzwick CORRECT / WRONG / COMBO / OVERCHARGE line | all three together; the first word was under the chime | no click; the chime, then Fizzwick once it has rung out |
+| Tier mastered (+ new specimen, blueprint, stamp or tactics card) | reward + specimen / gears / stamp / drill, MASTERED or NAT/GE/LIB/MECH line | stinger over the line | the line waits for the stinger (big line: stops other speech first) |
+| Round start (tier button, Drill, Practice, review, trial, exam) | click, forge / scroll / gears / drill / page, ROUNDSTART / NATSTART / GESTART / LIBSTART / MECHSTART / REVIEW / TRIALSTART / EXAMSTART line, first Listen clip | line started *before* the start sound; the first Listen clip cut into the line | start sound first, then the line; no click; the first clip queues behind the line |
+| Trial finished, exam passed / failed | reward or exampass, TRIALDONE / EXAMPASS / EXAMTRY line | overlapped | the line waits for the stinger |
+| Rank-up celebration | rankup fanfare (2.05 s), RANKUP line | fanfare over the line | the line starts when the fanfare ends |
+| Leader cameo card (after the rank-up card, an exam, a milestone) | cameo chime | could ring over the rank-up line | waits for the line to end (up to 6 s), else skipped |
+| Lore cameo story (Thrall / Magni) | LORECAMEO line | could overlap a click or a clip | speech channel |
+| Hint (Sprocket the parrot) | click, hint chime, Sprocket's HINT line | all together | no click; the line waits for the chime; the chime waits if Fizzwick is finishing a line |
+| Academy window opens / greeting | open, chirp, GREET line | chirp played after the line had started | open and chirp first, the greeting after them |
+| Academy window closes / goodbye | click, close, BYE line | close over the goodbye | goodbye after the close sound |
+| In-Flight Lesson pop-up; landing | flight chime, FLIGHTSTART line; FLIGHTLAND line | chime over the line | the line waits for the chime; speech channel |
+| Duel invite pop-up | chirp, DUELINVITE line | together | the line waits for the chirp |
+| Duel countdown 3-2-1, race start | countdown beats, DUELSTART line (4 s), forge | beats over the line | beats skipped while Fizzwick speaks (numbers still show), the race-start sound waits |
+| Duel finished, waiting for others | duelwin or reward, DUELWIN / DUELDONE / DUELWAIT line (+ rank-up) | stinger over the line | the line waits for the stinger |
+| Murloc Boarding Party (start, waves, the Tidehunter, splash, broadside, wheel, win / lose) | gurgle, splash, cannon, combo, wrong, reward, BOARDSTART (murloc line) and other BOARD lines | gurgle under the line | the line waits for the effect; hits during a long line are skipped |
+| Field Journal / Blueprint Binder / Passport pages | page, click | - | skipped while someone is speaking |
+| Language picker, Boarding "Set Sail" / "Again", skill-list companion link | click | **two** ticks (the handler and the button both clicked) | one tick, after the action |
+| Parent Panel toggles, sound channel | click, correct | - | unchanged (no speech); tick after the action |
+
+Only some lines have a recording (the first time each event happens in a session; see `Media/Sounds/README.md`);
+the rules apply whenever one does.
 
 ## Install
 
@@ -1092,6 +1139,29 @@ Azeroth Academy v0.10.0** (two accounts, or a friend), both with an age band pic
 226. [ ] Spanish course: all 20 Play buttons sound like the same man.
 227. [ ] Hiragana / Katakana with sound marks, Listen questions: never two buttons that sound the same (for example ず and づ).
 
+**v1.2.3: room to hear the word**
+
+228. [ ] World Tongues study page: press **Play**. No click; a short pause, then the word, clearly. Single kana are a little slower than before and still the same voice and pitch.
+229. [ ] Press Play (or **Replay** on a Listen card) three times quickly: you hear the word once or restarted, never two copies on top of each other.
+230. [ ] Answer a question so the next card is a Listen question (or press **Next**): no click on top of the clip; the word starts a moment after the card appears.
+231. [ ] Start a round with sound on: the start sound plays, then Fizzwick's line, and a Listen card's clip waits until he has finished.
+232. [ ] Answer right / wrong while Fizzwick is talking: his line is never covered by a click; the chime waits for a short line or is skipped under a long one.
+233. [ ] Rank up (or pass an exam): the fanfare first, then Fizzwick; the leader card's chime does not ring over him.
+234. [ ] Duel of Wits co-op phrasebook: the partner's line plays after your answer's chime, not on top of it; Replay has no click.
+235. [ ] Hint button: Sprocket's chime, then his line, no click on top. Murloc Boarding Party: gurgles and splashes do not cover Fizzwick's lines.
+236. [ ] Open and close the Academy: chime, then the greeting; close sound, then goodbye.
+237. [ ] On WoW Forever (OnUpdate timer fallback if the client has no C_Timer): clips still play, just a moment after the press.
+
+## Known limits (v1.2.3)
+
+- **Effects can be skipped.** While someone is speaking, button ticks and page turns are skipped, and an answer chime
+  under a long Fizzwick line is skipped too (the card still flashes). The Duel countdown beats are silent while his
+  start line plays.
+- The ducking uses the **lengths of the shipped effect files**; a parent's own replacement file of a different length,
+  or a built-in SoundKit fallback, may end a little earlier or later than the addon assumes.
+- Speech starts 0.2 s after the press, plus 0.2 s of silence in the clip: about 0.4 s to the first sound, by design.
+- **Not tested in a real game client yet** (mock-API smoke tests only); the delays need a listen in game.
+
 ## Known limits (v1.2.2)
 
 - **No seed.** The ElevenLabs tool used here cannot fix a seed or pass neighbouring text, so a regenerated clip can
@@ -1338,6 +1408,7 @@ AzerothAcademy/
   tools/build_fonts.py      rebuild the bundled font subsets from the Noto Sans sources (fontTools)
   tools/tongues_clips.tsv   v1.2: World Tongues clip list (file, course, native text, seconds)
   tools/gen_tongues_clips.py  v1.2: writes Core/TonguesClips.lua from the TSV
+  tools/tongues_pad.py      v1.2.3: re-master the World Tongues clips with 0.2 s lead / 0.15 s tail silence, kana at 0.85x (from the v1.2.2 clips)
   tools/voice_check/        v1.2.2: clip consistency checks: pitch_summary.py (Praat pitch vs. group median, before/after),
                             consistency.py (Resemblyzer embeddings + spectral stats), pitchnorm.py (PSOLA pitch nudge),
                             pitchcheck.py, seg.py (split row takes on silence), v122_takes.tsv (per-clip take log)
@@ -1440,6 +1511,21 @@ originals and face-centered head crops, and wrote a 26-entry manifest.
 For v0.5, `tools/convert_art.sh` was run with ImageMagick 7.1.2 on test PNGs. It produced 512x512 RGBA TGAs, a 1024x256 (4-frame) and a 2048x256 (8-frame) strip, and a correct manifest. Removed files dropped out of the manifest, and a bad `STRIP_FRAMES` was rejected.
 
 ## Changelog
+
+**v1.2.3**
+- **You can hear the word after pressing Play.** The cause: the button played its click (`click.ogg`, 0.35 s) in the same
+  frame as the clip, and the clips started 12 ms into the file. Play / Replay are now audio buttons (no click), every
+  clip starts 0.2 s after the press (`C_Timer.After`, OnUpdate fallback), and the 121 clips were re-mastered from the
+  v1.2.2 masters with 0.2 s / 0.15 s of silence and single kana at 0.85x speed, pitch kept (`tools/tongues_pad.py`,
+  `tools/master_audio.py --lead --tail --tempo`). No new ElevenLabs generations.
+- **One speech channel for the whole addon** (`Compat.Speak`, `Compat.SpeechLeft`, `Compat.StopSpeech`): Fizzwick's
+  lines, Sprocket's hint line and the language clips never overlap; a new clip stops the previous one (stored handle +
+  `StopSound`); Listen autoplay queues behind a line. Effects make way for speech (`SoundEvents.Duck`), and speech waits
+  for a stinger that is still ringing (`SoundEvents.SpeechStart`). Audit of every trigger: "Sound and speech (v1.2.3)".
+- Buttons tick after their action (skipped when the action starts speech); removed double ticks (language picker,
+  Boarding, skill-list link). Round start plays its sound before Fizzwick's line; the hub chirp before the greeting.
+- Tests: speech rules in the harness; the smoke test checks no click on Play / Replay, the start delay, rapid
+  replays, Fizzwick vs. clip, autoplay queueing, and that every clip file is padded and matches its listed length.
 
 **v1.2.2**
 - **World Tongues sounds like one teacher.** All Japanese clips (kana, greetings, phrasebook, dialogue) regenerated
