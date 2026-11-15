@@ -1,0 +1,122 @@
+clip	lang	source	elevenlabs_generation	prompt_sent	psola_shift_st
+es_adios	es	kept v1.2.0		Adiós.	0
+es_amarillo	es	kept v1.2.0		Amarillo.	0
+es_azul	es	v1.2.2 retake	x24AfZE7vMxHp3spxV7p	Azul.	0
+es_blanco	es	kept v1.2.0		Blanco.	0
+es_buenas_noches	es	v1.2.2 retake	Nb05NmDJPUd3QkLH7OaR	Buenas noches.	0
+es_buenos_dias	es	v1.2.2 retake	7pchAjOaFdkIyN9djgcV	Buenos días.	0
+es_como_estas	es	v1.2.2 retake	PmWTecpcwRK5c9WOh4XB	¿Cómo estás?	-6.8
+es_cuanto_cuesta	es	v1.2.2 retake	4KXKIs43svSNBgzvVY3s	¿Cuánto cuesta?	-1.0
+es_estoy_bien	es	kept v1.2.0		Estoy bien.	0
+es_gracias	es	kept v1.2.0		Gracias.	0
+es_hola	es	v1.2.2 retake	k2B6v7X2l9yLB4qZfFdn	Hola.	-3.6
+es_me_llamo	es	kept v1.2.0 + pitch fix		Me llamo...	+3.6
+es_mucho_gusto	es	v1.2.2 retake	f9jouPKugFHFBxlKk1eb	Mucho gusto.	-1.7
+es_negro	es	kept v1.2.0		Negro.	0
+es_no	es	kept v1.2.0		No.	0
+es_no_entiendo	es	v1.2.2 retake	k3yd0yKBCvKcmpi7N77V	No entiendo.	0
+es_por_favor	es	kept v1.2.0 + pitch fix		Por favor.	+1.2
+es_rojo	es	kept v1.2.0		Rojo.	0
+es_si	es	v1.2.2 retake	Hz7SI0MWhaMmlHsvqaVR	Sí.	+3.9
+es_verde	es	kept v1.2.0		Verde.	0
+ja_d_hai_onegaishimasu	ja	v1.2.2 take 1		はい、お願いします。	0
+ja_d_hyaku_en_desu	ja	v1.2.2 take 1		ひゃくえんです。	0
+ja_d_irasshaimase	ja	v1.2.2 take 1		いらっしゃいませ。	0
+ja_d_konnichiwa_hajimemashite	ja	v1.2.2 take 1		こんにちは。はじめまして。	0
+ja_d_kore_o_kudasai	ja	v1.2.2 take 1		これをください。	0
+ja_d_kore_wa_ikura_desu_ka	ja	v1.2.2 take 1		これはいくらですか？	0
+ja_d_ocha_wa_dou_desu_ka	ja	v1.2.2 retake	tlvzhzKn3InMhFEM62Ai	おちゃはどうですか？	-1.3
+ja_d_oishii_desu	ja	v1.2.2 take 1		おいしいです。	0
+ja_d_sore_wa_ringo_desu	ja	v1.2.2 take 1		それはりんごです。	0
+ja_d_watashi_wa_fizuwikku_desu	ja	v1.2.2 take 1		わたしはフィズウィックです。	0
+ja_k_a	ja	v1.2.2 row split		あ。 い。 う。 え。 お。	0
+ja_k_ba	ja	v1.2.2 retake	2Itu5WJoSOOSIiJdr8LH	ば。	-2.1
+ja_k_be	ja	v1.2.2 row split		ば。 び。 ぶ。 べ。 ぼ。	-3.5
+ja_k_bi	ja	v1.2.2 retake	FXO1WfBokHYWgFQjf6Y2	び。	0
+ja_k_bo	ja	v1.2.2 retake	c9ANJHyRg5Dz5wKV5ySo	ぼ。	+2.6
+ja_k_bu	ja	v1.2.2 retake	uqSKaBuqPhL77W1A1zeu	ぶ。	0
+ja_k_chi	ja	v1.2.2 take 1		ち。	0
+ja_k_da	ja	v1.2.2 retake	30MXPhoPzu8DA5EXxHnT	だ。	+0.6
+ja_k_de	ja	v1.2.2 take 1		で。	0
+ja_k_do	ja	v1.2.2 take 1		ど。	0
+ja_k_e	ja	v1.2.2 retake	VsiOuKqlHR6qtzPSkO7b	え。	0
+ja_k_fu	ja	v1.2.2 take 1		ふ。	0
+ja_k_ga	ja	v1.2.2 take 1		が。	0
+ja_k_ge	ja	v1.2.2 retake	daDC4beEtZ1SwdX5ZBuP	げ。	-1.4
+ja_k_gi	ja	v1.2.2 take 1		ぎ。	0
+ja_k_go	ja	v1.2.2 take 1		ご。	0
+ja_k_gu	ja	v1.2.2 retake	k1lj3dh669AxH5NpIor2	ぐ。	-5.3
+ja_k_ha	ja	v1.2.2 retake	rEwmpRG3Fxcxbxz7UuwD	は。	0
+ja_k_he	ja	v1.2.2 take 1		へ。	-1.6
+ja_k_hi	ja	v1.2.2 retake	TtfPgGEOwkUni2epJNwS	ひ。	-3.4
+ja_k_ho	ja	v1.2.2 take 1		ほ。	-2.2
+ja_k_i	ja	kept v1.2.0		「い」	0
+ja_k_ji	ja	v1.2.2 take 1		じ。	0
+ja_k_ka	ja	v1.2.2 take 1		か。	-2.4
+ja_k_ke	ja	v1.2.2 retake	MjOvqzFBQRnQYmmm7uQt	け。	-5.2
+ja_k_ki	ja	v1.2.2 retake	07MJ3vBc0ceIZgr80ac3	き。	-6.1
+ja_k_ko	ja	v1.2.2 take 1		こ。	0
+ja_k_ku	ja	v1.2.2 retake	0jXXoFN31yvU3VFubxKT	く。	-2.1
+ja_k_ma	ja	v1.2.2 retake	oIQqUG9m2jCJV1Cz79Tf	ま。	+0.8
+ja_k_me	ja	v1.2.2 take 1		め。	+0.0
+ja_k_mi	ja	v1.2.2 take 1		み。	+0.3
+ja_k_mo	ja	v1.2.2 take 1		も。	0
+ja_k_mu	ja	v1.2.2 take 1		む。	0
+ja_k_n	ja	v1.2.2 take 1		ん。	0
+ja_k_na	ja	v1.2.2 retake	uAHEvwMyCk5YfS2oy2zs	な。	0
+ja_k_ne	ja	v1.2.2 take 1		ね。	0
+ja_k_ni	ja	v1.2.2 take 1		に。	0
+ja_k_no	ja	v1.2.2 take 1		の。	0
+ja_k_nu	ja	v1.2.2 take 1		ぬ。	0
+ja_k_o	ja	v1.2.2 retake	hE3rdgvvrycDyp6SbPuL	お。	-0.6
+ja_k_pa	ja	v1.2.2 retake	qCvgYrgmXNjB6f35QLda	ぱ。	-2.2
+ja_k_pe	ja	v1.2.2 retake	Oyk66hxSN11AZ5JbBtOZ	ぺ。	0
+ja_k_pi	ja	v1.2.2 take 1		ぴ。	0
+ja_k_po	ja	v1.2.2 retake	x6IYikcjjZLJAUF4DC3S	ぽ。	-2.7
+ja_k_pu	ja	v1.2.2 take 1		ぷ。	-5.5
+ja_k_ra	ja	v1.2.2 retake	IjdlUY2uQ8uV2tlY68Dj	ら。	0
+ja_k_re	ja	v1.2.2 take 1		れ。	0
+ja_k_ri	ja	v1.2.2 retake	lX16NDgHMKJLxW0Yp7PH	り。	+0.9
+ja_k_ro	ja	v1.2.2 take 1		ろ。	+0.4
+ja_k_ru	ja	v1.2.2 retake	DXcwWR8vPluLhjc9FHlk	る。	0
+ja_k_sa	ja	v1.2.2 take 1		さ。	0
+ja_k_se	ja	v1.2.2 retake	RTxjNCUn9hIlXgG6zKx5	せ。	+0.9
+ja_k_shi	ja	v1.2.2 take 1		し。	0
+ja_k_so	ja	v1.2.2 retake	BZNPzOCNxUBo5Qj0TVVw	そ。	-2.7
+ja_k_su	ja	v1.2.2 retake	CACXg1hffPHSJNB6i74c	す。	0
+ja_k_ta	ja	v1.2.2 take 1		た。	0
+ja_k_te	ja	v1.2.2 retake	YjmYxSsC9HgLIK5qmsCs	て。	-1.6
+ja_k_to	ja	v1.2.2 retake	XQEMezeZJlm7jTfS2DjR	と。	-1.7
+ja_k_tsu	ja	v1.2.2 retake	riLz1Y1dwOCUzDYLWqTm	つ。	+0.8
+ja_k_u	ja	kept v1.2.0		う、う。 (second token)	0
+ja_k_wa	ja	v1.2.2 take 1		わ。	0
+ja_k_wo	ja	v1.2.2 take 1		を。	+3.0
+ja_k_ya	ja	v1.2.2 row split		や。 ゆ。 よ。	0
+ja_k_yo	ja	v1.2.2 row split		や。 ゆ。 よ。	0
+ja_k_yu	ja	v1.2.2 row split		や。 ゆ。 よ。	0
+ja_k_za	ja	v1.2.2 take 1		ざ。	0
+ja_k_ze	ja	v1.2.2 retake	i6BtSg7twl9zUcyEO3HY	ぜ。	0
+ja_k_zo	ja	v1.2.2 retake	Ot3PH4jZuYoYEQBd4hcR	ぞ。	-2.8
+ja_k_zu	ja	v1.2.2 retake	pQihcUbO0K9YlMutIZ6f	ず。	0
+ja_w_arigatou_gozaimasu	ja	v1.2.2 take 1		ありがとうございます。	0
+ja_w_daijoubu_desu	ja	v1.2.2 retake	mFoeHEXNMTVDnR1wtRv4	だいじょうぶです。	0
+ja_w_dou_itashimashite	ja	v1.2.2 take 1		どういたしまして。	0
+ja_w_douzo_yoroshiku	ja	v1.2.2 take 1		どうぞよろしく。	0
+ja_w_gochisousama_deshita	ja	v1.2.2 take 1		ごちそうさまでした。	0
+ja_w_hai	ja	v1.2.2 retake	9yxGljEDEDT8CCEutjYc	はい。	0
+ja_w_hajimemashite	ja	v1.2.2 take 1		はじめまして。	0
+ja_w_iie	ja	kept v1.2.0		いいえ。	0
+ja_w_ikura_desu_ka	ja	v1.2.2 take 1		いくらですか？	0
+ja_w_itadakimasu	ja	v1.2.2 take 1		いただきます。	0
+ja_w_konbanwa	ja	v1.2.2 take 1		こんばんは。	0
+ja_w_konnichiwa	ja	v1.2.2 take 1		こんにちは。	0
+ja_w_kore_wa_nan_desu_ka	ja	v1.2.2 take 1		これはなんですか？	0
+ja_w_mou_ichido_onegaishimasu	ja	v1.2.2 take 1		もういちどお願いします。	0
+ja_w_ohayou_gozaimasu	ja	v1.2.2 take 1		おはようございます。	0
+ja_w_onamae_wa	ja	kept v1.2.0		おなまえは？	0
+ja_w_onegaishimasu	ja	v1.2.2 take 1		お願いします。	0
+ja_w_oyasuminasai	ja	v1.2.2 take 1		おやすみなさい。	0
+ja_w_sayounara	ja	v1.2.2 take 1		さようなら。	0
+ja_w_sumimasen	ja	v1.2.2 take 1		すみません。	0
+ja_w_wakarimasen	ja	v1.2.2 take 1		わかりません。	0
+ja_w_yukkuri_onegaishimasu	ja	v1.2.2 take 1		ゆっくりお願いします。	0
