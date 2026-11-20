@@ -20,7 +20,7 @@ read_globals = {
   "PlaySoundFile", "StopSound", "UnitFactionGroup",
   "Minimap", "GameTooltip", "GetCursorPosition", "GetMinimapShape", "LibStub", "IsInInstance",
   -- v0.10 Duel of Wits comms
-  "C_ChatInfo", "SendAddonMessage", "RegisterAddonMessagePrefix", "GetNormalizedRealmName",
+  "C_ChatInfo", "SendAddonMessage", "RegisterAddonMessagePrefix", "GetNormalizedRealmName", "Ambiguate", "ERR_CHAT_PLAYER_NOT_FOUND_S", "ChatFrame_AddMessageEventFilter",
   "IsInRaid", "IsInGroup", "GetNumRaidMembers", "GetNumPartyMembers", "IsInGuild",
   "C_FriendList", "GetNumFriends", "GetFriendInfo", "GetChannelName", "JoinTemporaryChannel",
   "LeaveChannelByName", "ChatFrame_RemoveChannel", "ChatFrameUtil", "NUM_CHAT_WINDOWS", "_G",

@@ -100,8 +100,19 @@ function D.Norm(name, realm)
   if not name:find("-", 1, true) and realm and realm ~= "" then name = name .. "-" .. realm end
   return name
 end
-local function nkey(name) return tostring(name):lower() end
 function D.Short(name) return (tostring(name):match("^([^%-]+)")) or tostring(name) end
+-- v1.2.4: a player's key is the character name without any realm, lower case. Clients do not
+-- agree on realm spellings (WoW Forever reports realms like "CAMWOWUS1Realm1PvE"), and a duel
+-- only ever has up to 5 people from one group / guild, so the bare name is what identifies them.
+function D.Key(name)
+  local short = D.Short(name or ""):gsub("^%s+", ""):gsub("%s+$", "")
+  return short:lower()
+end
+local nkey = D.Key
+-- v1.2.4: messages meant for one player travel on the group (or guild) channel with this last
+-- field naming who it is for ("@>name"); peers it is not for ignore it. Older clients ignore
+-- the extra field (every message is read by position).
+D.TO_MARK = "@>"
 
 ------------------------------------------------------------------------
 -- Question sets (deterministic)
@@ -289,14 +300,66 @@ function Engine:Context() return (self.o.context and self.o.context()) or {} end
 
 function Engine:Flush() self.q:Flush(self:Now(), self.o.send) end
 
+function Engine:Log(fmt, ...)
+  if self.o.log then
+    local okf, text = pcall(string.format, fmt, ...)
+    pcall(self.o.log, okf and text or tostring(fmt))
+  end
+end
+
+-- v1.2.4: how a message for one player travels. Whispers to "Name-Realm" fail on WoW Forever
+-- ("No player named ... is currently playing"), so a player in our party / raid is reached on
+-- the group channel, a guild duel on the guild channel; only a stranger gets a real whisper.
+function Engine:Route(target)
+  local grp = self.o.groupChannel and self.o.groupChannel()
+  if grp and (not self.o.inGroup or self.o.inGroup(target)) then return grp end
+  local d = self.duel
+  if d and d.scope == "GUILD" and self.o.inGuild and self.o.inGuild() then return "GUILD" end
+  return nil
+end
+
 function Engine:Send(channel, target, key, mtype, ...)
   -- v1.1: protocol 1 unless the duel / queue is on a language subject
   local subject = (self.duel and self.duel.subject) or (self.queue and self.queue.subject)
   DP.sendVersion = D.ProtoFor(subject)
-  local msg = DP.Encode(mtype, ...)
+  local msg
+  if channel == "WHISPER" then
+    local via = self:Route(target)
+    if via then
+      local args = { ... }
+      args[select("#", ...) + 1] = D.TO_MARK .. D.Short(target)
+      msg = DP.Encode(mtype, unpack(args, 1, select("#", ...) + 1))
+      self:Log("send %s to %s via %s", mtype, D.Short(target), via)
+      channel, target = via, nil
+      if key then key = key .. ":" .. nkey(args[#args]) end
+    else
+      msg = DP.Encode(mtype, ...)
+      target = self.o.whisperName and self.o.whisperName(target) or target
+      self:Log("send %s to %s by whisper", mtype, tostring(target))
+    end
+  else
+    msg = DP.Encode(mtype, ...)
+    self:Log("send %s on %s", mtype, tostring(channel))
+  end
   DP.sendVersion = nil
   self.q:Push(msg, channel, target, key)
   self:Flush()
+end
+
+-- v1.2.4: the client said a whisper target is not online (system "No player named ...").
+-- Stop retrying it, and leave a duel that can only reach that player by whisper.
+function Engine:Unreachable(name)
+  local k = nkey(name)
+  local d = self.duel
+  if not d then return false end
+  for wk in pairs(d.wait) do if wk:sub(1, #k + 1) == k .. "|" then d.wait[wk] = nil end end
+  local involved = (d.hostKey == k) or (d.racers[k] ~= nil) or (d.target and nkey(d.target) == k)
+  if not involved or d.unreachableTold then return false end
+  d.unreachableTold = true
+  self:Log("%s cannot be reached by whisper", D.Short(name))
+  self:Notify("unreachable", d, D.Short(name))
+  if (d.state == "lobby" or d.state == "countdown") and not self:Route(name) then self:Leave("unreachable") end
+  return true
 end
 
 -- Reliable whisper: re-sent every RETRY seconds until an ACK arrives.
@@ -469,7 +532,7 @@ function Engine:Start()
     if r.status == "joined" then keep[#keep + 1] = k else d.racers[k] = nil end
   end
   d.order = keep
-  if #keep < D.MIN_RACERS then return false, "few" end
+  if #keep < D.MIN_RACERS then self:Log("start refused: only %d in the room", #keep) return false, "few" end
   -- v1.1 phrasebook is a two-trader dialogue (one role each)
   local sub = D.SUBJECT_BY_ID[d.subject]
   if sub and sub.coop and #keep ~= 2 then return false, "two" end
@@ -513,10 +576,12 @@ function Engine:BeginCountdown(now, secs)
   d.set = D.BuildSet(d.subject, d.myBand, d.seed, d.length, self.o.course and self.o.course() or nil, role)
   d.me = { index = 1, answered = 0, correct = 0, penalty = 0, wpmSum = 0, accSum = 0, log = {}, lastSent = -99 }
   if not d.set then
+    self:Log("could not build the questions (%s, %s)", tostring(d.subject), tostring(d.myBand))
     self:Leave("noset")
     return
   end
   if self.queue then self:QueueLeave("matched") end
+  self:Log("countdown %ss (seed %s, %d questions)", tostring(secs), tostring(d.seed), #d.set)
   self:Notify("countdown", d)
 end
 
@@ -635,7 +700,7 @@ function Engine:Leave(reason)
     else
       self:Broadcast(nil, "LEV", d.id, reason or "left")
     end
-  else
+  elseif reason ~= "unreachable" then
     self:Send("WHISPER", d.host, nil, "LEV", d.id, reason or "left")
   end
   d.state = "cancelled"
@@ -804,6 +869,7 @@ function Engine:TickCountdown(now)
     d.state = "race"
     d.raceStart = d.startAt
     d.me.shownAt = now
+    self:Log("race begins")
     self:Notify("race", d)
   end
 end
@@ -910,9 +976,17 @@ function Engine:Receive(raw, channel, sender)
       self:Send("WHISPER", sender, nil, "VER", f[1] or "", DP.VERSION)
       self:Notify("version", D.Short(sender), ver, DP.VERSION)
     end
+    self:Log("dropped %s from %s (protocol %s)", tostring(mtype), D.Short(sender), tostring(ver))
     self.stats.dropped = self.stats.dropped + 1
     return
   end
+  -- v1.2.4: a message for one player, sent on the group / guild channel
+  local last = f[#f]
+  if type(last) == "string" and last:sub(1, #D.TO_MARK) == D.TO_MARK then
+    f[#f] = nil
+    if nkey(last:sub(#D.TO_MARK + 1)) ~= self.meKey then return end
+  end
+  self:Log("got %s from %s on %s", mtype, D.Short(sender), tostring(channel))
   local h = H[mtype]
   if h then h(self, f, sender, channel, now) end
 end
@@ -998,6 +1072,7 @@ H.ACC = function(self, f, sender, channel, now)
   local display = d.scope == "QUEUE" and "" or (f[3] ~= "" and f[3] or D.Short(sender))
   local r = self:AddRacer(newRacer(sender, display, f[2], f[4], f[5], "joined", now))
   r.version = f[6]
+  self:Log("%s joined the room (v%s)", D.Short(sender), tostring(f[6]))
   self:SendLobby()
   self:Notify("lobby", d, r)
   if d.scope == "QUEUE" then self:Start() end

@@ -8,6 +8,15 @@ events:RegisterEvent("PLAYER_LOGIN")
 events:RegisterEvent("PLAYER_REGEN_DISABLED")
 events:RegisterEvent("PLAYER_REGEN_ENABLED")
 events:RegisterEvent("CHAT_MSG_ADDON") -- v0.10 Duel of Wits
+events:RegisterEvent("CHAT_MSG_SYSTEM") -- v1.2.4 "No player named ..." after a duel whisper
+-- v1.2.4: hide that system line when it answers one of our own duel whispers (it used to
+-- repeat every 2 seconds); real whispers the player typed are never touched.
+if ChatFrame_AddMessageEventFilter then
+  ChatFrame_AddMessageEventFilter("CHAT_MSG_SYSTEM", function(_, _, msg)
+    if ns.Compat and ns.Compat.WhisperFailName and ns.Compat.WhisperFailName(msg) then return true end
+    return false
+  end)
+end
 
 local function init()
   if ns.ready then return end
@@ -43,6 +52,8 @@ events:SetScript("OnEvent", function(self, event, arg1, arg2, arg3, arg4)
   elseif event == "CHAT_MSG_ADDON" then
     -- arg1 prefix, arg2 message, arg3 channel, arg4 sender
     if arg1 == ns.DuelProto.PREFIX and ns.ready and ns.DuelUI then ns.DuelUI.Receive(arg2, arg3, arg4) end
+  elseif event == "CHAT_MSG_SYSTEM" then
+    if ns.ready and ns.DuelUI and ns.DuelUI.OnSystem then pcall(ns.DuelUI.OnSystem, arg1) end
   end
 end)
 

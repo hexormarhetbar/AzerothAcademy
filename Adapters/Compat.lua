@@ -560,10 +560,66 @@ function C.RegisterAddonPrefix(prefix)
 end
 
 C.lastAddonMessage = nil -- { prefix, msg, channel, target } for tests
+C.recentWhispers = {} -- lower-case whisper target -> time we sent it an addon whisper
+
+local function shortOf(name)
+  name = tostring(name or "")
+  return name:match("^([^%-]+)") or name
+end
+
+-- v1.2.4: the name to whisper. Same-realm players are whispered by their bare name (what
+-- Ambiguate(name, "none") gives); WoW Forever rejects "Name-CAMWOWUS1Realm1PvE".
+function C.WhisperName(name)
+  name = tostring(name or "")
+  if Ambiguate then
+    local ok, n = pcall(Ambiguate, name, "none")
+    if ok and type(n) == "string" and n ~= "" then name = n end
+  end
+  local short, realm = name:match("^([^%-]+)%-(.+)$")
+  if short then
+    local mine = C.Realm():gsub("[%s%-]", ""):lower()
+    if mine == "" or realm:gsub("[%s%-]", ""):lower() == mine then return short end
+  end
+  return name
+end
+
+-- v1.2.4: is this player in our party / raid? (by bare name, any realm)
+function C.InGroupWith(name)
+  local want = shortOf(name):lower()
+  if want == "" or not UnitName then return false end
+  local units = {}
+  if C.GroupChannel() == "RAID" then
+    for i = 1, 40 do units[#units + 1] = "raid" .. i end
+  else
+    for i = 1, 4 do units[#units + 1] = "party" .. i end
+  end
+  for _, u in ipairs(units) do
+    local ok, n = pcall(UnitName, u)
+    if ok and n and shortOf(n):lower() == want then return true end
+  end
+  return false
+end
+
+-- v1.2.4: "No player named 'X' is currently playing." -> "X", but only for someone we sent
+-- an addon whisper to in the last 15 seconds (so we never touch other chat).
+local function notFoundPattern()
+  local fmt = type(ERR_CHAT_PLAYER_NOT_FOUND_S) == "string" and ERR_CHAT_PLAYER_NOT_FOUND_S
+    or "No player named '%s' is currently playing."
+  return "^" .. fmt:gsub("([%%%(%)%.%+%-%*%?%[%]%^%$])", "%%%1"):gsub("%%%%s", "(.+)") .. "$"
+end
+function C.WhisperFailName(msg)
+  if type(msg) ~= "string" then return nil end
+  local name = msg:match(notFoundPattern())
+  if not name then return nil end
+  local at = C.recentWhispers[name:lower()]
+  if at and C.Now() - at <= 15 then return name end
+  return nil
+end
 function C.SendAddonMessage(prefix, msg, channel, target)
   local f = (C_ChatInfo and C_ChatInfo.SendAddonMessage) or SendAddonMessage
   if not f then return false end
   C.lastAddonMessage = { prefix, msg, channel, target }
+  if channel == "WHISPER" and target then C.recentWhispers[tostring(target):lower()] = C.Now() end
   local ok, res = pcall(f, prefix, msg, channel, target)
   return ok and (res == nil or res == true or res == 0)
 end

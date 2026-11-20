@@ -195,7 +195,12 @@ date = os.date
 function GetBuildInfo() return "1.60.1", "70790", "Nov 3 2026", INTERFACE end
 function GetLocale() return LOCALE end
 function GetRealmName() return "Testrealm" end
-function UnitName() return "Hexkid", nil end
+PARTY_NAMES = {} -- v1.2.4: party1.. names for the duel group-routing checks
+function UnitName(unit)
+  local i = type(unit) == "string" and tonumber(unit:match("^party(%d)$"))
+  if i then return PARTY_NAMES[i], nil end
+  return "Hexkid", nil
+end
 local inCombat, onTaxi = false, false
 function InCombatLockdown() return inCombat end
 function UnitAffectingCombat() return inCombat end
@@ -233,6 +238,8 @@ if LEGACY then GetMinimapShape = nil end
 -- v0.10 Duel of Wits comms mocks (modern C_ChatInfo, or the legacy globals)
 local addonSent, prefixes, joinedChannels, leftChannels = {}, {}, {}, {}
 local inGroup, friendNames, channelIds, shiftDown = false, {}, {}, false
+chatFilters = {}
+function ChatFrame_AddMessageEventFilter(ev, fn) chatFilters[ev] = chatFilters[ev] or {}; table.insert(chatFilters[ev], fn) end
 local function recordAddon(p, m, ch, t)
   if #m > 255 then error("addon message longer than 255 bytes") end
   addonSent[#addonSent + 1] = { prefix = p, msg = m, channel = ch, target = t }
@@ -2147,6 +2154,7 @@ step("v0.10 duel of wits", function()
   click("^Send challenge$")
   if not visibleText("You are not in a group.") then fail("party duel without a group explains why") end
   inGroup = true
+  PARTY_NAMES[1] = "Pal"
   click("> My group <")
   click("^Send challenge$")
   local inv, f = lastSent("INV")
@@ -2196,7 +2204,10 @@ step("v0.10 duel of wits", function()
   if ns.Progress.char.duel.played ~= 1 then fail("duel stats recorded") end
   click("^Good game!$")
   local emo, ef = lastSent("EMO")
-  if not (emo and emo.channel == "WHISPER" and ef[2] == "1") then fail("emote sends a preset id only") end
+  if not (emo and emo.channel == "PARTY" and ef[2] == "1" and ef[3] == "@>Pal") then fail("emote to a party member goes on PARTY, addressed to them") end
+  -- v1.2.4: the host's per-racer replies go on PARTY with the racer named in the payload
+  local ackp, akf = lastSent("ACK")
+  if not (ackp and ackp.channel == "PARTY" and akf[#akf] == "@>Pal") then fail("ACK to a party member goes on PARTY with the target in the payload") end
   peer("EMO", "Pal-Testrealm", "WHISPER", id, 2)
   if not chatHas("Pal: Well played!") then fail("incoming emote shown as preset text") end
   if not findButton("^Block$") then fail("results offer Block") else click("^Block$") end
@@ -2217,7 +2228,7 @@ step("v0.10 duel of wits", function()
   if not visibleText("Rival challenges you") then fail("pop-up names the challenger") end
   click("^Accept$")
   local acc, af = lastSent("ACC")
-  if not (acc and acc.target == "Rival-Testrealm" and af[1] == "88801") then fail("ACC whispered to the host") end
+  if not (acc and acc.channel == "WHISPER" and acc.target == "Rival" and af[1] == "88801") then fail("ACC whispered to the host by bare name (no realm), got " .. tostring(acc and acc.target)) end
   if not (hub:IsShown() and ns.Hub.current == "duel") then fail("accepting opens the waiting room") end
   peer("LOB", "Rival-Testrealm", "WHISPER", "88801", "naturalist", 5, "WHISPER", 2,
     "Rival-Testrealm", "Rival", "magister", 4, 5, "joined", "Hexkid-Testrealm", "Hexkid", "adept", 1, 1, "joined")
@@ -2322,6 +2333,62 @@ step("v0.10 duel of wits", function()
     if E.queue then fail("stop searching leaves the queue") end
   end
   ns.Progress.account.settings.duel.random = false
+
+  -- v1.2.4 WoW Forever: a party racer answers on PARTY (whispers to "Name-CAMWOWUS1Realm1PvE" fail)
+  if E.duel then E:Close() end
+  if E.invite then E:Decline("left") end
+  local FR = "Fireball Ginger-CAMWOWUS1Realm1PvE"
+  PARTY_NAMES[1] = "Fireball Ginger"
+  slash("duel debug")
+  if not chatHas("Duel of Wits debug is ON") then fail("/aa duel debug turns debug on") end
+  peer("INV", FR, "PARTY", "66601", "runeforger", 5, "PARTY", "Fireball Ginger", "adept", 1, 1, "1.2.2")
+  if not E.invite then fail("party invite from a realm-suffixed sender shown") end
+  click("^Accept$")
+  local acc4, a4 = lastSent("ACC")
+  if not (acc4 and acc4.channel == "PARTY" and a4[1] == "66601" and a4[#a4] == "@>Fireball Ginger") then
+    fail("ACC to a party host goes on PARTY with the host named in the payload")
+  end
+  if not chatHas("[Duel]") then fail("debug prints handshake steps") end
+  -- the old host's LOB / STA arrive on PARTY; the racer reaches the countdown
+  peer("LOB", FR, "PARTY", "66601", "runeforger", 5, "PARTY", 2, FR, "Fireball Ginger", "adept", 1, 1, "joined",
+    "Hexkid-Testrealm", "Hexkid", "adept", 1, 1, "joined")
+  peer("STA", FR, "PARTY", "66601", 777, 3, "adept", "runeforger", 5, "PARTY", 2,
+    FR, "Fireball Ginger", "adept", 1, 1, "Hexkid-Testrealm", "Hexkid", "adept", 1, 1)
+  if not (E.duel and E.duel.state == "countdown") then fail("racer counts down after an old host's STA on PARTY") end
+  local ack4 = lastSent("ACK")
+  if not (ack4 and ack4.channel == "PARTY") then fail("racer ACKs STA on PARTY") end
+  tick(3.5)
+  if not E:Current() then fail("typing / question round reached") end
+  -- a message on PARTY for somebody else is ignored
+  local c0 = #chat
+  peer("EMO", FR, "PARTY", "66601", 2, "@>Somebody")
+  for i = c0 + 1, #chat do if chat[i]:find("got EMO", 1, true) or chat[i]:find("Well played", 1, true) then fail("PARTY message for another player ignored") break end end
+  peer("EMO", FR, "PARTY", "66601", 2, "@>Hexkid")
+  if not chatHas("Fireball Ginger: Well played!") then fail("PARTY message addressed to me is read") end
+  E:Close()
+  -- "No player named ..." right after an addon whisper: no retry spam, a clear message
+  PARTY_NAMES[1] = nil
+  inGroup = false
+  peer("INV", "Faraway-Testrealm", "WHISPER", "66602", "runeforger", 5, "WHISPER", "Faraway", "adept", 1, 1, "1.2.4")
+  click("^Accept$")
+  local accW = lastSent("ACC")
+  if not (accW and accW.channel == "WHISPER" and accW.target == "Faraway") then fail("stranger gets a real whisper") end
+  local hidden = false
+  for _, fn in ipairs(chatFilters and chatFilters.CHAT_MSG_SYSTEM or {}) do
+    if fn(nil, "CHAT_MSG_SYSTEM", "No player named 'Faraway' is currently playing.") then hidden = true end
+  end
+  if chatFilters and not hidden then fail("the whisper error line is hidden") end
+  fire("CHAT_MSG_SYSTEM", "No player named 'Faraway' is currently playing.")
+  if not chatHas("can't be reached by whisper") then fail("unreachable player explained") end
+  if E.duel then fail("duel left when the host can't be reached") end
+  local n0 = #addonSent
+  tick(6)
+  for i = n0 + 1, #addonSent do
+    local _, t = decode(i)
+    if t == "ACC" then fail("no ACC retries after 'No player named'") break end
+  end
+  slash("duel debug")
+  if not chatHas("Duel of Wits debug is OFF") then fail("/aa duel debug turns debug off") end
   inGroup = false
   hub:Hide()
 end)

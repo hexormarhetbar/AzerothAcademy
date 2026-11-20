@@ -731,3 +731,22 @@ UI position, shards, and stats are untouched. The report notes "carried over fro
   `SoundEvents.SpeechStart` makes speech wait for it (at least `SPEECH_DELAY` 0.2 s, at most `SPEECH_WAIT_MAX` 2.1 s).
 - `W.Button` runs the handler first and ticks after (`b.silent` skips it); `W.AudioButton` = silent button.
 - Fizzwick's `Voice.Started` is recorded when the line is scheduled; a refused file is marked missing in `onResult`.
+
+## v1.2.4: duel transport on WoW Forever
+
+- Cause of "challenge arrives, room never syncs, round never starts": `Engine:Send("WHISPER", ...)` (ACC, ACK, LOB
+  retries, STA retries, PRG, FIN, LEV, EMO, DEC, VER) whispered `Name-Realm`; on Forever that whisper fails, so only
+  the group-channel broadcasts (INV, LOB, STA, RES) ever arrived. The host's Start is gated on `Joined() >= 2`, i.e.
+  on receiving an ACC, so it never enabled.
+- `Engine:Route(target)`: `o.groupChannel()` if `o.inGroup(target)` (or no `inGroup` given), else GUILD for a guild duel,
+  else nil (a real whisper to `o.whisperName(target)`). Routed messages get a last field `"@>" .. Short(target)`
+  (`D.TO_MARK`); `Receive` strips it and drops the message unless it names us. Queue coalescing keys gain the target.
+- Keys: `D.Key(name)` = lower-case name without realm (was the full `Name-Realm`). Realm spellings differ by client.
+- `Engine:Unreachable(name)`: clears retries to that player; once per duel notifies `unreachable`, and leaves a lobby or
+  countdown that has no group route to them (without sending LEV, which would fail again). Fed by `CHAT_MSG_SYSTEM`
+  via `Compat.WhisperFailName` (matches `ERR_CHAT_PLAYER_NOT_FOUND_S`, only for addon whisper targets of the last 15 s;
+  the same test hides the line with `ChatFrame_AddMessageEventFilter`).
+- `o.log`: `Engine:Log` on send (route), receive, version drops, room join, start refused, countdown, race begins.
+  `/aa duel debug` toggles `account.settings.duel.debug`.
+- Compatibility: wire protocol unchanged (still 1 / 2). New racer + old host works (old handlers don't check the
+  channel); old racer + new host can't on Forever (old ACC is a whisper) and the host's waiting room says so after 15 s.

@@ -1,4 +1,4 @@
-# Azeroth Academy v1.2.3
+# Azeroth Academy v1.2.4
 
 A free learning addon for kids ages 5 to 13. Lessons are framed as Academy quests in Azeroth.
 This build has the **Main Hub** and two subjects: **Rune Forger** (math) and, new in v0.3,
@@ -347,6 +347,7 @@ the rules apply whenever one does.
 | `/aa duel <name>` | Open Duel of Wits ready to challenge that player (`Name` or `Name-Realm`) (v0.10) |
 | `/aa duel queue` | Open Duel of Wits on **Random challenger** (only works if a parent turned it on) (v0.10) |
 | `/aa duel leave` | Leave the current race, waiting room or random search (v0.10) |
+| `/aa duel debug` | Turn Duel of Wits debug on / off: every duel message sent and received is printed in chat with a `[Duel]` tag (v1.2.4) |
 | `/aa nudge` | Old command: turns In-Flight Lessons off, or back on (ask first) |
 | `/aa help` | List the commands |
 
@@ -377,6 +378,11 @@ or shift/middle-click on the minimap button.
   It says no by itself after 25 seconds, and right away in combat, in a dungeon/raid/battleground, when duels are off
   in the Parent Panel, or (with **Friends only**) when the challenger isn't on your friends list.
 - **Waiting room:** the challenger sees who joined (2 to 5 racers) and presses **Start race!**.
+- **Be in a party together (v1.2.4).** Everything between two racers in the same party or raid travels on the party
+  channel, so it also works on servers (WoW Forever) where addon whispers fail. One player outside your group is
+  reached by whisper; if the server says "No player named ...", the addon stops and asks you to invite them.
+  Everybody racing needs **v1.2.4 or newer** on WoW Forever: an older client's Accept never arrives, and after 15
+  seconds the challenger's waiting room says so.
 - **The race:** a 3-2-1 countdown, then everyone answers their own questions. Questions come from one shared
   seed plus **each racer's own age band**, so a 6-year-old and a 12-year-old can race fairly. A bar per racer
   shows how far everyone got. Each question gets one try; a wrong answer adds 3 seconds.
@@ -1139,6 +1145,16 @@ Azeroth Academy v0.10.0** (two accounts, or a friend), both with an age band pic
 226. [ ] Spanish course: all 20 Play buttons sound like the same man.
 227. [ ] Hiragana / Katakana with sound marks, Listen questions: never two buttons that sound the same (for example ず and づ).
 
+**v1.2.4: Duel of Wits on WoW Forever** (both players on v1.2.4, in one party)
+
+238. [ ] Both players: `/aa duel debug` (chat says debug is ON and shows `me=`, `group=PARTY`).
+239. [ ] Player A: `/aa duel`, **Typing race**, **My group**, **Send challenge**. Player B gets the pop-up.
+240. [ ] B presses **Accept**: B's chat shows `[Duel] send ACC to A via PARTY`; A's waiting room lists both names.
+241. [ ] A presses **Start race!**: both see 3-2-1, then the typing race starts on both screens.
+242. [ ] Swap roles (B challenges A) and repeat 239-241.
+243. [ ] Repeat once with **One player** and the other's name: it still goes over the party.
+244. [ ] No "No player named ..." lines appear in General chat during any of this. `/aa duel debug` again turns it off.
+
 **v1.2.3: room to hear the word**
 
 228. [ ] World Tongues study page: press **Play**. No click; a short pause, then the word, clearly. Single kana are a little slower than before and still the same voice and pitch.
@@ -1151,6 +1167,19 @@ Azeroth Academy v0.10.0** (two accounts, or a friend), both with an age band pic
 235. [ ] Hint button: Sprocket's chime, then his line, no click on top. Murloc Boarding Party: gurgles and splashes do not cover Fizzwick's lines.
 236. [ ] Open and close the Academy: chime, then the greeting; close sound, then goodbye.
 237. [ ] On WoW Forever (OnUpdate timer fallback if the client has no C_Timer): clips still play, just a moment after the press.
+
+## Known limits (v1.2.4)
+
+- **WoW Forever duels need a party or raid** (or the same guild for **My guild**). Whispers between players there
+  fail with "No player named 'Name-CAMWOWUS1Realm1PvE' ..." in our testing, so a **One player** challenge to someone
+  outside your group, and the **Random challenger** match after it is found, cannot work there.
+- Players are matched by character name without realm, so two racers with the same name from different realms in
+  one cross-realm group would be confused (not possible on a single Forever realm).
+- A **v1.2.2 / v1.2.3** client can still see a v1.2.4 challenge but can't join it on Forever (its Accept is a
+  whisper). It can join and race normally if **it is not the one accepting** (a v1.2.4 racer under an older host works).
+- Battle.net (BNet) friends are not used for duels: addon messages go only to party, raid, guild, custom channel and
+  character whispers.
+- Checked against the mock API and a model of Forever's chat; **not yet confirmed in a real 1.60.1 client**.
 
 ## Known limits (v1.2.3)
 
@@ -1511,6 +1540,28 @@ originals and face-centered head crops, and wrote a 26-entry manifest.
 For v0.5, `tools/convert_art.sh` was run with ImageMagick 7.1.2 on test PNGs. It produced 512x512 RGBA TGAs, a 1024x256 (4-frame) and a 2048x256 (8-frame) strip, and a correct manifest. Removed files dropped out of the manifest, and a bad `STRIP_FRAMES` was rejected.
 
 ## Changelog
+
+**v1.2.4**
+- **Duel of Wits starts on WoW Forever.** The cause: racers answered the challenger, and the challenger answered each
+  racer, by **addon whisper** to "Name-Realm", and Forever's realm (`CAMWOWUS1Realm1PvE`) makes every such whisper
+  fail ("No player named 'Fireball Ginger-CAMWOWUS1Realm1PvE' is currently playing."). The challenge itself went out on
+  the party channel, so it arrived, but the Accept never reached the challenger, so the waiting room never listed the
+  racer, **Start race!** never enabled, and no round began. The same code is in v1.2.2 and every version since v0.10;
+  the v1.2.2 / v1.2.3 mismatch was not the cause.
+- Every message for one player now goes on PARTY / RAID (or GUILD for a guild duel) when that player is in your group,
+  with their name as a last `@>Name` field; other clients ignore it. Older clients read messages by position, so the
+  extra field is harmless to them. Real whispers (only to players outside your group) use the bare name for your own
+  realm (`Ambiguate(name, "none")`).
+- Players are keyed by character name without realm, so "Name", "Name-Realm" and "Name-CAMWOWUS1Realm1PvE" are one
+  player. Names in the challenger's waiting room show again (the accepts arrive).
+- "No player named ..." after one of our duel whispers stops the retries, hides the repeated system line, and explains
+  (invite them to your party). After 15 s alone in a group waiting room: "they need Azeroth Academy v1.2.4 or newer".
+- `/aa duel debug` prints each handshake step (`[Duel] send ACC to X via PARTY`, `got STA ...`, `countdown`, `race
+  begins`, dropped versions, Lua errors in the duel code).
+- Tests: a WoW Forever chat model in the harness (whispers always fail, realm-suffixed senders): typing, kana and
+  classic races end to end, by-name challenge, an unreachable stranger, and mixed v1.2.2 / v1.2.4 clients (the v1.2.2
+  engine is loaded from `tests/fixtures/v1.2.2`); the smoke test checks the PARTY routing, the debug toggle and the
+  system-message handling.
 
 **v1.2.3**
 - **You can hear the word after pressing Play.** The cause: the button played its click (`click.ogg`, 0.35 s) in the same

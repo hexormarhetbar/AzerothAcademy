@@ -6,7 +6,7 @@
 local ITER = tonumber(arg and arg[1]) or 400
 math.randomseed(tonumber(os.getenv("SEED") or "") or os.time())
 
-local function newNS(locale)
+local function newNS(locale, swap)
   local ns = { Env = { time = os.time, date = os.date, locale = locale or "enUS" } }
   -- Load the shared core straight from the .toc (Core\ and Locales\ only, in order).
   local files = {}
@@ -15,7 +15,7 @@ local function newNS(locale)
     if line:match("^Core\\") or line:match("^Locales\\") then files[#files + 1] = (line:gsub("\\", "/")) end
   end
   for _, f in ipairs(files) do
-    local chunk = assert(loadfile(f))
+    local chunk = assert(loadfile((swap and swap[f]) or f))
     chunk("AzerothAcademy", ns)
   end
   return ns
@@ -2535,18 +2535,27 @@ do
     local function find(name)
       for _, c in ipairs(bus.clients) do if c.full:lower() == tostring(name):lower() or c.name:lower() == tostring(name):lower() then return c end end
     end
+    -- v1.2.4: cfg.forever = WoW Forever chat: every addon WHISPER fails ("No player named
+    -- 'X-CAMWOWUS1Realm1PvE' is currently playing."), senders carry that realm suffix.
+    local REALM = cfg.forever and "CAMWOWUS1Realm1PvE" or "Realm"
+    bus.whisperFails = 0
     function bus:Add(name, band, o)
       o = o or {}
-      local cns = newNS()
+      -- o.old: this client runs the v1.2.2 duel engine (tests/fixtures/v1.2.2)
+      local cns = newNS(nil, o.old and { ["Core/Duel.lua"] = "tests/fixtures/v1.2.2/Duel.lua",
+        ["Core/DuelProto.lua"] = "tests/fixtures/v1.2.2/DuelProto.lua" } or nil)
       cns.Progress.Bind({}, {})
       if band then cns.Progress.SetBand(band) end
-      local c = { name = name, full = name .. "-Realm", ns = cns, events = {}, ctx = { combat = false, instance = false },
+      local c = { name = name, full = name .. "-" .. REALM, old = o.old, ns = cns, events = {}, ctx = { combat = false, instance = false },
         group = o.group, guild = o.guild, friends = o.friends or {}, inQueueChan = false, skill = o.skill or 1, think = o.think or 2,
         nextAnswer = nil, offline = false, ver = o.ver }
       c.st = cns.Progress.account.settings.duel
       if o.settings then for k, v2 in pairs(o.settings) do c.st[k] = v2 end end
       c.E = cns.Duel.NewEngine({
-        me = name, realm = "Realm", now = function() return bus.t end, addonVersion = "0.10.0",
+        me = name, realm = REALM, now = function() return bus.t end, addonVersion = o.old and "1.2.2" or "1.2.4",
+        inGroup = function(n) local t = find(n); return (t and c.group and t.group == c.group) and true or false end,
+        whisperName = function(n) return (tostring(n):gsub("%-" .. REALM .. "$", "")) end,
+        log = cfg.log and function(text) print(string.format("  [%5.1f %s] %s", bus.t, name, text)) end or nil,
         send = function(msg, channel, target)
           if o.ver then msg = msg:gsub("^AA%d+", "AA" .. o.ver) end
           bus:Send(c, msg, channel, target)
@@ -2575,7 +2584,12 @@ do
       bus.perSecond[from.name .. sec] = (bus.perSecond[from.name .. sec] or 0) + 1
       if #msg > 255 then bus.oversize = true end
       local rcpt = {}
-      if channel == "WHISPER" then
+      if channel == "WHISPER" and cfg.forever then
+        bus.whisperFails = bus.whisperFails + 1
+        from.sysErrors = (from.sysErrors or 0) + 1
+        -- the client's system message arrives a moment later, outside the send
+        bus.inflight[#bus.inflight + 1] = { at = bus.t + 0.05, to = from, sys = target }
+      elseif channel == "WHISPER" then
         local c = find(target); if c then rcpt[1] = c end
       elseif channel == "PARTY" or channel == "RAID" then
         for _, c in ipairs(bus.clients) do if from.group and c.group == from.group then rcpt[#rcpt + 1] = c end end
@@ -2596,7 +2610,11 @@ do
       for _, m2 in ipairs(bus.inflight) do if m2.at <= bus.t then due[#due + 1] = m2 else keep[#keep + 1] = m2 end end
       bus.inflight = keep
       table.sort(due, function(a, b) return a.at < b.at end)
-      for _, m2 in ipairs(due) do if not m2.to.offline then m2.to.E:Receive(m2.msg, m2.channel, m2.from) end end
+      for _, m2 in ipairs(due) do
+        if m2.sys then
+          if m2.to.E.Unreachable then m2.to.E:Unreachable(m2.sys) end
+        elseif not m2.to.offline then m2.to.E:Receive(m2.msg, m2.channel, m2.from) end
+      end
       for _, c in ipairs(bus.clients) do
         if not c.offline then
           c.E:Update()
@@ -2771,6 +2789,80 @@ do
   ok(not kb.E.invite, "duels switched off in Settings block language duels too")
   kb.st.enabled = true
   ka.E:Close(); lb:Run(2)
+
+  -- (c4) v1.2.4 WoW Forever: addon whispers to "Name-CAMWOWUS1Realm1PvE" always fail there.
+  -- Every handshake step (invite, accept, room, start/seed, ACKs, progress, results) has to
+  -- work over PARTY with the target named in the payload, in both directions.
+  local function foreverRace(subject, hostOld, racerOld, seed, label)
+    local fb = newBus({ seed = seed, forever = true, log = os.getenv("DUEL_LOG") == "1" })
+    local hostC = fb:Add("Hexor", "adept", { group = 40, skill = 1, think = 2, old = hostOld })
+    local racerC = fb:Add("Fireball Ginger", "adept", { group = 40, skill = 1, think = 2, old = racerOld })
+    local d0 = hostC.E:Host(subject, 5, "PARTY")
+    fb:Run(0.5)
+    local invited = racerC.E.invite ~= nil
+    if invited then racerC.E:Accept() end
+    fb:Run(3)
+    local joined = hostC.E:Joined() == 2
+    local started = joined and hostC.E:Start()
+    fb:Run(4.5)
+    local racing = state(racerC) == "race" and racerC.E:Current() ~= nil
+    local mode = racing and racerC.E:Current().mode
+    fb:Run(70)
+    return { bus = fb, host = hostC, racer = racerC, d0 = d0, invited = invited, joined = joined, started = started,
+      racing = racing, mode = mode, done = state(hostC) == "done" and state(racerC) == "done", label = label }
+  end
+  local fr = foreverRace("typing", false, false, 41)
+  ok(fr.invited, "Forever: party invite reaches the racer")
+  ok(fr.joined, "Forever: the host's room lists the racer after Accept (no whisper needed)")
+  ok(fr.started, "Forever: host can start the race")
+  ok(fr.racing and fr.mode == "typing", "Forever: the typing round actually starts on the racer, got " .. tostring(fr.mode))
+  ok(fr.done, "Forever: typing race reaches results on both clients")
+  ok(fr.bus.whisperFails == 0, "Forever: party duel sends no whispers at all (" .. fr.bus.whisperFails .. ")")
+  ok(fr.host.E.duel.seed == fr.racer.E.duel.seed, "Forever: shared seed")
+  -- the other direction (the other player hosts) and a protocol-2 race
+  local frB = foreverRace("kana", false, false, 43)
+  ok(frB.joined and frB.racing and frB.done and frB.bus.whisperFails == 0, "Forever: protocol-2 kana race runs end to end over PARTY")
+  local frC = foreverRace("runeforger", false, false, 47)
+  ok(frC.racing and frC.done, "Forever: classic protocol-1 race runs end to end over PARTY")
+  -- 1:1 challenge by name to a party member also goes over PARTY
+  local fw = newBus({ seed = 53, forever = true })
+  local wa = fw:Add("Hexor", "adept", { group = 41, skill = 1, think = 2 })
+  local wb = fw:Add("Fireball Ginger", "adept", { group = 41, skill = 1, think = 2 })
+  wa.E:Host("typing", 5, "WHISPER", "Fireball Ginger-CAMWOWUS1Realm1PvE"); fw:Run(0.5)
+  ok(wb.E.invite ~= nil, "Forever: a by-name challenge to a party member arrives (over PARTY)")
+  if wb.E.invite then wb.E:Accept() end
+  fw:Run(2)
+  ok(wa.E:Joined() == 2 and wa.E:Start(), "Forever: by-name duel room syncs and starts")
+  fw:Run(70)
+  ok(state(wa) == "done" and state(wb) == "done" and fw.whisperFails == 0, "Forever: by-name duel finishes without whispers")
+  -- a stranger outside the group: whisper fails -> the duel stops cleanly, no endless retries
+  local fs = newBus({ seed = 59, forever = true })
+  local sa = fs:Add("Hexor", "adept", { group = 42 })
+  local sb = fs:Add("Stranger", "adept", { group = 43 })
+  sa.E:Host("typing", 5, "WHISPER", "Stranger"); fs:Run(12)
+  ok(fs:Has(sa, "unreachable") and sa.E.duel == nil, "Forever: unreachable whisper target ends the lobby with an explanation")
+  ok((sa.sysErrors or 0) <= 2, "Forever: at most a couple of whisper attempts, not a retry storm (" .. tostring(sa.sysErrors) .. ")")
+  ok(sb.E.invite == nil, "Forever: the stranger got nothing")
+
+  -- (c5) mixed versions on Forever: the old v1.2.2 engine is loaded from tests/fixtures/v1.2.2
+  local mOldHost = foreverRace("typing", true, false, 61)
+  ok(mOldHost.invited and mOldHost.joined, "mixed: v1.2.4 racer joins a v1.2.2 host's room (its accept goes on PARTY)")
+  ok(mOldHost.racing and mOldHost.mode == "typing", "mixed: v1.2.4 racer reaches the typing round under a v1.2.2 host")
+  ok(mOldHost.done, "mixed: v1.2.2 host + v1.2.4 racer reach results")
+  local mOldRacer = foreverRace("typing", false, true, 67)
+  ok(mOldRacer.invited, "mixed: v1.2.2 racer still sees a v1.2.4 host's challenge")
+  ok(not mOldRacer.joined, "mixed: v1.2.2 racer's accept is a whisper and never arrives on Forever (so she must update)")
+  ok(mOldRacer.host.E.duel == nil or mOldRacer.host.E.duel.state ~= "race", "mixed: nothing hangs in a half-started race")
+  local both122 = foreverRace("typing", true, true, 71)
+  ok(not both122.joined and not both122.racing, "v1.2.2 on both sides reproduces Hex's bug: room never syncs, round never starts")
+  -- off Forever (whispers work) old and new still interoperate
+  local nb = newBus({ seed = 73 })
+  local nOld = nb:Add("Oldie", "adept", { group = 44, skill = 1, think = 2, old = true })
+  local nNew = nb:Add("Newbie", "adept", { group = 44, skill = 1, think = 2 })
+  nNew.E:Host("typing", 5, "PARTY"); nb:Run(0.5); if nOld.E.invite then nOld.E:Accept() end; nb:Run(2)
+  ok(nNew.E:Joined() == 2 and nNew.E:Start(), "normal realms: v1.2.2 racer still joins a v1.2.4 host")
+  nb:Run(70)
+  ok(state(nNew) == "done" and state(nOld) == "done", "normal realms: mixed race reaches results")
 
   -- (d) disconnect mid-race: racer vanishes, host finishes and ranks them last
   local db = newBus({ seed = 11 })

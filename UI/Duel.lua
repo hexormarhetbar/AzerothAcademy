@@ -11,6 +11,7 @@ local DU = {}
 ns.DuelUI = DU
 
 DU.TICK = 0.1
+DU.OLD_PEER_HINT_AFTER = 15
 DU.sel = { subject = "runeforger", length = 5, scope = "PARTY", target = "" }
 
 local function say(event) if ns.GuideUI and H.IsShown() then return ns.GuideUI.Say(event) end end
@@ -56,6 +57,9 @@ function DU.Init()
     isFriend = C.IsFriend,
     isBlocked = DU.IsBlocked,
     groupChannel = C.GroupChannel,
+    inGroup = C.InGroupWith,
+    whisperName = C.WhisperName,
+    log = function(text) if DU.Debugging() then C.Print("|cff66ccff[Duel]|r " .. tostring(text)) end end,
     inGuild = C.InGuild,
     queueChannel = function() return DU.inQueueChannel and C.ChannelIndex(C.QUEUE_CHANNEL) or nil end,
     queueJoin = function() DU.inQueueChannel = true; C.JoinHiddenChannel(C.QUEUE_CHANNEL) end,
@@ -74,11 +78,46 @@ function DU.Init()
   return DU.engine
 end
 
+-- v1.2.4: /aa duel debug prints every handshake step to chat (saved per account)
+function DU.Debugging()
+  local okd, st = pcall(dset)
+  return okd and st and st.debug == true
+end
+
+function DU.ToggleDebug()
+  local st = dset()
+  st.debug = not st.debug
+  C.Print(st.debug and L.DUEL_DEBUG_ON or L.DUEL_DEBUG_OFF)
+  if st.debug then
+    C.Print(string.format("|cff66ccff[Duel]|r me=%s key=%s group=%s comms=%s proto=%s", tostring(DU.engine and DU.engine.me),
+      tostring(DU.engine and DU.engine.meKey), tostring(C.GroupChannel() or "none"), C.HasModernComms() and "C_ChatInfo" or "legacy",
+      tostring(ns.DuelProto.VERSION)))
+  end
+  return st.debug
+end
+
+local function noteError(err)
+  DU.lastError = err
+  if DU.Debugging() then C.Print("|cffff6666[Duel] error:|r " .. tostring(err)) end
+end
+
+-- v1.2.4: CHAT_MSG_SYSTEM "No player named 'X' is currently playing." right after we
+-- whispered X: stop the retries and explain, instead of repeating the error every 2 s.
+function DU.OnSystem(msg)
+  local name = C.WhisperFailName(msg)
+  if not name then return false end
+  if DU.engine and DU.engine.duel then
+    local okr, told = pcall(DU.engine.Unreachable, DU.engine, name)
+    if okr and told then C.Print(string.format(L.DUEL_UNREACHABLE, ns.Duel.Short(name))) end
+  end
+  return true
+end
+
 function DU.Tick()
   local E = DU.engine
   if not E then return end
   local okt, err = pcall(E.Update, E)
-  if not okt then DU.lastError = err end
+  if not okt then noteError(err) end
   local v = DU.view
   if v and v:IsShown() and v.Tick then v:Tick() end
   if DU.popup and DU.popup:IsShown() then DU.popup:Tick() end
@@ -89,7 +128,7 @@ function DU.Receive(msg, channel, sender)
   local E = DU.Init()
   if not E then return end
   local okr, err = pcall(E.Receive, E, msg, channel, sender)
-  if not okr then DU.lastError = err end
+  if not okr then noteError(err) end
 end
 
 function DU.OnCombat()
@@ -124,7 +163,10 @@ function DU.Slash(rest)
   rest = (rest or ""):gsub("^%s+", ""):gsub("%s+$", "")
   local low = rest:lower()
   DU.Init()
-  if low == "leave" or low == "stop" then
+  if low == "debug" then
+    DU.ToggleDebug()
+    return
+  elseif low == "leave" or low == "stop" then
     DU.StopQueue()
     if DU.engine then DU.engine:Close() end
     return
@@ -179,6 +221,8 @@ function DU.OnEvent(ev, a, b, c)
     end
     if ev == "race" then C.Sound("forge") end
     if ev == "progress" and a.me and a.me.doneAt and a.state == "race" then say("DUELWAIT") end
+    if v and v:IsShown() then v:Refresh() end
+  elseif ev == "unreachable" then
     if v and v:IsShown() then v:Refresh() end
   elseif ev == "hostLost" then
     C.Print(L.DUEL_HOSTLOST)
@@ -438,7 +482,14 @@ H.RegisterView("duel", function(parent)
       if d.isHost then
         self.start:Show()
         if E:Joined() >= D().MIN_RACERS then self.start:Enable() else self.start:Disable() end
-        if E:Joined() < D().MIN_RACERS then self.status:SetText(string.format(L.DUEL_LOBBY_WAIT_JOIN, E:Joined(), D().MAX_RACERS)) end
+        if E:Joined() < D().MIN_RACERS then
+          -- v1.2.4: an accept from v1.2.3 or older never arrives on WoW Forever (it was a whisper)
+          if C.Now() - (d.created or C.Now()) >= DU.OLD_PEER_HINT_AFTER then
+            self.status:SetText(L.DUEL_OLD_PEER_HINT)
+          else
+            self.status:SetText(string.format(L.DUEL_LOBBY_WAIT_JOIN, E:Joined(), D().MAX_RACERS))
+          end
+        end
       else
         self.start:Hide()
         self.status:SetText(L.DUEL_LOBBY_WAIT_HOST)
@@ -798,6 +849,10 @@ H.RegisterView("duel", function(parent)
   function v:Tick()
     local E = DU.engine
     local d = E and E.duel
+    if self.mode == "setup" and d and d.state == "lobby" and d.isHost then
+      local sec = math.floor(C.Now())
+      if self.lobbySec ~= sec then self.lobbySec = sec; self:RefreshSetup() end
+    end
     if self.mode == "race" and d then
       if d.state == "countdown" then
         local n = math.max(1, math.ceil(d.startAt - C.Now()))
